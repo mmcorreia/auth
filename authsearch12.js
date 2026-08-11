@@ -212,12 +212,13 @@
                 '.authsearch-graph-toggle-title{display:block;font-size:13px;font-weight:850;color:#111827;}' +
                 '.authsearch-graph-toggle-sub{display:block;font-size:11px;color:#667085;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
                 '.authsearch-kp{background:#fff;border:1px solid #d8dee6;border-radius:12px;overflow:hidden;box-shadow:0 8px 26px rgba(15,23,42,.08);margin-bottom:12px;}' +
-                '.authsearch-kp-gallery{display:grid;grid-template-columns:minmax(220px,2.35fr) minmax(90px,1fr) minmax(90px,1fr);grid-template-rows:118px 118px;gap:5px;background:#eef2f6;min-height:241px;}' +
+                '.authsearch-kp-gallery{display:grid;grid-template-columns:minmax(180px,1.35fr) minmax(95px,1fr) minmax(95px,1fr);grid-template-rows:136px 136px;gap:5px;background:#eef2f6;min-height:277px;}' +
                 '.authsearch-kp-gallery-item{position:relative;overflow:hidden;background:#e8edf3;display:block;border-radius:3px;min-width:0;}' +
                 '.authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3;}' +
                 '.authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1;}' +
                 '.authsearch-kp-gallery-item:nth-child(3){grid-column:3;grid-row:1;}' +
-                '.authsearch-kp-gallery-item:nth-child(4){grid-column:2/4;grid-row:2;}' +
+                '.authsearch-kp-gallery-item:nth-child(4){grid-column:2;grid-row:2;}' +
+                '.authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2;}' +
                 '.authsearch-kp-gallery-item img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;transition:transform .18s ease;}' +
                 '.authsearch-kp-gallery-item:first-child img{object-position:center top;}' +
                 '.authsearch-kp-gallery-item:hover img{transform:scale(1.025);}' +
@@ -240,7 +241,7 @@
                 '.authsearch-kp-idbtn:hover{background:#eef4f8;border-color:#aebdca;text-decoration:none!important;}' +
                 '.authsearch-kp-idbtn span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:#174b75;}' +
                 '.authsearch-kp-aliases{font-size:12px;color:#475467;line-height:1.5;}' +
-                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:1.9fr 1fr;grid-template-rows:92px 92px;gap:4px}.authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3}.authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1}.authsearch-kp-gallery-item:nth-child(3){grid-column:2;grid-row:2}.authsearch-kp-gallery-item:nth-child(n+4){display:none}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
+                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:1.45fr 1fr 1fr;grid-template-rows:96px 96px;gap:4px}.authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3}.authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1}.authsearch-kp-gallery-item:nth-child(3){grid-column:3;grid-row:1}.authsearch-kp-gallery-item:nth-child(4){grid-column:2;grid-row:2}.authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
                 '</style>';
 
             $("head").append(css);
@@ -493,7 +494,7 @@
                 facts += factLine('Pseudónimos', pseudonimos.slice(0, 8).join(', '));
                 if (facts) html += '<div class="authsearch-kp-facts-text">' + facts + '</div>';
 
-                html += '<div class="authsearch-kp-section" id="authsearch-kp-wikipedia"><div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki">A carregar resumo…</div></div>';
+                html += '<div class="authsearch-kp-section" id="authsearch-kp-wikipedia"><div class="authsearch-kp-wiki">A carregar resumo…</div></div>';
 
                 if (aliases.length) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Outros nomes</div><div class="authsearch-kp-aliases">' + escaparHTML(aliases.join(' · ')) + '</div></div>';
 
@@ -588,7 +589,7 @@
                     add(url, page, p.title || label);
                 });
 
-                imagens = imagens.slice(0, 4);
+                imagens = imagens.slice(0, 5);
                 if (!imagens.length) {
                     $galeria.html('<div class="authsearch-kp-gallery-empty">Sem imagens adicionais no Wikimedia Commons.</div>');
                     return;
@@ -649,10 +650,10 @@
                     return;
                 }
                 if (resumo.length > 900) resumo = resumo.slice(0, 897).replace(/\s+\S*$/, "") + "…";
-                $sec.html('<div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki"><p>' + escaparHTML(resumo) + '</p><a href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Ler mais na Wikipedia</a></div>');
+                $sec.html('<div class="authsearch-kp-wiki"><p>' + escaparHTML(resumo) + ' <a href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Ler mais</a></p></div>');
             }).fail(function () {
                 if (!$("#authsearch-kp-wikipedia").length) return;
-                $sec.html('<div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki"><a href="' + escaparAttr(ref.url) + '" target="_blank" rel="noopener">Abrir artigo na Wikipedia</a></div>');
+                $sec.html('<div class="authsearch-kp-wiki"><a href="' + escaparAttr(ref.url) + '" target="_blank" rel="noopener">Ler mais</a></div>');
             });
             registarPedido(req);
         }
