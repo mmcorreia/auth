@@ -1869,25 +1869,39 @@ body.authsearch-resizing #authsearch-tab {
          * A pesquisa an:<authid> garante a ligação ao registo; esta segunda validação evita
          * incluir bibliográficos em que a mesma autoridade aparece apenas como assunto.
          */
+        /**
+         * Validação tri-state da responsabilidade bibliográfica.
+         * true  = a ficha confirma a autoridade como autor;
+         * false = a ficha contém responsabilidade legível e confirma que não corresponde;
+         * null  = o template Koha não expõe a responsabilidade de forma que possamos validar.
+         *
+         * Um resultado `null` nunca deve eliminar um registo encontrado por an:<authid>.
+         */
         function detalheConfirmaAutoria(html) {
             var a = STATE.authority || {};
             var apelido = normalizarNomeParaComparacao(a.nomeA || '');
             var restantes = normalizarNomeParaComparacao(a.nomeB || '');
-            if (!apelido) return false;
+            var nomeCompleto = normalizarNomeParaComparacao(a.nome || '');
+            if (!apelido && !nomeCompleto) return null;
 
             var d = extrairMetadadosObra(html, { titulo: '' });
             var autores = normalizarNomeParaComparacao(d.autores || '');
-            if (!autores) return false;
 
-            // O apelido/palavra de ordem tem de estar na responsabilidade de autor.
-            if (autores.indexOf(apelido) === -1) return false;
+            // O detail.pl varia bastante entre temas/versões. Ausência de texto de autor
+            // significa "não determinado", não "não é autor".
+            if (!autores) return null;
 
-            // Quando há 200$b, exige também a parte principal do nome para reduzir homónimos.
-            if (restantes) {
+            // Primeiro tenta a forma autorizada completa quando está disponível.
+            if (nomeCompleto && autores.indexOf(nomeCompleto) !== -1) return true;
+
+            // Depois valida pela palavra de ordem + tokens relevantes de 200$b.
+            if (apelido && autores.indexOf(apelido) !== -1) {
+                if (!restantes) return true;
                 var tokens = restantes.split(/\s+/).filter(function (t) { return t.length > 1; });
-                if (tokens.length && !tokens.every(function (t) { return autores.indexOf(t) !== -1; })) return false;
+                if (!tokens.length || tokens.every(function (t) { return autores.indexOf(t) !== -1; })) return true;
             }
-            return true;
+
+            return false;
         }
 
         /**
@@ -1900,11 +1914,18 @@ body.authsearch-resizing #authsearch-tab {
             onProgress = typeof onProgress === 'function' ? onProgress : function () {};
             if (!obras.length) { callback([]); return; }
 
-            var aprovadas = [], indice = 0, ativos = 0, concluidos = 0, limite = 6;
+            var aprovadas = [], naoConfirmadas = [], rejeitadas = [], indice = 0, ativos = 0, concluidos = 0, limite = 6;
 
             function terminarSePronto() {
                 if (concluidos >= obras.length && ativos === 0) {
-                    callback(aprovadas);
+                    // Os não-determinados permanecem na lista: a pesquisa an:<authid>
+                    // confirma a ligação à autoridade, embora o detail.pl não permita classificar
+                    // com segurança a função. Só excluímos os casos explicitamente rejeitados.
+                    callback(aprovadas.concat(naoConfirmadas), {
+                        confirmadas: aprovadas.length,
+                        naoDeterminadas: naoConfirmadas.length,
+                        rejeitadas: rejeitadas.length
+                    });
                     return true;
                 }
                 return false;
@@ -1921,11 +1942,21 @@ body.authsearch-resizing #authsearch-tab {
                                 obra.detailHtml = html;
                                 STATE.obrasDetalheHtml = STATE.obrasDetalheHtml || {};
                                 STATE.obrasDetalheHtml[String(obra.biblionumber)] = html;
-                                if (detalheConfirmaAutoria(html)) aprovadas.push(obra);
+                                var validacao = detalheConfirmaAutoria(html);
+                                if (validacao === true) {
+                                    obra.authsearchAutoria = 'confirmada';
+                                    aprovadas.push(obra);
+                                } else if (validacao === null) {
+                                    obra.authsearchAutoria = 'nao-determinada';
+                                    naoConfirmadas.push(obra);
+                                } else {
+                                    obra.authsearchAutoria = 'rejeitada';
+                                    rejeitadas.push(obra);
+                                }
                             })
                             .always(function () {
                                 ativos--; concluidos++;
-                                onProgress(concluidos, obras.length, aprovadas.length);
+                                onProgress(concluidos, obras.length, aprovadas.length, naoConfirmadas.length, rejeitadas.length);
                                 proximo();
                             });
                         registarPedido(req);
@@ -2021,12 +2052,22 @@ body.authsearch-resizing #authsearch-tab {
                     return;
                 }
                 $alvo.html('<div class="authsearch-loading">A validar a autoria nos ' + obras.length + ' registos ligados…</div>');
-                filtrarObrasPorAutoria(obras, function (obrasAutoria) {
+                filtrarObrasPorAutoria(obras, function (obrasAutoria, resumo) {
                     STATE.obrasCarregadas = true;
-                    atualizarTituloObras(obrasAutoria.length, 'obras com autoria confirmada');
+                    resumo = resumo || { confirmadas: obrasAutoria.length, naoDeterminadas: 0, rejeitadas: 0 };
+                    var estadoTitulo;
+                    if (resumo.naoDeterminadas > 0) {
+                        estadoTitulo = resumo.confirmadas + ' autoria' + (resumo.confirmadas === 1 ? '' : 's') + ' confirmada' + (resumo.confirmadas === 1 ? '' : 's') +
+                            ' · ' + resumo.naoDeterminadas + ' ligação' + (resumo.naoDeterminadas === 1 ? '' : 'ões') + ' por validar';
+                    } else {
+                        estadoTitulo = 'autoria confirmada';
+                    }
+                    atualizarTituloObras(obrasAutoria.length, estadoTitulo);
                     renderObrasCatalogo(obrasAutoria, url);
-                }, function (feito, total, encontrados) {
-                    $alvo.html('<div class="authsearch-loading">A validar autoria… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' confirmada' + (encontrados === 1 ? '' : 's') + '</div>');
+                }, function (feito, total, encontrados, indeterminados) {
+                    var msg = 'A validar autoria… ' + feito + '/' + total + ' · ' + encontrados + ' confirmada' + (encontrados === 1 ? '' : 's');
+                    if (indeterminados) msg += ' · ' + indeterminados + ' por validar';
+                    $alvo.html('<div class="authsearch-loading">' + msg + '</div>');
                 });
             }
 
