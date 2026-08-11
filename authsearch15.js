@@ -842,6 +842,8 @@ body.authsearch-docked #authsearch-tab {
             qidAtual: "",
             cacheEntidades: {},
             cacheLabels: {},
+            // Mantém a última pesquisa visível mesmo quando o painel é reconstruído.
+            pesquisaPersistente: null,
             larguraPainelPx: 0,
             redimensionando: false
         };
@@ -1123,6 +1125,11 @@ body.authsearch-docked #authsearch-tab {
 
             $("#authsearch-body").html(html);
             preencherPesquisa(a.nome || "");
+
+            // Se já foi feita uma pesquisa neste registo, restaura-a integralmente.
+            if (STATE.pesquisaPersistente) {
+                restaurarEstadoResultadosPesquisa(STATE.pesquisaPersistente);
+            }
 
         }
 
@@ -1443,8 +1450,11 @@ body.authsearch-docked #authsearch-tab {
 
             setEstado("A pesquisar. Confirme sempre os resultados antes de aplicar identificadores.");
             $("#authsearch-create-area").empty();
+            // Uma nova pesquisa substitui deliberadamente a anterior.
+            STATE.pesquisaPersistente = null;
             pesquisarWikidata(termo, token);
             pesquisarVIAF(termo, token);
+            memorizarEstadoPesquisa();
         }
 
         /* ======================================================
@@ -1474,6 +1484,7 @@ body.authsearch-docked #authsearch-tab {
                 if (!dados || !dados.search || !dados.search.length) {
                     $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados no Wikidata para esta pesquisa.</div>');
                     renderAjudaCriacaoWikidata(false);
+                    memorizarEstadoPesquisa();
                     return;
                 }
 
@@ -1516,6 +1527,7 @@ body.authsearch-docked #authsearch-tab {
                         var msg = tipoPessoa ? "Sem resultados confirmados como pessoa humana (P31 = Q5)." : "Sem resultados válidos.";
                         $("#authsearch-wikidata").html('<div class="authsearch-empty">' + escaparHTML(msg) + '</div>');
                         renderAjudaCriacaoWikidata(false);
+                        memorizarEstadoPesquisa();
                         return;
                     }
 
@@ -1525,12 +1537,14 @@ body.authsearch-docked #authsearch-tab {
                 }).fail(function () {
                     if (token !== STATE.tokenPesquisa) return;
                     $("#authsearch-wikidata").html('<div class="authsearch-error">Erro ao obter detalhes do Wikidata.</div>');
+                    memorizarEstadoPesquisa();
                 });
 
                 registarPedido(req2);
             }).fail(function (_xhr, status) {
                 if (status === "abort" || token !== STATE.tokenPesquisa) return;
                 $("#authsearch-wikidata").html('<div class="authsearch-error">Erro ao consultar o Wikidata.</div>');
+                memorizarEstadoPesquisa();
             });
 
             registarPedido(req);
@@ -1582,6 +1596,7 @@ body.authsearch-docked #authsearch-tab {
             });
 
             $("#authsearch-wikidata").html(html || '<div class="authsearch-empty">Sem resultados.</div>');
+            memorizarEstadoPesquisa();
         }
 
         function entidadeEhPessoaHumana(entidade) {
@@ -1740,6 +1755,7 @@ body.authsearch-docked #authsearch-tab {
                 var lista = dados && dados.result ? dados.result : [];
                 if (!lista.length) {
                     $("#authsearch-viaf").html('<div class="authsearch-empty">Sem resultados VIAF.</div>');
+                    memorizarEstadoPesquisa();
                     return;
                 }
 
@@ -1760,9 +1776,11 @@ body.authsearch-docked #authsearch-tab {
                 });
 
                 $("#authsearch-viaf").html(html || '<div class="authsearch-empty">Sem resultados VIAF.</div>');
+                memorizarEstadoPesquisa();
             }, function () {
                 if (token !== STATE.tokenPesquisa) return;
                 $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível consultar o VIAF.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-retry-viaf">Tentar novamente</button></div>');
+                memorizarEstadoPesquisa();
             });
         }
 
@@ -1928,6 +1946,12 @@ body.authsearch-docked #authsearch-tab {
             if (snapshot.estadoHtml && $("#authsearch-state").length) $("#authsearch-state").html(snapshot.estadoHtml);
         }
 
+        /** Guarda a pesquisa atual para sobreviver a rerenders e ao fechar/reabrir o painel. */
+        function memorizarEstadoPesquisa() {
+            if (!$("#authsearch-term").length) return;
+            STATE.pesquisaPersistente = capturarEstadoResultadosPesquisa();
+        }
+
         /** Preenche apenas um 017 completamente vazio; nunca substitui dados existentes. */
         function aplicarNoCampo017(valor, fonte) {
             valor = limparTexto(valor);
@@ -1990,6 +2014,7 @@ body.authsearch-docked #authsearch-tab {
                     renderModoPesquisa();
                     restaurarEstadoResultadosPesquisa(resultadosAntesDeAplicar);
                     setEstado("Wikidata aplicado no 017. Pode agora aplicar o VIAF a partir dos resultados já apresentados.");
+                    memorizarEstadoPesquisa();
                 } else if (fonte === "viaf" && STATE.entidadeAtual && STATE.qidAtual && $("#authsearch-graph-area").children().length) {
                     renderFichaAutoridade(STATE.entidadeAtual, STATE.qidAtual);
                 }
@@ -2004,6 +2029,7 @@ body.authsearch-docked #authsearch-tab {
             STATE.qidAtual = qid;
             renderModoPesquisa();
             restaurarEstadoResultadosPesquisa(snapshot);
+            memorizarEstadoPesquisa();
         }
 
         /* ======================================================
