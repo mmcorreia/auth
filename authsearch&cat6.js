@@ -1421,6 +1421,32 @@ body.authsearch-resizing #authsearch-tab {
         }
 
         /**
+         * Normaliza uma forma de nome apenas para comparação local.
+         * Não altera o valor que será efetivamente gravado no UNIMARC.
+         */
+        function normalizarForma400Comparacao(valor) {
+            valor = limparTexto(valor || "").toLowerCase();
+            try { valor = valor.normalize("NFKC"); } catch (_e) {}
+            return valor.replace(/\s*,\s*/g, ", ").replace(/\s+/g, " " ).trim();
+        }
+
+        /** Recolhe as formas 400 já existentes para não voltar a sugeri-las. */
+        function obterFormas400Existentes() {
+            var formas = {};
+            encontrarCampos400ParaAplicacao().forEach(function (campo) {
+                var a = campo.campoA && campo.campoA.length ? limparTexto(campo.campoA.val()) : "";
+                var b = campo.campoB && campo.campoB.length ? limparTexto(campo.campoB.val()) : "";
+                if (!a && !b) return;
+
+                [a, [b, a].filter(Boolean).join(" "), a + (b ? ", " + b : "")].forEach(function (forma) {
+                    var chave = normalizarForma400Comparacao(forma);
+                    if (chave) formas[chave] = true;
+                });
+            });
+            return formas;
+        }
+
+        /**
          * Cria uma nova ocorrência repetível de 400 através do controlo nativo do Koha.
          * A estrutura HTML varia entre versões, por isso procuramos primeiro junto do campo
          * e, como fallback, um CloneField associado explicitamente à tag 400.
@@ -1748,8 +1774,8 @@ body.authsearch-resizing #authsearch-tab {
             if (!/^\d+$/.test(biblionumber)) return;
             $obra.attr('data-detail-loading', '1');
             var $dest = $obra.find('.authsearch-work-details');
-            var req = $.ajax({ url: '/cgi-bin/koha/catalogue/detail.pl?biblionumber=' + encodeURIComponent(biblionumber), dataType: 'html', timeout: CONFIG.timeout })
-                .done(function (html) {
+            var htmlCache = STATE.obrasDetalheHtml && STATE.obrasDetalheHtml[biblionumber];
+            function aplicarHtmlDetalhe(html) {
                     var d = extrairMetadadosObra(html, { titulo: $obra.find('.authsearch-work-title').text() });
                     var linhas = '';
                     linhas += linhaObra('Autores', d.autores);
@@ -1761,7 +1787,15 @@ body.authsearch-resizing #authsearch-tab {
                     $obra.attr('data-detail-loaded', '1');
                     var filtro = limparTexto(($obra.find('.authsearch-work-title').text() || '') + ' ' + $dest.text()).toLowerCase();
                     $obra.attr('data-filter', filtro);
-                }).fail(function () {
+            }
+            if (htmlCache) {
+                aplicarHtmlDetalhe(htmlCache);
+                $obra.removeAttr('data-detail-loading');
+                return;
+            }
+            var req = $.ajax({ url: '/cgi-bin/koha/catalogue/detail.pl?biblionumber=' + encodeURIComponent(biblionumber), dataType: 'html', timeout: CONFIG.timeout })
+                .done(aplicarHtmlDetalhe)
+                .fail(function () {
                     $dest.html('<span class="authsearch-muted">Não foi possível carregar os metadados.</span>').removeClass('is-loading');
                     $obra.attr('data-detail-loaded', '1');
                 }).always(function () { $obra.removeAttr('data-detail-loading'); });
@@ -1794,6 +1828,89 @@ body.authsearch-resizing #authsearch-tab {
             });
         }
 
+        /** Normaliza nomes para comparar a forma autorizada com a responsabilidade do bibliográfico. */
+        function normalizarNomeParaComparacao(valor) {
+            valor = limparTexto(valor || '').toLowerCase();
+            try { valor = valor.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (_e) {}
+            return valor
+                .replace(/\b(?:18|19|20)\d{2}\s*[-–]\s*(?:18|19|20)?\d{0,4}\b/g, ' ')
+                .replace(/\b(?:18|19|20)\d{2}\b/g, ' ')
+                .replace(/[^a-z0-9\u00c0-\u024f]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        /**
+         * Confirma que a autoridade é apresentada pelo Koha na responsabilidade "Autor".
+         * A pesquisa an:<authid> garante a ligação ao registo; esta segunda validação evita
+         * incluir bibliográficos em que a mesma autoridade aparece apenas como assunto.
+         */
+        function detalheConfirmaAutoria(html) {
+            var a = STATE.authority || {};
+            var apelido = normalizarNomeParaComparacao(a.nomeA || '');
+            var restantes = normalizarNomeParaComparacao(a.nomeB || '');
+            if (!apelido) return false;
+
+            var d = extrairMetadadosObra(html, { titulo: '' });
+            var autores = normalizarNomeParaComparacao(d.autores || '');
+            if (!autores) return false;
+
+            // O apelido/palavra de ordem tem de estar na responsabilidade de autor.
+            if (autores.indexOf(apelido) === -1) return false;
+
+            // Quando há 200$b, exige também a parte principal do nome para reduzir homónimos.
+            if (restantes) {
+                var tokens = restantes.split(/\s+/).filter(function (t) { return t.length > 1; });
+                if (tokens.length && !tokens.every(function (t) { return autores.indexOf(t) !== -1; })) return false;
+            }
+            return true;
+        }
+
+        /**
+         * Valida em paralelo moderado quais registos têm esta autoridade como autora.
+         * Guarda o HTML da ficha para reutilização posterior e evitar um segundo pedido.
+         */
+        function filtrarObrasPorAutoria(obras, callback, onProgress) {
+            obras = Array.isArray(obras) ? obras : [];
+            callback = typeof callback === 'function' ? callback : function () {};
+            onProgress = typeof onProgress === 'function' ? onProgress : function () {};
+            if (!obras.length) { callback([]); return; }
+
+            var aprovadas = [], indice = 0, ativos = 0, concluidos = 0, limite = 6;
+
+            function terminarSePronto() {
+                if (concluidos >= obras.length && ativos === 0) {
+                    callback(aprovadas);
+                    return true;
+                }
+                return false;
+            }
+
+            function proximo() {
+                if (terminarSePronto()) return;
+                while (ativos < limite && indice < obras.length) {
+                    (function (obra) {
+                        ativos++;
+                        var url = '/cgi-bin/koha/catalogue/detail.pl?biblionumber=' + encodeURIComponent(obra.biblionumber);
+                        var req = $.ajax({ url: url, dataType: 'html', timeout: CONFIG.timeout })
+                            .done(function (html) {
+                                obra.detailHtml = html;
+                                STATE.obrasDetalheHtml = STATE.obrasDetalheHtml || {};
+                                STATE.obrasDetalheHtml[String(obra.biblionumber)] = html;
+                                if (detalheConfirmaAutoria(html)) aprovadas.push(obra);
+                            })
+                            .always(function () {
+                                ativos--; concluidos++;
+                                onProgress(concluidos, obras.length, aprovadas.length);
+                                proximo();
+                            });
+                        registarPedido(req);
+                    })(obras[indice++]);
+                }
+            }
+            proximo();
+        }
+
         function carregarObrasCatalogo() {
             var $alvo = $('#authsearch-works');
             if (!$alvo.length || STATE.obrasCarregadas) return;
@@ -1808,7 +1925,13 @@ body.authsearch-resizing #authsearch-tab {
                     $alvo.html('<div class="authsearch-error">Não foi possível consultar os bibliográficos ligados.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="' + escaparAttr(url) + '" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
                     return;
                 }
-                renderObrasCatalogo(obras, url);
+                $alvo.html('<div class="authsearch-loading">A validar a autoria nos ' + obras.length + ' registos ligados…</div>');
+                filtrarObrasPorAutoria(obras, function (obrasAutoria) {
+                    STATE.obrasCarregadas = true;
+                    renderObrasCatalogo(obrasAutoria, url);
+                }, function (feito, total, encontrados) {
+                    $alvo.html('<div class="authsearch-loading">A validar autoria… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' confirmada' + (encontrados === 1 ? '' : 's') + '</div>');
+                });
             });
         }
 
@@ -2054,8 +2177,10 @@ body.authsearch-resizing #authsearch-tab {
                     '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(qid) + '" data-fonte="wikidata">Aplicar Wikidata</button>' +
                     '</div>';
 
+                var formas400Existentes = obterFormas400Existentes();
                 var variantes400 = removerDuplicados(aliases.concat(obterValoresTextoClaims(entidade, "P742"))).filter(function (nomeVariante) {
-                    return limparTexto(nomeVariante).toLowerCase() !== limparTexto(label).toLowerCase();
+                    if (limparTexto(nomeVariante).toLowerCase() === limparTexto(label).toLowerCase()) return false;
+                    return !formas400Existentes[normalizarForma400Comparacao(nomeVariante)];
                 }).slice(0, 8);
                 if (variantes400.length) {
                     html += '<div class="authsearch-result-variants"><div class="authsearch-result-variants-title">Candidatos ao 400</div><div class="authsearch-variants-list">';
