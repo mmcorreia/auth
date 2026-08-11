@@ -46,7 +46,6 @@
             qidAtual: "",
             cacheEntidades: {},
             cacheLabels: {},
-            ultimaPesquisaAutomatica: "",
             larguraPainelPx: 0,
             redimensionando: false
         };
@@ -213,8 +212,9 @@
                 '.authsearch-graph-toggle-title{display:block;font-size:13px;font-weight:850;color:#111827;}' +
                 '.authsearch-graph-toggle-sub{display:block;font-size:11px;color:#667085;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
                 '.authsearch-kp{background:#fff;border:1px solid #d8dee6;border-radius:12px;overflow:hidden;box-shadow:0 8px 26px rgba(15,23,42,.08);margin-bottom:12px;}' +
-                '.authsearch-kp-gallery{display:grid;grid-template-columns:1.15fr repeat(4,.9fr);gap:6px;background:#eef2f6;min-height:220px;align-items:stretch;}' +
-                '.authsearch-kp-gallery-item{position:relative;overflow:hidden;background:#e8edf3;display:block;border-radius:4px;aspect-ratio:3/4;}' +
+                '.authsearch-kp-gallery{display:grid;grid-template-columns:minmax(180px,1.75fr) repeat(3,minmax(90px,.75fr));grid-template-rows:240px;gap:6px;background:#eef2f6;min-height:240px;align-items:stretch;}' +
+                '.authsearch-kp-gallery-item{position:relative;overflow:hidden;background:#e8edf3;display:block;border-radius:4px;min-width:0;}' +
+                '.authsearch-kp-gallery-item:first-child{min-width:180px;}' +
                 '.authsearch-kp-gallery-item img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transition:transform .18s ease;}' +
                 '.authsearch-kp-gallery-item:hover img{transform:scale(1.025);}' +
                 '.authsearch-kp-gallery-empty{display:flex;align-items:center;justify-content:center;min-height:180px;background:#f8fafc;color:#98a2b3;font-size:12px;border-radius:4px;}' +
@@ -236,7 +236,7 @@
                 '.authsearch-kp-idbtn:hover{background:#eef4f8;border-color:#aebdca;text-decoration:none!important;}' +
                 '.authsearch-kp-idbtn span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:#174b75;}' +
                 '.authsearch-kp-aliases{font-size:12px;color:#475467;line-height:1.5;}' +
-                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:repeat(3,1fr);gap:5px}.authsearch-kp-gallery-item{aspect-ratio:3/4}.authsearch-kp-gallery-item:nth-child(n+4){display:none}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
+                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:1.6fr 1fr 1fr;grid-template-rows:190px;gap:5px}.authsearch-kp-gallery-item:nth-child(n+4){display:none}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
                 '</style>';
 
             $("head").append(css);
@@ -423,13 +423,6 @@
             $("#authsearch-body").html(html);
             preencherPesquisa(a.nome || "");
 
-            var termoAuto = limparTexto(a.nome || "");
-            if (termoAuto && !qid && STATE.ultimaPesquisaAutomatica !== termoAuto) {
-                STATE.ultimaPesquisaAutomatica = termoAuto;
-                setTimeout(function () {
-                    if (STATE.modo === "pesquisa" && limparTexto($("#authsearch-term").val()) === termoAuto) executarPesquisa();
-                }, 0);
-            }
         }
 
         function renderModoFichaLoading(qid) {
@@ -591,7 +584,7 @@
                     add(url, page, p.title || label);
                 });
 
-                imagens = imagens.slice(0, 5);
+                imagens = imagens.slice(0, 4);
                 if (!imagens.length) {
                     $galeria.html('<div class="authsearch-kp-gallery-empty">Sem imagens adicionais no Wikimedia Commons.</div>');
                     return;
