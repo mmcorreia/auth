@@ -854,7 +854,11 @@ body.authsearch-resizing #authsearch-tab {
             pesquisaPersistente: null,
             larguraPainelPx: 0,
             redimensionando: false,
-            obrasCarregadas: false
+            obrasCarregadas: false,
+            obrasLigadasPreload: null,
+            obrasPrecarregadasAuthid: "",
+            obrasPreloadEmCurso: false,
+            obrasPesquisaUrl: ""
         };
 
         // Inicialização: estilos -> UI -> eventos -> leitura do registo -> estado inicial.
@@ -930,7 +934,9 @@ body.authsearch-resizing #authsearch-tab {
             var authority = STATE.authority || {};
             var qid = primeiroQidValido(authority.wikidata || []);
 
-            preencherPesquisa(authority.nome || "");
+            // A pesquisa de identidade parte SEMPRE da forma autorizada do campo 200.
+            // As variantes 400 servem apenas para aliases/pseudónimos e nunca para definir o termo inicial.
+            if ($("#authsearch-term").length) $("#authsearch-term").val(authority.nome || "");
             atualizarResumoLateral();
             STATE.qidAtual = qid || "";
             renderModoPesquisa();
@@ -1143,11 +1149,12 @@ body.authsearch-resizing #authsearch-tab {
             }
             html += criarAccordion('search', 'Identificadores e reconciliação', 'Pesquisa Wikidata + VIAF e formas variantes 400', false, pesquisa);
             html += criarAccordion('works', 'Obras no catálogo', '', false,
-                '<div id="authsearch-works"><div class="authsearch-empty">Abra esta secção para carregar as obras ligadas.</div></div>');
+                '<div id="authsearch-works"><div class="authsearch-empty">A verificar obras ligadas…</div></div>');
 
             $("#authsearch-body").html(html);
             preencherPesquisa(a.nome || "");
             if (STATE.pesquisaPersistente) restaurarEstadoResultadosPesquisa(STATE.pesquisaPersistente);
+            precarregarResumoObras();
         }
 
         function criarAccordion(id, titulo, subtitulo, aberto, conteudo) {
@@ -1920,27 +1927,112 @@ body.authsearch-resizing #authsearch-tab {
             proximo();
         }
 
+        /**
+         * Faz apenas a pesquisa an:<authid> em segundo plano para saber imediatamente
+         * se existem bibliográficos ligados. Não abre ainda cada ficha bibliográfica.
+         * A validação fina de autoria permanece diferida até o utilizador abrir a secção.
+         */
+        function atualizarTituloObras(total, estado) {
+            var $titulo = $('.authsearch-accordion[data-accordion="works"] .authsearch-accordion-title').first();
+            var $sub = $('.authsearch-accordion[data-accordion="works"] .authsearch-accordion-sub').first();
+            if (!$titulo.length) return;
+            var base = 'Obras no catálogo';
+            if (typeof total === 'number') base += ' · ' + total;
+            $titulo.text(base);
+            if ($sub.length) $sub.text(estado || '');
+        }
+
+        function precarregarResumoObras() {
+            atualizarAuthorityState();
+            var authid = String((STATE.authority && STATE.authority.authid) || '');
+            var $alvo = $('#authsearch-works');
+            if (!/^\d+$/.test(authid)) {
+                atualizarTituloObras(null, '');
+                if ($alvo.length) $alvo.html('<div class="authsearch-empty">A autoridade ainda não tem AuthID persistido.</div>');
+                return;
+            }
+
+            // Reutiliza resultados já obtidos para este AuthID.
+            if (STATE.obrasPrecarregadasAuthid === authid && Array.isArray(STATE.obrasLigadasPreload)) {
+                atualizarTituloObras(STATE.obrasLigadasPreload.length, 'registos ligados');
+                if ($alvo.length && !STATE.obrasCarregadas) {
+                    $alvo.html('<div class="authsearch-empty">' + STATE.obrasLigadasPreload.length + ' registo' + (STATE.obrasLigadasPreload.length === 1 ? '' : 's') + ' ligado' + (STATE.obrasLigadasPreload.length === 1 ? '' : 's') + '. Abra a secção para validar a autoria e carregar os detalhes.</div>');
+                }
+                return;
+            }
+            if (STATE.obrasPreloadEmCurso) return;
+
+            STATE.obrasPreloadEmCurso = true;
+            STATE.obrasPrecarregadasAuthid = authid;
+            STATE.obrasLigadasPreload = null;
+            var url = '/cgi-bin/koha/catalogue/search.pl?q=' + encodeURIComponent('an:' + authid) + '&count=50';
+            STATE.obrasPesquisaUrl = url;
+            atualizarTituloObras(null, 'a verificar…');
+
+            carregarTodasObrasCatalogo(url, function (erro, obras) {
+                STATE.obrasPreloadEmCurso = false;
+                if (String((STATE.authority && STATE.authority.authid) || '') !== authid) return;
+                obras = Array.isArray(obras) ? obras : [];
+                if (erro && !obras.length) {
+                    STATE.obrasLigadasPreload = null;
+                    atualizarTituloObras(null, 'não foi possível verificar');
+                    if ($alvo.length) $alvo.html('<div class="authsearch-error">Não foi possível verificar automaticamente os bibliográficos ligados.</div>');
+                    return;
+                }
+                STATE.obrasLigadasPreload = obras;
+                atualizarTituloObras(obras.length, 'registos ligados');
+                if ($alvo.length && !STATE.obrasCarregadas) {
+                    if (!obras.length) {
+                        $alvo.html('<div class="authsearch-empty">Não foram encontrados bibliográficos ligados.</div>');
+                    } else {
+                        $alvo.html('<div class="authsearch-empty">' + obras.length + ' registo' + (obras.length === 1 ? '' : 's') + ' ligado' + (obras.length === 1 ? '' : 's') + '. Abra esta secção para validar a autoria e carregar os detalhes.</div>');
+                    }
+                }
+            });
+        }
+
         function carregarObrasCatalogo() {
             var $alvo = $('#authsearch-works');
             if (!$alvo.length || STATE.obrasCarregadas) return;
             atualizarAuthorityState();
             var authid = String((STATE.authority && STATE.authority.authid) || '');
             if (!/^\d+$/.test(authid)) { $alvo.html('<div class="authsearch-empty">A autoridade ainda não tem AuthID persistido.</div>'); return; }
-            $alvo.html('<div class="authsearch-loading">A carregar a lista integral de obras ligadas…</div>');
-            var url = '/cgi-bin/koha/catalogue/search.pl?q=' + encodeURIComponent('an:' + authid) + '&count=50';
-            carregarTodasObrasCatalogo(url, function (erro, obras) {
+            var url = STATE.obrasPesquisaUrl || ('/cgi-bin/koha/catalogue/search.pl?q=' + encodeURIComponent('an:' + authid) + '&count=50');
+
+            function validarERenderizar(obras, erro) {
+                obras = Array.isArray(obras) ? obras : [];
                 STATE.obrasCarregadas = !erro;
                 if (erro && !obras.length) {
                     $alvo.html('<div class="authsearch-error">Não foi possível consultar os bibliográficos ligados.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="' + escaparAttr(url) + '" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
                     return;
                 }
+                if (!obras.length) {
+                    STATE.obrasCarregadas = true;
+                    atualizarTituloObras(0, 'registos ligados');
+                    renderObrasCatalogo([], url);
+                    return;
+                }
                 $alvo.html('<div class="authsearch-loading">A validar a autoria nos ' + obras.length + ' registos ligados…</div>');
                 filtrarObrasPorAutoria(obras, function (obrasAutoria) {
                     STATE.obrasCarregadas = true;
+                    atualizarTituloObras(obrasAutoria.length, 'obras com autoria confirmada');
                     renderObrasCatalogo(obrasAutoria, url);
                 }, function (feito, total, encontrados) {
                     $alvo.html('<div class="authsearch-loading">A validar autoria… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' confirmada' + (encontrados === 1 ? '' : 's') + '</div>');
                 });
+            }
+
+            // Se o pré-carregamento terminou, não repete a pesquisa do catálogo.
+            if (STATE.obrasPrecarregadasAuthid === authid && Array.isArray(STATE.obrasLigadasPreload)) {
+                validarERenderizar(STATE.obrasLigadasPreload.slice(), null);
+                return;
+            }
+
+            $alvo.html('<div class="authsearch-loading">A carregar a lista integral de obras ligadas…</div>');
+            carregarTodasObrasCatalogo(url, function (erro, obras) {
+                STATE.obrasPrecarregadasAuthid = authid;
+                STATE.obrasLigadasPreload = Array.isArray(obras) ? obras.slice() : [];
+                validarERenderizar(obras, erro);
             });
         }
 
@@ -2052,8 +2144,57 @@ body.authsearch-resizing #authsearch-tab {
            ====================================================== */
 
         function pesquisarWikidata(termo, token) {
-            $("#authsearch-wikidata").html('<div class="authsearch-loading">A pesquisar…</div>');
+            $("#authsearch-wikidata").html('<div class="authsearch-loading">A pesquisar pessoas…</div>');
+            var tipoPessoa = STATE.authority && STATE.authority.tipo === "person";
 
+            // Para pessoas usa CirrusSearch com o filtro P31=Q5 já no índice do Wikidata.
+            // Evita obter resultados genéricos para depois os rejeitar localmente.
+            if (tipoPessoa) {
+                pesquisarWikidataPessoasCirrus(termo, token);
+                return;
+            }
+            pesquisarWikidataEntitySearch(termo, token, false);
+        }
+
+        function pesquisarWikidataPessoasCirrus(termo, token) {
+            var consulta = termo + ' haswbstatement:P31=Q5';
+            var req = $.ajax({
+                url: "https://www.wikidata.org/w/api.php",
+                dataType: "json",
+                timeout: CONFIG.timeout,
+                data: {
+                    action: "query",
+                    format: "json",
+                    list: "search",
+                    srsearch: consulta,
+                    srnamespace: 0,
+                    srlimit: CONFIG.maxResultadosWikidata,
+                    srprop: "",
+                    utf8: 1,
+                    origin: "*"
+                }
+            }).done(function (dados) {
+                if (token !== STATE.tokenPesquisa) return;
+                var hits = dados && dados.query && Array.isArray(dados.query.search) ? dados.query.search : [];
+                var ids = hits.map(function (item) { return String(item.title || '').toUpperCase(); })
+                    .filter(function (id) { return /^Q\d+$/.test(id); });
+
+                if (!ids.length) {
+                    $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados de pessoas humanas no Wikidata para esta pesquisa.</div>');
+                    renderAjudaCriacaoWikidata(false);
+                    memorizarEstadoPesquisa();
+                    return;
+                }
+                carregarResultadosWikidataPorIds(ids, token, true);
+            }).fail(function (_xhr, status) {
+                if (status === "abort" || token !== STATE.tokenPesquisa) return;
+                // Fallback conservador: mantém a pesquisa funcional se o endpoint Search falhar.
+                pesquisarWikidataEntitySearch(termo, token, true);
+            });
+            registarPedido(req);
+        }
+
+        function pesquisarWikidataEntitySearch(termo, token, filtrarPessoa) {
             var req = $.ajax({
                 url: "https://www.wikidata.org/w/api.php",
                 dataType: "json",
@@ -2070,73 +2211,69 @@ body.authsearch-resizing #authsearch-tab {
                 }
             }).done(function (dados) {
                 if (token !== STATE.tokenPesquisa) return;
-
-                if (!dados || !dados.search || !dados.search.length) {
+                var lista = dados && Array.isArray(dados.search) ? dados.search : [];
+                var ids = lista.map(function (item) { return item.id; }).filter(Boolean);
+                if (!ids.length) {
                     $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados no Wikidata para esta pesquisa.</div>');
                     renderAjudaCriacaoWikidata(false);
                     memorizarEstadoPesquisa();
                     return;
                 }
-
-                var ids = dados.search.map(function (item) { return item.id; }).filter(Boolean);
-                if (!ids.length) return;
-
-                var req2 = $.ajax({
-                    url: "https://www.wikidata.org/w/api.php",
-                    dataType: "json",
-                    timeout: CONFIG.timeout,
-                    data: {
-                        action: "wbgetentities",
-                        format: "json",
-                        ids: ids.join("|"),
-                        props: "labels|descriptions|aliases|claims|sitelinks",
-                        languages: "pt|en",
-                        origin: "*"
-                    }
-                }).done(function (detalhes) {
-                    if (token !== STATE.tokenPesquisa) return;
-
-                    var entidades = (detalhes && detalhes.entities) || {};
-                    var resultados = [];
-                    var tipoPessoa = STATE.authority && STATE.authority.tipo === "person";
-
-                    dados.search.forEach(function (item) {
-                        var entidade = entidades[item.id];
-                        if (!entidade || entidade.missing !== undefined) return;
-                        if (tipoPessoa && !entidadeEhPessoaHumana(entidade)) return;
-
-                        resultados.push({
-                            id: item.id,
-                            label: limitarTexto(obterLabelEntidade(entidade) || item.label || "", 180),
-                            description: limitarTexto(obterDescricaoEntidade(entidade) || item.description || "", 500),
-                            entidade: entidade
-                        });
-                    });
-
-                    if (!resultados.length) {
-                        var msg = tipoPessoa ? "Sem resultados confirmados como pessoa humana (P31 = Q5)." : "Sem resultados válidos.";
-                        $("#authsearch-wikidata").html('<div class="authsearch-empty">' + escaparHTML(msg) + '</div>');
-                        renderAjudaCriacaoWikidata(false);
-                        memorizarEstadoPesquisa();
-                        return;
-                    }
-
-                    resultados = resultados.slice(0, CONFIG.maxMostrarWikidata);
-                    $("#authsearch-create-area").empty();
-                    enriquecerResultadosWikidata(resultados, token);
-                }).fail(function () {
-                    if (token !== STATE.tokenPesquisa) return;
-                    $("#authsearch-wikidata").html('<div class="authsearch-error">Erro ao obter detalhes do Wikidata.</div>');
-                    memorizarEstadoPesquisa();
-                });
-
-                registarPedido(req2);
+                carregarResultadosWikidataPorIds(ids, token, !!filtrarPessoa);
             }).fail(function (_xhr, status) {
                 if (status === "abort" || token !== STATE.tokenPesquisa) return;
                 $("#authsearch-wikidata").html('<div class="authsearch-error">Erro ao consultar o Wikidata.</div>');
                 memorizarEstadoPesquisa();
             });
+            registarPedido(req);
+        }
 
+        function carregarResultadosWikidataPorIds(ids, token, exigirPessoa) {
+            ids = (ids || []).slice(0, CONFIG.maxResultadosWikidata);
+            var req = $.ajax({
+                url: "https://www.wikidata.org/w/api.php",
+                dataType: "json",
+                timeout: CONFIG.timeout,
+                data: {
+                    action: "wbgetentities",
+                    format: "json",
+                    ids: ids.join("|"),
+                    props: "labels|descriptions|aliases|claims|sitelinks",
+                    languages: "pt|en",
+                    origin: "*"
+                }
+            }).done(function (detalhes) {
+                if (token !== STATE.tokenPesquisa) return;
+                var entidades = (detalhes && detalhes.entities) || {};
+                var resultados = [];
+                ids.forEach(function (id) {
+                    var entidade = entidades[id];
+                    if (!entidade || entidade.missing !== undefined) return;
+                    // Mesmo com o filtro no índice, P31=Q5 continua a ser validado no item.
+                    if (exigirPessoa && !entidadeEhPessoaHumana(entidade)) return;
+                    resultados.push({
+                        id: id,
+                        label: limitarTexto(obterLabelEntidade(entidade) || "", 180),
+                        description: limitarTexto(obterDescricaoEntidade(entidade) || "", 500),
+                        entidade: entidade
+                    });
+                });
+
+                if (!resultados.length) {
+                    var msg = exigirPessoa ? "Sem resultados confirmados como pessoa humana (P31 = Q5)." : "Sem resultados válidos.";
+                    $("#authsearch-wikidata").html('<div class="authsearch-empty">' + escaparHTML(msg) + '</div>');
+                    renderAjudaCriacaoWikidata(false);
+                    memorizarEstadoPesquisa();
+                    return;
+                }
+                resultados = resultados.slice(0, CONFIG.maxMostrarWikidata);
+                $("#authsearch-create-area").empty();
+                enriquecerResultadosWikidata(resultados, token);
+            }).fail(function () {
+                if (token !== STATE.tokenPesquisa) return;
+                $("#authsearch-wikidata").html('<div class="authsearch-error">Erro ao obter detalhes do Wikidata.</div>');
+                memorizarEstadoPesquisa();
+            });
             registarPedido(req);
         }
 
@@ -2410,35 +2547,70 @@ body.authsearch-resizing #authsearch-tab {
             f: ["Datas", "Datas associadas ao nome", "Dates"]
         };
 
-        /** Localiza um subcampo pelo código MARC quando o DOM o expõe; usa rótulos como fallback. */
+        /**
+         * Localiza o VALOR de um subcampo MARC dentro de uma ocorrência 200/400.
+         * Importante: o editor Koha também contém pequenos inputs com os códigos
+         * de subcampo (a, b, c, f). Esses inputs nunca podem ser confundidos com
+         * o conteúdo catalogado.
+         */
         function obterElementoSubcampoPessoa(campo, codigo) {
             if (!campo || !campo.length) return $();
             codigo = String(codigo || "").toLowerCase();
             var encontrado = $();
 
-            campo.find("input[type='text'], textarea").each(function () {
-                var $el = $(this);
-                var attrs = [
-                    $el.attr("data-subfieldcode"), $el.attr("data-subfield"), $el.attr("data-code"),
-                    $el.attr("id"), $el.attr("name")
-                ].filter(Boolean).join(" ").toLowerCase();
-                if (attrs === codigo || new RegExp("(?:subfield|code)[_-]?" + codigo + "(?:[_-]|$)", "i").test(attrs)) {
-                    encontrado = $el; return false;
-                }
-                var $linha = $el.closest("li, tr, p, .subfield_line, .input_marceditor");
-                var txt = limparTexto($linha.find(".subfieldcode, .subfield-code, label").first().text()).toLowerCase();
-                if (txt === codigo || txt === "$" + codigo || txt.indexOf("$" + codigo) === 0) {
-                    encontrado = $el; return false;
+            // 1. Preferir a linha que contém explicitamente o input do código do subcampo.
+            campo.find("input.subfieldcode, input.subfield-code, input[data-subfieldcode], input[data-subfield]").each(function () {
+                var $codigo = $(this);
+                var valorCodigo = limparTexto($codigo.val() || $codigo.attr("data-subfieldcode") || $codigo.attr("data-subfield") || "").toLowerCase();
+                if (valorCodigo !== codigo) return;
+
+                var $linha = $codigo.closest("li, tr, p, .subfield_line, .input_marceditor, .subfield");
+                if (!$linha.length) return;
+
+                var $valor = $linha.find("input[type='text'], textarea").filter(function () {
+                    var $x = $(this);
+                    if (this === $codigo[0]) return false;
+                    if ($x.hasClass("subfieldcode") || $x.hasClass("subfield-code")) return false;
+                    var v = limparTexto($x.val());
+                    var largura = $x.outerWidth() || 0;
+                    return $x.is(":visible") && (largura > 70 || v.length > 1);
+                }).last();
+
+                if ($valor.length) {
+                    encontrado = $valor;
+                    return false;
                 }
             });
             if (encontrado.length) return encontrado;
 
+            // 2. Fallback pelos rótulos textuais do framework Koha.
             var rotulos = ROTULOS_SUBCAMPOS_PESSOA[codigo] || [];
             for (var i = 0; i < rotulos.length; i++) {
                 encontrado = encontrarCampoPorEtiquetaRobusto(campo, rotulos[i]);
                 if (encontrado.length) return encontrado;
             }
-            return $();
+
+            // 3. Último fallback: procurar uma linha cujo pequeno input tenha exatamente o código.
+            campo.find("li, tr, p, .subfield_line, .input_marceditor, .subfield").each(function () {
+                var $linha = $(this);
+                var temCodigo = $linha.find("input[type='text']").filter(function () {
+                    var $x = $(this);
+                    return ($x.outerWidth() || 0) <= 70 && limparTexto($x.val()).toLowerCase() === codigo;
+                }).length > 0;
+                if (!temCodigo) return;
+
+                var $valor = $linha.find("input[type='text'], textarea").filter(function () {
+                    var $x = $(this);
+                    if (($x.outerWidth() || 0) <= 70 && limparTexto($x.val()).toLowerCase() === codigo) return false;
+                    return $x.is(":visible") && (($x.outerWidth() || 0) > 70);
+                }).last();
+                if ($valor.length) {
+                    encontrado = $valor;
+                    return false;
+                }
+            });
+
+            return encontrado;
         }
 
         function obterSubcampoPessoa(campo, codigo) {
