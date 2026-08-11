@@ -139,8 +139,8 @@ $(document).ready(function () {
 
     function criarBlocoBase() {
         return `
-            <div id="bibliosugest" style="clear:both; display:block; width:100%; box-sizing:border-box; margin:25px 0; padding:18px 0; border-top:1px solid #e5e5e5; border-bottom:1px solid #e5e5e5;">
-                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;">
+            <div id="bibliosugest" style="clear:both; display:block; width:100%; box-sizing:border-box; margin:28px 0 0 0; padding:20px 18px 24px 18px; border:1px solid #e5e5e5; background:#fff;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:18px;">
                     <h3 style="margin:0; font-size:18px; font-weight:600;">${escapeHtml(T.titulo)}</h3>
                     <div>
                         <button type="button" id="bibliosugest-carousel-prev" class="btn btn-default btn-sm" style="margin-right:5px;">‹</button>
@@ -148,8 +148,8 @@ $(document).ready(function () {
                     </div>
                 </div>
 
-                <div id="bibliosugest-carousel-wrapper" style="overflow:hidden; width:100%;">
-                    <div id="bibliosugest-carousel-track" style="display:flex; gap:14px; transition:transform .25s ease;">
+                <div id="bibliosugest-carousel-wrapper" style="overflow:hidden; width:100%; box-sizing:border-box; padding:0 2px 2px 2px;">
+                    <div id="bibliosugest-carousel-track" style="display:flex; gap:14px; transition:transform .25s ease; padding:0 0 4px 0;">
                         <div style="font-size:14px; color:#666;">${escapeHtml(T.carregar)}</div>
                     </div>
                 </div>
