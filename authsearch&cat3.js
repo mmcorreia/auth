@@ -675,8 +675,8 @@ body.authsearch-resizing #authsearch-tab {
 }
 
 .authsearch-kp-wiki a {
-    display:inline-block;
-    margin-top:7px;
+    display:inline;
+    margin-left:4px;
     font-weight:750;
     color:#1769aa;
     text-decoration:none;
@@ -726,109 +726,76 @@ body.authsearch-resizing #authsearch-tab {
 }
 
 @media(max-width:800px) {
-    .authsearch-kp-gallery{grid-template-columns:1.45fr 1fr 1fr;
-    grid-template-rows:96px 96px;
-    gap:4px;
+    .authsearch-kp-gallery{grid-template-columns:1.45fr 1fr 1fr;grid-template-rows:96px 96px;gap:4px}
+    .authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3}
+    .authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1}
+    .authsearch-kp-gallery-item:nth-child(3){grid-column:3;grid-row:1}
+    .authsearch-kp-gallery-item:nth-child(4){grid-column:2;grid-row:2}
+    .authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2}
+    .authsearch-kp-name{font-size:20px}
+    body.authsearch-docked{padding-left:0!important}
+    body.authsearch-docked #authsearch-tab{left:0}
+    #authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}
+    .authsearch-card-main{grid-template-columns:86px 1fr}
+    .authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}
+    .authsearch-details{grid-template-columns:1fr}
+    .authsearch-card-name{font-size:18px}
 }
 
-.authsearch-kp-gallery-item:first-child {
-    grid-column:1;
-    grid-row:1/3;
+/* ============================================================
+   NAVEGAÇÃO INTERNA DO AUTHBOX
+   Três secções com comportamento de menu/accordion claramente visível.
+   ============================================================ */
+.authsearch-accordion{margin:0 0 7px;background:#fff}
+.authsearch-accordion-toggle{
+    min-height:50px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+    cursor:pointer;user-select:none;outline:none;background:#f5f7f9;border:1px solid #d8e0e7;border-radius:5px;
+    transition:background .14s ease,border-color .14s ease,box-shadow .14s ease
 }
-
-.authsearch-kp-gallery-item:nth-child(2) {
-    grid-column:2;
-    grid-row:1;
-}
-
-.authsearch-kp-gallery-item:nth-child(3) {
-    grid-column:3;
-    grid-row:1;
-}
-
-.authsearch-kp-gallery-item:nth-child(4) {
-    grid-column:2;
-    grid-row:2;
-}
-
-.authsearch-kp-gallery-item:nth-child(5) {
-    grid-column:3;
-    grid-row:2;
-}
-
-.authsearch-kp-name {
-    font-size:20px;
-}
-
-body.authsearch-docked {
-    padding-left:0!important;
-}
-
-body.authsearch-docked #authsearch-tab {
-    left:0;
-}
-
-#authsearch-root {
-    width:calc(100vw - 34px);
-    min-width:0;
-    max-width:none;
-}
-
-.authsearch-card-main {
-    grid-template-columns:86px 1fr;
-}
-
-.authsearch-card-photo,.authsearch-card-placeholder {
-    width:86px;
-    height:112px;
-}
-
-.authsearch-details {
-    grid-template-columns:1fr;
-}
-
-.authsearch-card-name {
-    font-size:18px;
-}
-
-/* Componentes colapsáveis internos do AuthBox. */
-/* Navegação interna: três linhas discretas, fechadas por defeito. */
-.authsearch-accordion{border-top:1px solid #e5e7eb;background:transparent}
-.authsearch-accordion:last-child{border-bottom:1px solid #e5e7eb}
-.authsearch-accordion-toggle{min-height:58px;padding:10px 2px;display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;user-select:none;outline:none}
-.authsearch-accordion-toggle:hover .authsearch-accordion-title{color:#0b57d0}
-.authsearch-accordion-toggle:focus-visible{box-shadow:0 0 0 2px rgba(11,87,208,.18);border-radius:4px}
+.authsearch-accordion-toggle:hover{background:#eef3f6;border-color:#bccbd7}
+.authsearch-accordion-toggle:focus-visible{box-shadow:0 0 0 2px rgba(36,96,137,.18)}
+.authsearch-accordion.is-open>.authsearch-accordion-toggle{background:#edf3f7;border-color:#b7c7d3;border-left:4px solid #336d96;padding-left:9px;border-radius:5px 5px 0 0}
 .authsearch-accordion-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
-.authsearch-accordion-title{font-size:13px;font-weight:750;color:#1f2937;line-height:1.3}
-.authsearch-accordion-sub{font-size:11px;font-weight:500;color:#7a8494;line-height:1.3}
-.authsearch-accordion-chevron{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#98a2b3;transition:transform .16s ease}
-.authsearch-accordion.is-open .authsearch-accordion-chevron{transform:rotate(90deg)}
-.authsearch-accordion-body{padding:4px 0 14px}
+.authsearch-accordion-title{font-size:13px;font-weight:750;color:#263746;line-height:1.3}
+.authsearch-accordion-sub{font-size:11px;font-weight:500;color:#71808e;line-height:1.3}
+.authsearch-accordion-sub:empty{display:none}
+.authsearch-accordion-chevron{width:18px;height:18px;flex:0 0 18px;position:relative}
+.authsearch-accordion-chevron:before{content:"";position:absolute;width:7px;height:7px;left:4px;top:3px;border-right:2px solid #667786;border-bottom:2px solid #667786;transform:rotate(45deg);transition:transform .16s ease,top .16s ease}
+.authsearch-accordion.is-open .authsearch-accordion-chevron:before{transform:rotate(225deg);top:7px}
+.authsearch-accordion-body{padding:12px 10px 16px;border:1px solid #d8e0e7;border-top:0;border-radius:0 0 5px 5px;background:#fff}
 .authsearch-accordion:not(.is-open) .authsearch-accordion-body{display:none}
-.authsearch-variants-list{display:flex;flex-direction:column;gap:5px;margin-top:7px}
-.authsearch-variant-row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid #eef1f5}
-.authsearch-variant-name{font-size:12px;line-height:1.35;min-width:0}
-.authsearch-inline-action{border:0;background:transparent;padding:0;color:#0b57d0;font-size:11px;font-weight:650;cursor:pointer;text-decoration:none}
-.authsearch-inline-action:hover{text-decoration:underline}
-.authsearch-result-variants{margin-top:7px;padding-top:6px;border-top:1px solid #eef1f5}
-.authsearch-result-variants-title{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#7a8494;margin-bottom:3px;font-weight:700}
 
-/* Obras: lista integral com scroll próprio; capa à esquerda e ISBD à direita. */
-.authsearch-works-toolbar{position:sticky;top:0;z-index:2;background:#fff;padding:0 0 8px;border-bottom:1px solid #eef1f5;margin-bottom:4px}
-.authsearch-works-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
-.authsearch-works-meta{font-size:12px;color:#667085}
-.authsearch-works-filter{width:100%;border:1px solid #cfd6df;border-radius:5px;padding:7px 9px;font-size:12px;background:#fff}
-.authsearch-works-list{max-height:560px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-right:4px}
-.authsearch-work{display:grid;grid-template-columns:64px minmax(0,1fr);gap:11px;padding:10px 2px;border-bottom:1px solid #e8ecf1;min-width:0}
+/* Variantes 400 apresentadas junto dos resultados Wikidata. */
+.authsearch-variants-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.authsearch-variant-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid #eef1f5}
+.authsearch-variant-name{font-size:12px;line-height:1.35;min-width:0;flex:1 1 auto}
+.authsearch-inline-action{flex:0 0 auto;margin-left:14px;border:1px solid #c8d4de;border-radius:4px;background:#f8fafb;padding:3px 7px;color:#295f86;font-size:10.5px;font-weight:650;cursor:pointer;text-decoration:none;white-space:nowrap}
+.authsearch-inline-action:hover{background:#eef4f7;border-color:#9fb4c3;text-decoration:none}
+.authsearch-result-variants{margin-top:9px;padding-top:7px;border-top:1px solid #eef1f5}
+.authsearch-result-variants-title{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#7a8494;margin-bottom:4px;font-weight:700}
+
+/* ============================================================
+   OBRAS NO CATÁLOGO
+   Lista vertical integral; metadados essenciais em vez do ISBD completo.
+   ============================================================ */
+.authsearch-works-toolbar{position:sticky;top:0;z-index:2;background:#fff;padding:0 0 8px;margin-bottom:2px}
+.authsearch-works-meta{font-size:11px;color:#7a8793;margin-bottom:6px}
+.authsearch-works-filter{width:100%;border:1px solid #cfd6df;border-radius:4px;padding:6px 8px;font-size:11.5px;background:#fff}
+.authsearch-works-list{max-height:560px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-right:5px}
+.authsearch-work{display:grid;grid-template-columns:68px minmax(0,1fr);gap:12px;padding:12px 2px;border-bottom:1px solid #e5e9ed;min-width:0}
 .authsearch-work:last-child{border-bottom:0}
-.authsearch-work-cover{width:64px;height:96px;object-fit:cover;object-position:center top;border-radius:3px;background:#f1f5f9}
-.authsearch-work-placeholder{width:64px;height:96px;border-radius:3px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#98a2b3;font-size:9px;text-align:center;padding:5px}
+.authsearch-work-cover{width:68px;height:102px;object-fit:cover;object-position:center top;border-radius:3px;background:#f1f5f9;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.authsearch-work-placeholder{width:68px;height:102px;border-radius:3px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#98a2b3;font-size:9px;text-align:center;padding:5px}
 .authsearch-work-body{min-width:0}
-.authsearch-work-title{font-size:12px;font-weight:750;line-height:1.35;margin-bottom:5px}
-.authsearch-work-title a{text-decoration:none!important}
-.authsearch-work-isbd{font-size:11.5px;color:#475467;line-height:1.48;white-space:normal}
-.authsearch-work-isbd.is-loading{color:#98a2b3;font-style:italic}
-.authsearch-work-id{font-size:10px;color:#98a2b3;margin-top:5px}
+.authsearch-work-title{font-size:13.5px;font-weight:780;line-height:1.35;margin:0 0 7px;color:#1f3f58}
+.authsearch-work-title a{color:#1f5f8b!important;text-decoration:none!important}
+.authsearch-work-title a:hover{text-decoration:underline!important}
+.authsearch-work-details{font-size:11.5px;color:#465766;line-height:1.42}
+.authsearch-work-line{display:flex;align-items:flex-start;gap:6px;margin-top:3px;min-width:0}
+.authsearch-work-line:first-child{margin-top:0}
+.authsearch-work-label{flex:0 0 68px;color:#657786;font-weight:700}
+.authsearch-work-value{min-width:0;overflow-wrap:anywhere}
+.authsearch-work-details.is-loading{color:#98a2b3;font-style:italic}
 .authsearch-works-actions{margin-top:8px;font-size:11px}
 .authsearch-works-hidden{display:none!important}
 
@@ -1167,7 +1134,7 @@ body.authsearch-docked #authsearch-tab {
                     '<div id="authsearch-graph-area" class="authsearch-graph-slot" data-qid="' + escaparAttr(qid) + '"></div>');
             }
             html += criarAccordion('search', 'Identificadores e reconciliação', 'Pesquisa Wikidata + VIAF e formas variantes 400', false, pesquisa);
-            html += criarAccordion('works', 'Obras no catálogo', 'Lista integral dos bibliográficos ligados à autoridade', false,
+            html += criarAccordion('works', 'Obras no catálogo', '', false,
                 '<div id="authsearch-works"><div class="authsearch-empty">Abra esta secção para carregar as obras ligadas.</div></div>');
 
             $("#authsearch-body").html(html);
@@ -1179,7 +1146,7 @@ body.authsearch-docked #authsearch-tab {
             return '<section class="authsearch-accordion' + (aberto ? ' is-open' : '') + '" data-accordion="' + escaparAttr(id) + '">' +
                 '<div class="authsearch-accordion-toggle" role="button" tabindex="0" aria-expanded="' + (aberto ? 'true' : 'false') + '">' +
                     '<span class="authsearch-accordion-copy"><span class="authsearch-accordion-title">' + escaparHTML(titulo) + '</span><span class="authsearch-accordion-sub">' + escaparHTML(subtitulo || '') + '</span></span>' +
-                    '<span class="authsearch-accordion-chevron" aria-hidden="true">›</span>' +
+                    '<span class="authsearch-accordion-chevron" aria-hidden="true"></span>' +
                 '</div>' +
                 '<div class="authsearch-accordion-body">' + conteudo + '</div>' +
             '</section>';
@@ -1567,72 +1534,125 @@ body.authsearch-docked #authsearch-tab {
             carregar(urlInicial);
         }
 
+        function tituloSemResponsabilidade(titulo) {
+            titulo = limparTexto(titulo || '');
+            if (!titulo) return '';
+            // Nos resultados Koha a responsabilidade surge normalmente depois de " / ".
+            return limparTexto(titulo.split(/\s+\/\s+/)[0] || titulo);
+        }
+
+        function textoResumo($doc, seletores) {
+            var $el = $doc.find(seletores).first();
+            if (!$el.length) return '';
+            var $clone = $el.clone();
+            $clone.find('.label, script, style, button').remove();
+            return limitarTexto(limparTexto($clone.text()), 900);
+        }
+
+        /**
+         * Extrai do detalhe bibliográfico staff apenas os elementos úteis para esta lista.
+         * Usamos várias classes/seletores para tolerar pequenas diferenças entre templates Koha.
+         */
+        function extrairMetadadosObra(html, obra) {
+            var doc = $.parseHTML(html, document, true), $doc = $(doc);
+            var titulo = tituloSemResponsabilidade(obra.titulo || '');
+            var tituloPagina = limparTexto($doc.find('h1').first().text());
+            if (tituloPagina) titulo = tituloSemResponsabilidade(tituloPagina.replace(/^Detalhes\s+de\s+/i, '')) || titulo;
+
+            var autores = textoResumo($doc, '.results_summary.author, .results_summary.author_statement, .author');
+            var isbn = textoResumo($doc, '.results_summary.isbn, .isbn');
+            var editor = textoResumo($doc, '.results_summary.publisher, .publisher');
+            var colecao = textoResumo($doc, '.results_summary.series, .results_summary.collection, .series');
+            var assunto = textoResumo($doc, '.results_summary.subjects, .results_summary.subject, .subjects');
+
+            // Fallbacks simples sobre o texto visível quando o template não expõe classes específicas.
+            var textoPagina = limparTexto($doc.find('#catalogue_detail_biblio, #catalogue_detail, main').first().text());
+            function fallback(rotuloRegex) {
+                var m = textoPagina.match(rotuloRegex);
+                return m ? limitarTexto(limparTexto(m[1]), 700) : '';
+            }
+            if (!autores) autores = fallback(/(?:Autor(?:es)?|Responsabilidade)\s*:\s*(.*?)(?=\s{2,}|ISBN\s*:|Editor\s*:|Publica(?:ção|cao)\s*:|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
+            if (!isbn) isbn = fallback(/ISBN\s*:\s*(.*?)(?=\s{2,}|Editor\s*:|Publica(?:ção|cao)\s*:|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
+            if (!editor) editor = fallback(/(?:Editor|Publica(?:ção|cao))\s*:\s*(.*?)(?=\s{2,}|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
+            if (!colecao) colecao = fallback(/(?:Cole(?:ção|cao)|Série|Serie)\s*:\s*(.*?)(?=\s{2,}|Assunto(?:s)?\s*:|$)/i);
+            if (!assunto) assunto = fallback(/Assunto(?:s)?\s*:\s*(.*)$/i);
+
+            return { titulo: titulo, autores: autores, isbn: isbn, editor: editor, colecao: colecao, assunto: assunto };
+        }
+
+        function linhaObra(rotulo, valor) {
+            valor = limparTexto(valor || '');
+            if (!valor) return '';
+            return '<div class="authsearch-work-line"><span class="authsearch-work-label">' + escaparHTML(rotulo) + '</span><span class="authsearch-work-value">' + escaparHTML(valor) + '</span></div>';
+        }
+
         function renderObrasCatalogo(obras, urlPesquisa) {
             var $alvo = $('#authsearch-works');
             if (!$alvo.length) return;
             if (!obras.length) {
-                $alvo.html('<div class="authsearch-empty">Não foram encontrados bibliográficos ligados nesta pesquisa.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="' + escaparAttr(urlPesquisa) + '" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
+                $alvo.html('<div class="authsearch-empty">Não foram encontrados bibliográficos ligados nesta pesquisa.</div>');
                 return;
             }
 
-            var out = '<div class="authsearch-works-toolbar"><div class="authsearch-works-head"><div class="authsearch-works-meta"><strong>' + obras.length + '</strong> registos ligados</div><a class="authsearch-link" href="' + escaparAttr(urlPesquisa) + '" target="_blank" rel="noopener noreferrer">Abrir no catálogo</a></div>' +
-                '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar esta lista…"></div>' +
-                '<div class="authsearch-works-list" id="authsearch-works-list">';
+            var toolbar = '<div class="authsearch-works-toolbar"><div class="authsearch-works-meta">' + obras.length + ' registo' + (obras.length === 1 ? '' : 's') + '</div>';
+            if (obras.length > 8) toolbar += '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar obras…">';
+            toolbar += '</div>';
+            var out = toolbar + '<div class="authsearch-works-list" id="authsearch-works-list">';
 
             obras.forEach(function (o) {
-                var textoFiltro = limparTexto((o.titulo || '') + ' ' + (o.fallback || '')).toLowerCase();
+                var titulo = tituloSemResponsabilidade(o.titulo || '') || ('Registo ' + o.biblionumber);
+                var textoFiltro = limparTexto((titulo || '') + ' ' + (o.fallback || '')).toLowerCase();
                 out += '<article class="authsearch-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '" data-filter="' + escaparAttr(textoFiltro) + '">' +
                     (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
-                    '<div class="authsearch-work-body"><div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(o.titulo) + '</a></div>' +
-                    '<div class="authsearch-work-isbd is-loading" data-fallback="' + escaparAttr(o.fallback || '') + '">A carregar ISBD…</div>' +
-                    '<div class="authsearch-work-id">Registo #' + escaparHTML(o.biblionumber) + '</div></div></article>';
+                    '<div class="authsearch-work-body"><div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(titulo) + '</a></div>' +
+                    '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div></div></article>';
             });
             out += '</div>';
             $alvo.html(out);
-            observarISBDVisivel();
+            observarDetalhesObrasVisiveis();
         }
 
-        function extrairTextoISBD(html) {
-            var doc = $.parseHTML(html, document, true), $doc = $(doc);
-            var $isbd = $doc.find('#isbdcontents, #isbd, .isbd').first();
-            var texto = $isbd.length ? limparTexto($isbd.text()) : '';
-            return limitarTexto(texto, 2400);
-        }
-
-        function carregarISBDObra($obra) {
-            if (!$obra || !$obra.length || $obra.attr('data-isbd-loaded') === '1' || $obra.attr('data-isbd-loading') === '1') return;
+        function carregarDetalhesObra($obra) {
+            if (!$obra || !$obra.length || $obra.attr('data-detail-loaded') === '1' || $obra.attr('data-detail-loading') === '1') return;
             var biblionumber = String($obra.attr('data-biblionumber') || '');
             if (!/^\d+$/.test(biblionumber)) return;
-            $obra.attr('data-isbd-loading', '1');
-            var $dest = $obra.find('.authsearch-work-isbd');
-            var fallback = limitarTexto(String($dest.attr('data-fallback') || ''), 700);
-            var req = $.ajax({ url: '/cgi-bin/koha/catalogue/ISBDdetail.pl?biblionumber=' + encodeURIComponent(biblionumber), dataType: 'html', timeout: CONFIG.timeout })
+            $obra.attr('data-detail-loading', '1');
+            var $dest = $obra.find('.authsearch-work-details');
+            var req = $.ajax({ url: '/cgi-bin/koha/catalogue/detail.pl?biblionumber=' + encodeURIComponent(biblionumber), dataType: 'html', timeout: CONFIG.timeout })
                 .done(function (html) {
-                    var texto = extrairTextoISBD(html) || fallback || 'Descrição ISBD não disponível.';
-                    $dest.text(texto).removeClass('is-loading');
-                    $obra.attr('data-isbd-loaded', '1');
+                    var d = extrairMetadadosObra(html, { titulo: $obra.find('.authsearch-work-title').text() });
+                    var linhas = '';
+                    linhas += linhaObra('Autores', d.autores);
+                    linhas += linhaObra('ISBN', d.isbn);
+                    linhas += linhaObra('Editor', d.editor);
+                    linhas += linhaObra('Coleção / vol.', d.colecao);
+                    linhas += linhaObra('Assuntos', d.assunto);
+                    $dest.html(linhas || '<span class="authsearch-muted">Sem metadados adicionais disponíveis.</span>').removeClass('is-loading');
+                    $obra.attr('data-detail-loaded', '1');
+                    var filtro = limparTexto(($obra.find('.authsearch-work-title').text() || '') + ' ' + $dest.text()).toLowerCase();
+                    $obra.attr('data-filter', filtro);
                 }).fail(function () {
-                    $dest.text(fallback || 'Descrição ISBD não disponível.').removeClass('is-loading');
-                    $obra.attr('data-isbd-loaded', '1');
-                }).always(function () { $obra.removeAttr('data-isbd-loading'); });
+                    $dest.html('<span class="authsearch-muted">Não foi possível carregar os metadados.</span>').removeClass('is-loading');
+                    $obra.attr('data-detail-loaded', '1');
+                }).always(function () { $obra.removeAttr('data-detail-loading'); });
             registarPedido(req);
         }
 
-        function observarISBDVisivel() {
+        function observarDetalhesObrasVisiveis() {
             var root = document.getElementById('authsearch-works-list');
             if (!root) return;
             var itens = root.querySelectorAll('.authsearch-work[data-biblionumber]');
             if (!('IntersectionObserver' in window)) {
-                $(itens).each(function () { carregarISBDObra($(this)); });
+                $(itens).each(function () { carregarDetalhesObra($(this)); });
                 return;
             }
             var observer = new IntersectionObserver(function (entries, obs) {
                 entries.forEach(function (entry) {
                     if (!entry.isIntersecting) return;
-                    carregarISBDObra($(entry.target));
+                    carregarDetalhesObra($(entry.target));
                     obs.unobserve(entry.target);
                 });
-            }, { root: root, rootMargin: '160px 0px' });
+            }, { root: root, rootMargin: '180px 0px' });
             Array.prototype.forEach.call(itens, function (item) { observer.observe(item); });
         }
 
