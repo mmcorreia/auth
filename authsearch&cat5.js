@@ -1420,23 +1420,82 @@ body.authsearch-resizing #authsearch-tab {
             return livre;
         }
 
+        /**
+         * Cria uma nova ocorrência repetível de 400 através do controlo nativo do Koha.
+         * A estrutura HTML varia entre versões, por isso procuramos primeiro junto do campo
+         * e, como fallback, um CloneField associado explicitamente à tag 400.
+         */
         function tentarCriarNovo400(callback) {
             callback = typeof callback === "function" ? callback : function () {};
-            var campos = encontrarCampos400ParaAplicacao(), antes = campos.length, gatilho = $();
-            campos.some(function (campo) {
-                var zona = campo.bloco.closest("li"); if (!zona.length) zona = campo.bloco;
-                var c = zona.find("button, input[type='button'], a").filter(function () {
-                    var el=$(this), onclick=String(el.attr("onclick")||""), texto=limparTexto([el.text(),el.attr("title"),el.attr("aria-label"),el.val()].filter(Boolean).join(" ")).toLowerCase();
-                    return /CloneField\s*\(/i.test(onclick) || /repetir campo|duplicar campo|adicionar campo|novo campo|repeat field|clone field/i.test(texto);
-                }).first();
-                if (c.length) { gatilho=c; return true; } return false;
+            var antes = encontrarCampos400ParaAplicacao().length;
+            var $gatilho = $();
+
+            function ehControloRepeticao400(el) {
+                var $el = $(el);
+                var onclick = String($el.attr("onclick") || "");
+                var texto = limparTexto([$el.text(), $el.attr("title"), $el.attr("aria-label"), $el.val()].filter(Boolean).join(" ")).toLowerCase();
+                var contexto = limparTexto($el.closest("li, .tag, .tag_400, fieldset, tr").text());
+
+                if (/CloneField\s*\(/i.test(onclick)) {
+                    if (/400/.test(onclick) || /(^|\s)400(\s|$)/.test(contexto)) return true;
+                }
+                if (/repetir campo|duplicar campo|adicionar campo|novo campo|repeat field|clone field/i.test(texto) && /400/.test(contexto)) return true;
+                return false;
+            }
+
+            // 1) Procurar progressivamente nos ancestrais de uma ocorrência 400 já existente.
+            encontrarCampos400ParaAplicacao().some(function (campo) {
+                var $zona = campo.bloco;
+                for (var nivel = 0; nivel < 6 && $zona.length; nivel++) {
+                    var $c = $zona.find("button, input[type='button'], input[type='image'], a").filter(function () {
+                        return ehControloRepeticao400(this);
+                    }).first();
+                    if ($c.length) {
+                        $gatilho = $c;
+                        return true;
+                    }
+                    $zona = $zona.parent();
+                }
+                return false;
             });
-            if (!gatilho.length) { callback(null); return; }
-            try { gatilho.trigger("click"); } catch(e) { callback(null); return; }
-            window.setTimeout(function () {
-                var livre=encontrar400Livre(), depois=encontrarCampos400ParaAplicacao().length;
-                callback((depois>antes && livre) ? livre : (livre||null));
-            },120);
+
+            // 2) Fallback global: algumas versões colocam o botão fora do bloco dos subcampos.
+            if (!$gatilho.length) {
+                $gatilho = $("button, input[type='button'], input[type='image'], a").filter(function () {
+                    return ehControloRepeticao400(this);
+                }).first();
+            }
+
+            if (!$gatilho.length) {
+                console.warn("AuthSearch: não foi localizado o controlo nativo para repetir o campo 400.");
+                callback(null);
+                return;
+            }
+
+            try {
+                $gatilho.trigger("click");
+            } catch (e) {
+                console.warn("AuthSearch: não foi possível acionar a repetição do campo 400", e);
+                callback(null);
+                return;
+            }
+
+            // Esperar pela criação real da nova ocorrência antes de a preencher.
+            var tentativas = 0;
+            (function verificarNovo400() {
+                tentativas++;
+                var depois = encontrarCampos400ParaAplicacao().length;
+                var livre = encontrar400Livre();
+                if (depois > antes && livre) {
+                    callback(livre);
+                    return;
+                }
+                if (tentativas < 8) {
+                    window.setTimeout(verificarNovo400, 100);
+                    return;
+                }
+                callback(livre || null);
+            })();
         }
 
         function escrever400(campo, dados) {
