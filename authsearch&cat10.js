@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.0 · reconstrução estrutural · 2026-08-11
+   Versão 3.5 · correção estrutural 017/200/400 · 2026-08-11
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -936,7 +936,7 @@ body.authsearch-resizing #authsearch-tab {
                 variantes400: variantes400,
                 ids017: ids017,
                 wikidata: ids017.filter(function (id) { return id.tipo === "wikidata"; }),
-                viaf: ids017.filter(function (id) { return id.tipo === "viaf"; })
+                viaf: ids017.filter(function (id) { return id.tipo === "viaf" && /^\d+$/.test(limparTexto(id.valor)) && limparTexto(id.fonte).toLowerCase() === "viaf"; })
             };
         }
 
@@ -1422,9 +1422,7 @@ body.authsearch-resizing #authsearch-tab {
 
         function encontrarCampos400ParaAplicacao() {
             var campos = [], vistos = {};
-            $("li, div, tr").each(function () {
-                var bloco = $(this), texto = limparTexto(bloco.text());
-                if (texto.indexOf("400") === -1 || texto.indexOf("Palavra de ordem") === -1) return;
+            encontrarRaizesCampoMarc("400").forEach(function (bloco) {
                 var a = obterElementoSubcampoPessoa(bloco, "a");
                 var b = obterElementoSubcampoPessoa(bloco, "b");
                 var c = obterElementoSubcampoPessoa(bloco, "c");
@@ -1432,7 +1430,7 @@ body.authsearch-resizing #authsearch-tab {
                 var chave = (a.attr("id") || a.attr("name") || "") + "|" + (b.attr("id") || b.attr("name") || "") + "|" + (c.attr("id") || c.attr("name") || "");
                 if (!chave || vistos[chave]) return;
                 vistos[chave] = true;
-                campos.push({ bloco: bloco, campoA: a, campoB: b, campoC: c, indicador1: encontrarIndicador017Robusto(bloco) });
+                campos.push({ bloco: bloco, campoA: a, campoB: b, campoC: c });
             });
             return campos;
         }
@@ -2684,17 +2682,78 @@ body.authsearch-resizing #authsearch-tab {
             return out;
         }
 
-        function obterCampo200Autoridade() {
-            var campo = $();
-            $("li").each(function () {
-                var li = $(this);
-                var texto = limparTexto(li.text());
-                if (texto.indexOf("200") !== -1 && texto.indexOf("Palavra de ordem") !== -1) {
-                    campo = li;
-                    return false;
+        /**
+         * Localiza as ocorrências MARC pela etiqueta visível exata (017/200/400).
+         * É deliberadamente restritivo: nunca usa um div ancestral que contenha vários
+         * campos MARC, pois isso permitia que um 017 fosse confundido com um 400.
+         */
+        function encontrarRaizesCampoMarc(tag) {
+            tag = String(tag || "");
+            var raizes = [], vistos = [];
+            if (!/^\d{3}$/.test(tag)) return raizes;
+
+            $("span, label, strong, b, legend, div").filter(function () {
+                var $el = $(this);
+                if ($el.children().length) return false;
+                return limparTexto($el.text()) === tag;
+            }).each(function () {
+                var $hit = $(this);
+                var $li = $hit.closest("li");
+                if (!$li.length) return;
+
+                // Se o marcador estiver dentro de um subelemento, escolher o menor LI
+                // que ainda contém pelo menos um código de subcampo editável.
+                var $root = $li;
+                while ($root.length) {
+                    var temSubcampo = $root.find("input[type='text']").filter(function () {
+                        var v = limparTexto($(this).val());
+                        return /^[a-z0-9]$/i.test(v);
+                    }).length > 0;
+                    if (temSubcampo) break;
+                    var $pai = $root.parent().closest("li");
+                    if (!$pai.length) break;
+                    $root = $pai;
                 }
+
+                if (!$root.length) return;
+                var node = $root[0];
+                if (vistos.indexOf(node) !== -1) return;
+                vistos.push(node);
+                raizes.push($root);
             });
-            return campo;
+
+            // Fallback conservador para frameworks cujo número da etiqueta não esteja
+            // num elemento folha: procurar o menor LI que contenha a etiqueta e subcampos.
+            if (!raizes.length) {
+                $("li").each(function () {
+                    var $li = $(this);
+                    var texto = limparTexto($li.text());
+                    if (texto.indexOf(tag) === -1) return;
+                    var temCodigo = $li.find("input[type='text']").filter(function () {
+                        return /^[a-z0-9]$/i.test(limparTexto($(this).val()));
+                    }).length > 0;
+                    if (!temCodigo) return;
+                    var node = $li[0];
+                    if (vistos.indexOf(node) !== -1) return;
+                    vistos.push(node);
+                    raizes.push($li);
+                });
+                // Menores blocos primeiro, para evitar apanhar o formulário inteiro.
+                raizes.sort(function (a, b) { return a.find("input,textarea").length - b.find("input,textarea").length; });
+                if (raizes.length > 1) {
+                    var minimo = raizes[0].find("input,textarea").length;
+                    raizes = raizes.filter(function (r) { return r.find("input,textarea").length === minimo; });
+                }
+            }
+            return raizes;
+        }
+
+        function obterCampo200Autoridade() {
+            var raizes = encontrarRaizesCampoMarc("200");
+            for (var i = 0; i < raizes.length; i++) {
+                if (obterElementoSubcampoPessoa(raizes[i], "a").length) return raizes[i];
+            }
+            return $();
         }
 
         function obterValorSubcampo(campo, etiqueta) {
@@ -2739,20 +2798,18 @@ body.authsearch-resizing #authsearch-tab {
             return identificadores;
         }
 
-        /** Localiza campos 017 no DOM sem depender de IDs gerados pelo Koha. */
+        /**
+         * Localiza exclusivamente ocorrências MARC 017 e os seus subcampos $a e $2.
+         * Não procura rótulos genéricos fora da ocorrência; assim VIAF/Wikidata nunca
+         * podem ser escritos num 200/400 por colisão de DOM.
+         */
         function encontrarCampos017ParaAplicacao() {
             var campos = [];
             var vistos = {};
 
-            $("li, div, tr").each(function () {
-                var bloco = $(this);
-                var texto = limparTexto(bloco.text());
-                if (texto.indexOf("017") === -1) return;
-                if (texto.indexOf("Identificador") === -1) return;
-                if (texto.indexOf("Sistema de codificação") === -1) return;
-
-                var campoA = encontrarCampoPorEtiquetaRobusto(bloco, "Identificador");
-                var campo2 = encontrarCampoPorEtiquetaRobusto(bloco, "Sistema de codificação");
+            encontrarRaizesCampoMarc("017").forEach(function (bloco) {
+                var campoA = obterElementoSubcampoPessoa(bloco, "a");
+                var campo2 = obterElementoSubcampoPessoa(bloco, "2");
                 if (!campoA.length || !campo2.length) return;
 
                 var idA = campoA.attr("id") || campoA.attr("name") || "";
@@ -2771,43 +2828,31 @@ body.authsearch-resizing #authsearch-tab {
             return campos;
         }
 
-        function encontrarCampoPorEtiquetaRobusto(bloco, etiqueta) {
-            var resultado = $();
+        /**
+         * Indicador 1 do 017: considerar apenas pequenos inputs anteriores ao primeiro
+         * código de subcampo. Isto impede que os inputs "a" ou "2" sejam alterados.
+         */
+        function encontrarIndicador017Robusto(bloco) {
+            var indicador = $();
+            if (!bloco || !bloco.length) return indicador;
 
-            bloco.find("label").each(function () {
-                var label = $(this);
-                var texto = limparTexto(label.text());
-                if (texto.indexOf(etiqueta) === -1) return;
-
-                var idCampo = label.attr("for");
-                if (idCampo && $("#" + escaparSelector(idCampo)).length) {
-                    resultado = $("#" + escaparSelector(idCampo));
-                    return false;
-                }
-
-                var linha = label.closest("li, div, tr, p");
-                var input = linha.find("input[type='text'], textarea").filter(function () {
-                    var valor = limparTexto($(this).val());
-                    var largura = $(this).outerWidth();
-                    return largura > 100 && valor !== "a" && valor !== "2" && valor !== "017";
-                }).first();
-
-                if (input.length) {
-                    resultado = input;
+            var $inputs = bloco.find("input[type='text']");
+            var indicePrimeiroCodigo = -1;
+            $inputs.each(function (i) {
+                var v = limparTexto($(this).val()).toLowerCase();
+                if (v === "a" || v === "2") {
+                    indicePrimeiroCodigo = i;
                     return false;
                 }
             });
-            return resultado;
-        }
 
-        function encontrarIndicador017Robusto(bloco) {
-            var indicador = $();
-            bloco.find("input[type='text']").each(function () {
-                var input = $(this);
-                var valor = limparTexto(input.val());
-                var largura = input.outerWidth();
-                if (largura <= 45 && (valor === "" || valor === "7" || valor.length === 1)) {
-                    indicador = input;
+            $inputs.each(function (i) {
+                if (indicePrimeiroCodigo >= 0 && i >= indicePrimeiroCodigo) return false;
+                var $input = $(this);
+                var valor = limparTexto($input.val());
+                var largura = $input.outerWidth();
+                if (largura <= 55 && (valor === "" || valor === "7" || valor.length === 1)) {
+                    indicador = $input;
                     return false;
                 }
             });
@@ -3234,7 +3279,7 @@ body.authsearch-resizing #authsearch-tab {
                 linhas.push('LAST|P742|"' + escaparQuickStatements(forma) + '"');
             });
 
-            if (/^\d+$/.test(viaf)) linhas.push('LAST|P214|"' + viaf + '"');
+            if (/^\d+$/.test(viaf)) linhas.push('LAST|P214|"' + viaf + '"'); // VIAF é sempre identificador externo P214, nunca alias/400
             return removerDuplicados(linhas).join("\n");
         }
 
