@@ -159,34 +159,27 @@ $(document).ready(function () {
 
     function inserirBloco() {
         /*
-         * O BiblioSugest deve ficar FORA do bloco de exemplares.
-         * A prioridade é colocá-lo depois do último elemento da zona de
-         * exemplares/reservas, nunca entre a tabela de exemplares e o
-         * respetivo rodapé (por exemplo, "Total de reservas").
+         * O BiblioSugest deve ser uma CAIXA AUTÓNOMA, irmã do bloco de
+         * exemplares, e nunca um elemento inserido dentro dele.
+         *
+         * No OPAC atual, #opac-detail-tabs contém toda a caixa de
+         * Exemplares / Comentários / Imagens, incluindo o total de reservas.
+         * Por isso, a primeira opção é inserir o BiblioSugest DEPOIS desse
+         * contentor completo.
          */
 
         var bloco = criarBlocoBase();
 
-        /*
-         * 1. Se existir o texto de total de reservas, este é o melhor
-         *    marcador para o fim visual da zona de exemplares.
-         */
-        var fimReservas = $('div, p, span').filter(function () {
-            var texto = limparTexto($(this).clone().children().remove().end().text()).toLowerCase();
-            return /^(total de reservas|total reservations|total holds)\s*:\s*/i.test(texto);
-        }).sort(function (a, b) {
-            return $(a).text().length - $(b).text().length;
-        }).first();
+        var tabs = $('#opac-detail-tabs').first();
 
-        if (fimReservas.length) {
-            var linhaReservas = fimReservas.closest('div, p').first();
-            if (!linhaReservas.length) linhaReservas = fimReservas;
-            linhaReservas.after(bloco);
+        if (tabs.length) {
+            tabs.after(bloco);
             return;
         }
 
         /*
-         * 2. Preferir o contentor completo de holdings, e não a tabela.
+         * Fallback: se não existir #opac-detail-tabs, usar o contentor
+         * completo de holdings.
          */
         var holdings = $('#holdings').first();
 
@@ -196,47 +189,37 @@ $(document).ready(function () {
         }
 
         /*
-         * 3. Alguns templates usam #opac-detail-tabs para toda a zona de
-         *    exemplares. Colocamos o novo bloco depois desse contentor.
-         */
-        var tabs = $('#opac-detail-tabs').first();
-
-        if (tabs.length) {
-            tabs.after(bloco);
-            return;
-        }
-
-        /*
-         * 4. Fallback para templates antigos: subir da tabela para um
-         *    contentor estrutural antes de inserir o BiblioSugest.
+         * Fallback para templates antigos: subir da tabela para um contentor
+         * estrutural, evitando inserir o BiblioSugest dentro da própria tabela.
          */
         var tabela = $('#itemst, table#holdingst').last();
 
         if (tabela.length) {
-            var contentorTabela = tabela.closest('.table-responsive, .tab-pane, .tab-content').first();
-            (contentorTabela.length ? contentorTabela : tabela).after(bloco);
+            var contentorTabela = tabela.closest('.tab-content, .tab-pane, .table-responsive, #holdings').first();
+
+            if (contentorTabela.length) {
+                contentorTabela.after(bloco);
+            } else {
+                tabela.after(bloco);
+            }
             return;
         }
 
-        /* Último recurso: depois da área bibliográfica principal. */
+        /*
+         * Último fallback: depois do bloco bibliográfico principal.
+         */
         var destino = $(
             '#catalogue_detail_biblio, ' +
             '#bibliodescriptions, ' +
             '.bibliodescriptions, ' +
             '#isbdcontents, ' +
             '#views'
-        ).last();
+        ).first();
 
         if (destino.length) {
             destino.after(bloco);
-            return;
-        }
-
-        var principal = $('#maincontent, #main, main').first();
-        if (principal.length) {
-            principal.append(bloco);
         } else {
-            $('body').append(bloco);
+            $('h1').first().after(bloco);
         }
     }
 
