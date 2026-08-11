@@ -139,7 +139,7 @@ $(document).ready(function () {
 
     function criarBlocoBase() {
         return `
-            <div id="bibliosugest" style="margin:25px 0; padding:18px 0; border-top:1px solid #e5e5e5; border-bottom:1px solid #e5e5e5;">
+            <div id="bibliosugest" style="clear:both; display:block; width:100%; box-sizing:border-box; margin:25px 0; padding:18px 0; border-top:1px solid #e5e5e5; border-bottom:1px solid #e5e5e5;">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px;">
                     <h3 style="margin:0; font-size:18px; font-weight:600;">${escapeHtml(T.titulo)}</h3>
                     <div>
@@ -159,43 +159,84 @@ $(document).ready(function () {
 
     function inserirBloco() {
         /*
-         * O BiblioSugest deve surgir abaixo da zona de exemplares.
-         * No OPAC Koha, #opac-detail-tabs é normalmente o contentor que
-         * inclui a visualização de exemplares e restantes separadores.
+         * O BiblioSugest deve ficar FORA do bloco de exemplares.
+         * A prioridade é colocá-lo depois do último elemento da zona de
+         * exemplares/reservas, nunca entre a tabela de exemplares e o
+         * respetivo rodapé (por exemplo, "Total de reservas").
          */
-        var zonaExemplares = $('#opac-detail-tabs').first();
 
-        if (zonaExemplares.length) {
-            zonaExemplares.after(criarBlocoBase());
+        var bloco = criarBlocoBase();
+
+        /*
+         * 1. Se existir o texto de total de reservas, este é o melhor
+         *    marcador para o fim visual da zona de exemplares.
+         */
+        var fimReservas = $('div, p, span').filter(function () {
+            var texto = limparTexto($(this).clone().children().remove().end().text()).toLowerCase();
+            return /^(total de reservas|total reservations|total holds)\s*:\s*/i.test(texto);
+        }).sort(function (a, b) {
+            return $(a).text().length - $(b).text().length;
+        }).first();
+
+        if (fimReservas.length) {
+            var linhaReservas = fimReservas.closest('div, p').first();
+            if (!linhaReservas.length) linhaReservas = fimReservas;
+            linhaReservas.after(bloco);
             return;
         }
 
-        /* Fallback para templates sem #opac-detail-tabs. */
-        zonaExemplares = $('#holdings, #itemst, table#holdingst').last();
+        /*
+         * 2. Preferir o contentor completo de holdings, e não a tabela.
+         */
+        var holdings = $('#holdings').first();
 
-        if (zonaExemplares.length) {
-            zonaExemplares.after(criarBlocoBase());
+        if (holdings.length) {
+            holdings.after(bloco);
             return;
         }
 
-        /* Último recurso: colocar no fim da área principal do detalhe. */
+        /*
+         * 3. Alguns templates usam #opac-detail-tabs para toda a zona de
+         *    exemplares. Colocamos o novo bloco depois desse contentor.
+         */
+        var tabs = $('#opac-detail-tabs').first();
+
+        if (tabs.length) {
+            tabs.after(bloco);
+            return;
+        }
+
+        /*
+         * 4. Fallback para templates antigos: subir da tabela para um
+         *    contentor estrutural antes de inserir o BiblioSugest.
+         */
+        var tabela = $('#itemst, table#holdingst').last();
+
+        if (tabela.length) {
+            var contentorTabela = tabela.closest('.table-responsive, .tab-pane, .tab-content').first();
+            (contentorTabela.length ? contentorTabela : tabela).after(bloco);
+            return;
+        }
+
+        /* Último recurso: depois da área bibliográfica principal. */
         var destino = $(
             '#catalogue_detail_biblio, ' +
             '#bibliodescriptions, ' +
             '.bibliodescriptions, ' +
             '#isbdcontents, ' +
             '#views'
-        ).first();
+        ).last();
 
         if (destino.length) {
-            destino.after(criarBlocoBase());
+            destino.after(bloco);
+            return;
+        }
+
+        var principal = $('#maincontent, #main, main').first();
+        if (principal.length) {
+            principal.append(bloco);
         } else {
-            var principal = $('#maincontent, #main, main').first();
-            if (principal.length) {
-                principal.append(criarBlocoBase());
-            } else {
-                $('body').append(criarBlocoBase());
-            }
+            $('body').append(bloco);
         }
     }
 
