@@ -213,25 +213,31 @@
                 '.authsearch-graph-toggle-title{display:block;font-size:13px;font-weight:850;color:#111827;}' +
                 '.authsearch-graph-toggle-sub{display:block;font-size:11px;color:#667085;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
                 '.authsearch-kp{background:#fff;border:1px solid #d8dee6;border-radius:12px;overflow:hidden;box-shadow:0 8px 26px rgba(15,23,42,.08);margin-bottom:12px;}' +
-                '.authsearch-kp-hero{display:grid;grid-template-columns:145px minmax(0,1fr);gap:16px;padding:15px;background:linear-gradient(135deg,#fff 0%,#f8fbfd 100%);}' +
-                '.authsearch-kp-photo,.authsearch-kp-placeholder{width:145px;height:184px;object-fit:cover;border-radius:10px;border:1px solid #d8dee6;background:#eef2f6;}' +
-                '.authsearch-kp-name{font-size:25px;line-height:1.05;font-weight:900;color:#111827;letter-spacing:-.02em;}' +
+                '.authsearch-kp-gallery{display:grid;grid-template-columns:1.7fr 1fr 1fr;grid-template-rows:105px 105px;gap:4px;background:#eef2f6;min-height:214px;}' +
+                '.authsearch-kp-gallery-item{position:relative;overflow:hidden;background:#e8edf3;display:block;}' +
+                '.authsearch-kp-gallery-item:first-child{grid-row:1/3;}' +
+                '.authsearch-kp-gallery-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .18s ease;}' +
+                '.authsearch-kp-gallery-item:hover img{transform:scale(1.025);}' +
+                '.authsearch-kp-gallery-empty{display:flex;align-items:center;justify-content:center;min-height:180px;background:#f8fafc;color:#98a2b3;font-size:12px;}' +
+                '.authsearch-kp-main{padding:15px 16px 4px;background:linear-gradient(135deg,#fff 0%,#f8fbfd 100%);}' +
+                '.authsearch-kp-name{font-size:26px;line-height:1.05;font-weight:900;color:#111827;letter-spacing:-.02em;}' +
                 '.authsearch-kp-desc{font-size:13px;color:#475467;line-height:1.45;margin-top:6px;}' +
-                '.authsearch-kp-idline{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}' +
-                '.authsearch-kp-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid #dbe3ec;background:#fff;font-size:11px;font-weight:700;color:#344054;}' +
-                '.authsearch-kp-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}' +
-                '.authsearch-kp-fact{padding:8px 9px;border:1px solid #e5e7eb;background:#fff;border-radius:8px;min-width:0;}' +
-                '.authsearch-kp-fact b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#667085;margin-bottom:3px;}' +
-                '.authsearch-kp-fact span{font-size:12px;color:#111827;line-height:1.35;}' +
-                '.authsearch-kp-section{padding:12px 15px;border-top:1px solid #e5e7eb;}' +
-                '.authsearch-kp-section-title{font-size:13px;font-weight:850;color:#111827;margin-bottom:8px;}' +
-                '.authsearch-kp-ids{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}' +
-                '.authsearch-kp-idcard{padding:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfdff;min-width:0;}' +
-                '.authsearch-kp-idcard b{display:block;font-size:10px;color:#667085;margin-bottom:3px;}' +
-                '.authsearch-kp-idcard span{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#174b75;overflow-wrap:anywhere;}' +
+                '.authsearch-kp-facts-text{padding:10px 16px 13px;font-size:12.5px;color:#344054;line-height:1.55;}' +
+                '.authsearch-kp-fact-line{margin-top:5px;}' +
+                '.authsearch-kp-fact-line:first-child{margin-top:0;}' +
+                '.authsearch-kp-fact-line b{color:#111827;}' +
+                '.authsearch-kp-section{padding:12px 16px;border-top:1px solid #e5e7eb;}' +
+                '.authsearch-kp-section-title{font-size:13px;font-weight:850;color:#111827;margin-bottom:7px;}' +
+                '.authsearch-kp-wiki{font-size:12.5px;color:#344054;line-height:1.55;}' +
+                '.authsearch-kp-wiki p{margin:0;}' +
+                '.authsearch-kp-wiki a{display:inline-block;margin-top:7px;font-weight:750;color:#1769aa;text-decoration:none;}' +
+                '.authsearch-kp-wiki a:hover{text-decoration:underline;}' +
+                '.authsearch-kp-ids{display:flex;gap:6px;flex-wrap:wrap;}' +
+                '.authsearch-kp-idbtn{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #dbe3ec;border-radius:5px;background:#f8fafc;color:#344054!important;text-decoration:none!important;font-size:10.5px;font-weight:700;line-height:1.2;}' +
+                '.authsearch-kp-idbtn:hover{background:#eef4f8;border-color:#aebdca;text-decoration:none!important;}' +
+                '.authsearch-kp-idbtn span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:#174b75;}' +
                 '.authsearch-kp-aliases{font-size:12px;color:#475467;line-height:1.5;}' +
-                '.authsearch-kp-actions{display:flex;gap:7px;flex-wrap:wrap;padding:11px 15px;border-top:1px solid #e5e7eb;background:#fbfdff;}' +
-                '@media(max-width:800px){.authsearch-kp-hero{grid-template-columns:92px 1fr}.authsearch-kp-photo,.authsearch-kp-placeholder{width:92px;height:118px}.authsearch-kp-name{font-size:19px}.authsearch-kp-facts{grid-template-columns:1fr}.authsearch-kp-ids{grid-template-columns:1fr 1fr}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
+                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:1.5fr 1fr;grid-template-rows:90px 90px}.authsearch-kp-gallery-item:nth-child(n+4){display:none}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
                 '</style>';
 
             $("head").append(css);
@@ -407,7 +413,7 @@
                 '<div class="authsearch-toolbar">' +
                     '<span class="authsearch-chip">' + escaparHTML(tipoLabel) + '</span>' +
                 '</div>' +
-                (qid ? '<div class="authsearch-graph-toggle"><div class="authsearch-graph-toggle-copy"><span class="authsearch-graph-toggle-title">Identidade ligada ao Wikidata</span><span class="authsearch-graph-toggle-sub">' + escaparHTML(qid) + ' · consultar o grafo de identidade</span></div><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Grafo de identidade</button></div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>' : '') +
+                (qid ? '<div class="authsearch-graph-toggle"><div class="authsearch-graph-toggle-copy"><span class="authsearch-graph-toggle-title">Identidade ligada ao Wikidata</span><span class="authsearch-graph-toggle-sub">Informação enriquecida a partir do Wikidata, Commons e Wikipedia</span></div><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Ver grafo de identidade</button></div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>' : '') +
                 '<div class="authsearch-searchbar">' +
                     '<input type="text" id="authsearch-term" autocomplete="off" placeholder="Nome da autoridade">' +
                 '</div>' +
@@ -462,7 +468,6 @@
                 var a = STATE.authority || {};
                 var label = obterLabelEntidade(entidade) || a.nome || qid;
                 var descricao = obterDescricaoEntidade(entidade);
-                var imagem = obterImagemWikidata(entidade);
                 var nascimento = obterPrimeiraDataClaims(entidade, "P569");
                 var morte = obterPrimeiraDataClaims(entidade, "P570");
                 var paises = obterLabelsClaims(entidade, "P27", labelsMap);
@@ -474,51 +479,178 @@
                 var lccn = obterPrimeiroValorTextoClaim(entidade, "P244");
                 var gnd = obterPrimeiroValorTextoClaim(entidade, "P227");
                 var bnf = obterPrimeiroValorTextoClaim(entidade, "P268");
-                var wikipedia = obterWikipediaUrlDaEntidade(entidade);
                 var viafLocal = a.viaf && a.viaf.length ? a.viaf[0].valor : "";
 
-                function fact(t, v) {
-                    return v ? '<div class="authsearch-kp-fact"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></div>' : '';
+                function factLine(t, v) {
+                    return v ? '<div class="authsearch-kp-fact-line"><b>' + escaparHTML(t) + ':</b> ' + escaparHTML(v) + '</div>' : '';
                 }
-                function idcard(t, v) {
-                    return v ? '<div class="authsearch-kp-idcard"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></div>' : '';
+                function idButton(t, v, url) {
+                    if (!v || !url) return '';
+                    return '<a class="authsearch-kp-idbtn" href="' + escaparAttr(url) + '" target="_blank" rel="noopener" title="Abrir ' + escaparAttr(t) + '"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></a>';
                 }
 
                 var html = '<div class="authsearch-kp">';
-                html += '<div class="authsearch-kp-hero">';
-                html += imagem ? '<img class="authsearch-kp-photo" src="' + escaparAttr(imagem) + '" alt="' + escaparAttr(label) + '">' : '<div class="authsearch-kp-placeholder"></div>';
-                html += '<div><div class="authsearch-kp-name">' + escaparHTML(label) + '</div>';
+                html += '<div id="authsearch-kp-gallery" class="authsearch-kp-gallery"><div class="authsearch-kp-gallery-empty">A carregar imagens do Wikimedia Commons…</div></div>';
+                html += '<div class="authsearch-kp-main"><div class="authsearch-kp-name">' + escaparHTML(label) + '</div>';
                 if (descricao) html += '<div class="authsearch-kp-desc">' + escaparHTML(descricao) + '</div>';
-                html += '<div class="authsearch-kp-idline"><span class="authsearch-kp-pill">' + escaparHTML(qid) + '</span>';
-                if (viafLocal) html += '<span class="authsearch-kp-pill">VIAF ' + escaparHTML(viafLocal) + '</span>';
-                if (a.authid) html += '<span class="authsearch-kp-pill">AuthID #' + escaparHTML(a.authid) + '</span>';
-                html += '</div><div class="authsearch-kp-facts">';
-                html += fact('Datas', [nascimento, morte].filter(Boolean).join(' – '));
-                html += fact('Nacionalidade / país', paises.join(', '));
-                html += fact('Ocupações', ocupacoes.slice(0, 6).join(', '));
-                html += fact('Pseudónimos', pseudonimos.slice(0, 5).join(', '));
-                html += '</div></div></div>';
+                html += '</div>';
+
+                var facts = '';
+                facts += factLine('Datas', [nascimento, morte].filter(Boolean).join(' – '));
+                facts += factLine('Nacionalidade / país', paises.join(', '));
+                facts += factLine('Ocupações', ocupacoes.slice(0, 8).join(', '));
+                facts += factLine('Pseudónimos', pseudonimos.slice(0, 8).join(', '));
+                if (facts) html += '<div class="authsearch-kp-facts-text">' + facts + '</div>';
+
+                html += '<div class="authsearch-kp-section" id="authsearch-kp-wikipedia"><div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki">A carregar resumo…</div></div>';
 
                 if (aliases.length) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Outros nomes</div><div class="authsearch-kp-aliases">' + escaparHTML(aliases.join(' · ')) + '</div></div>';
 
-                var idsHtml = idcard('Wikidata', qid) + idcard('VIAF', viafWd || viafLocal) + idcard('ISNI', isni) + idcard('LCNAF / LCCN', lccn) + idcard('GND', gnd) + idcard('BnF', bnf);
-                if (idsHtml) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Identificadores externos</div><div class="authsearch-kp-ids">' + idsHtml + '</div></div>';
+                var idsHtml = '';
+                idsHtml += idButton('Wikidata', qid, 'https://www.wikidata.org/wiki/' + encodeURIComponent(qid));
+                idsHtml += idButton('VIAF', viafWd || viafLocal, (viafWd || viafLocal) ? 'https://viaf.org/viaf/' + encodeURIComponent(viafWd || viafLocal) : '');
+                idsHtml += idButton('ISNI', isni, isni ? 'https://isni.org/isni/' + encodeURIComponent(isni.replace(/\s+/g, '')) : '');
+                idsHtml += idButton('LC', lccn, lccn ? 'https://id.loc.gov/authorities/names/' + encodeURIComponent(lccn) + '.html' : '');
+                idsHtml += idButton('GND', gnd, gnd ? 'https://explore.gnd.network/gnd/' + encodeURIComponent(gnd) : '');
+                idsHtml += idButton('BnF', bnf, bnf ? 'https://catalogue.bnf.fr/ark:/12148/cb' + encodeURIComponent(bnf) : '');
+                if (idsHtml) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Identificadores</div><div class="authsearch-kp-ids">' + idsHtml + '</div></div>';
 
                 if (viafLocal && viafWd && viafLocal !== viafWd) {
                     html += '<div class="authsearch-warning"><strong>Atenção:</strong> o VIAF do 017 (' + escaparHTML(viafLocal) + ') difere do VIAF indicado no Wikidata (' + escaparHTML(viafWd) + ').</div>';
                 }
 
-                html += '<div class="authsearch-kp-actions">' +
-                    '<a class="authsearch-link authsearch-primary" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener">Wikidata</a>' +
-                    (wikipedia ? '<a class="authsearch-link" href="' + escaparAttr(wikipedia) + '" target="_blank" rel="noopener">Wikipedia</a>' : '') +
-                    (viafLocal ? '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafLocal) + '" target="_blank" rel="noopener">VIAF</a>' : '') +
-                    (!viafLocal && viafWd ? '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafWd) + '" data-fonte="viaf">Adicionar VIAF ao 017</button>' : '') +
-                    '<button type="button" class="authsearch-btn" id="authsearch-hide-graph">Fechar grafo</button>' +
-                    '</div>';
                 html += '</div>';
-
                 $("#authsearch-graph-area").html(html);
+
+                carregarGaleriaCommons(entidade, label);
+                carregarResumoWikipedia(entidade);
             });
+        }
+
+        function obterFicheiroImagemWikidata(entidade) {
+            var claims = entidade && entidade.claims && entidade.claims.P18;
+            if (!Array.isArray(claims) || !claims.length) return "";
+            try {
+                return String(claims[0].mainsnak.datavalue.value || "");
+            } catch (e) {
+                return "";
+            }
+        }
+
+        function carregarGaleriaCommons(entidade, label) {
+            var $galeria = $("#authsearch-kp-gallery");
+            if (!$galeria.length) return;
+
+            var principalFile = obterFicheiroImagemWikidata(entidade);
+            var principalUrl = principalFile ? "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(principalFile) + "?width=900" : "";
+            var principalPage = principalFile ? "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(principalFile.replace(/ /g, "_")) : "";
+
+            var req = $.ajax({
+                url: "https://commons.wikimedia.org/w/api.php",
+                dataType: "jsonp",
+                timeout: CONFIG.timeout,
+                data: {
+                    action: "query",
+                    format: "json",
+                    generator: "search",
+                    gsrsearch: '"' + label + '"',
+                    gsrnamespace: 6,
+                    gsrlimit: 12,
+                    prop: "imageinfo",
+                    iiprop: "url",
+                    iiurlwidth: 700
+                }
+            }).done(function (data) {
+                if (!$("#authsearch-kp-gallery").length) return;
+                var imagens = [];
+                var vistos = {};
+
+                function add(url, page, title) {
+                    url = String(url || "");
+                    if (!url || vistos[url]) return;
+                    if (!/\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url)) return;
+                    vistos[url] = true;
+                    imagens.push({ url: url, page: page || url, title: title || label });
+                }
+
+                add(principalUrl, principalPage, principalFile || label);
+
+                var pages = data && data.query && data.query.pages ? data.query.pages : {};
+                Object.keys(pages).forEach(function (k) {
+                    var p = pages[k] || {};
+                    var ii = p.imageinfo && p.imageinfo[0] ? p.imageinfo[0] : {};
+                    var url = ii.thumburl || ii.url || "";
+                    var page = p.title ? "https://commons.wikimedia.org/wiki/" + encodeURIComponent(p.title.replace(/ /g, "_")) : url;
+                    add(url, page, p.title || label);
+                });
+
+                imagens = imagens.slice(0, 5);
+                if (!imagens.length) {
+                    $galeria.html('<div class="authsearch-kp-gallery-empty">Sem imagens adicionais no Wikimedia Commons.</div>');
+                    return;
+                }
+
+                var html = '';
+                imagens.forEach(function (img) {
+                    html += '<a class="authsearch-kp-gallery-item" href="' + escaparAttr(img.page) + '" target="_blank" rel="noopener" title="Abrir imagem no Wikimedia Commons"><img src="' + escaparAttr(img.url) + '" alt="' + escaparAttr(label) + '"></a>';
+                });
+                $galeria.html(html);
+            }).fail(function () {
+                if (!$("#authsearch-kp-gallery").length) return;
+                if (principalUrl) {
+                    $galeria.html('<a class="authsearch-kp-gallery-item" href="' + escaparAttr(principalPage) + '" target="_blank" rel="noopener"><img src="' + escaparAttr(principalUrl) + '" alt="' + escaparAttr(label) + '"></a>');
+                } else {
+                    $galeria.html('<div class="authsearch-kp-gallery-empty">Sem imagens disponíveis.</div>');
+                }
+            });
+            registarPedido(req);
+        }
+
+        function obterWikipediaReferenciaDaEntidade(entidade) {
+            var sites = entidade && entidade.sitelinks ? entidade.sitelinks : {};
+            var ordem = ["ptwiki", "enwiki", "eswiki", "frwiki"];
+            for (var i = 0; i < ordem.length; i++) {
+                var sl = sites[ordem[i]];
+                if (!sl || !sl.title) continue;
+                var lang = ordem[i].replace("wiki", "");
+                return {
+                    lang: lang,
+                    title: sl.title,
+                    url: sl.url || ("https://" + lang + ".wikipedia.org/wiki/" + encodeURIComponent(sl.title.replace(/ /g, "_")))
+                };
+            }
+            return null;
+        }
+
+        function carregarResumoWikipedia(entidade) {
+            var $sec = $("#authsearch-kp-wikipedia");
+            if (!$sec.length) return;
+            var ref = obterWikipediaReferenciaDaEntidade(entidade);
+            if (!ref) {
+                $sec.remove();
+                return;
+            }
+
+            var endpoint = "https://" + ref.lang + ".wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(ref.title.replace(/ /g, "_"));
+            var req = $.ajax({
+                url: endpoint,
+                dataType: "json",
+                timeout: CONFIG.timeout
+            }).done(function (data) {
+                if (!$("#authsearch-kp-wikipedia").length) return;
+                var resumo = limparTexto(data && data.extract || "");
+                var link = data && data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page ? data.content_urls.desktop.page : ref.url;
+                if (!resumo) {
+                    $sec.remove();
+                    return;
+                }
+                if (resumo.length > 900) resumo = resumo.slice(0, 897).replace(/\s+\S*$/, "") + "…";
+                $sec.html('<div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki"><p>' + escaparHTML(resumo) + '</p><a href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Ler mais na Wikipedia</a></div>');
+            }).fail(function () {
+                if (!$("#authsearch-kp-wikipedia").length) return;
+                $sec.html('<div class="authsearch-kp-section-title">Wikipedia</div><div class="authsearch-kp-wiki"><a href="' + escaparAttr(ref.url) + '" target="_blank" rel="noopener">Abrir artigo na Wikipedia</a></div>');
+            });
+            registarPedido(req);
         }
 
         function detalhe(titulo, valor) {
@@ -531,31 +663,34 @@
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv140")
-                .on("click.authsearchv140", "#authsearch-tab", function () {
+                .off(".authsearchv150")
+                .on("click.authsearchv150", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv140", "#authsearch-close", fecharPainel)
-                .on("pointerdown.authsearchv140", "#authsearch-resizer", iniciarRedimensionamento)
-                .on("pointermove.authsearchv140", moverRedimensionamento)
-                .on("pointerup.authsearchv140 pointercancel.authsearchv140", terminarRedimensionamento)
-                .on("keydown.authsearchv140", "#authsearch-resizer", redimensionarPorTeclado)
-                .on("keydown.authsearchv140", "#authsearch-term", function (e) {
+                .on("click.authsearchv150", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv150", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv150", moverRedimensionamento)
+                .on("pointerup.authsearchv150 pointercancel.authsearchv150", terminarRedimensionamento)
+                .on("keydown.authsearchv150", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("keydown.authsearchv150", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
 
-                .on("click.authsearchv140", "#authsearch-toggle-graph", function () {
+                .on("click.authsearchv150", "#authsearch-toggle-graph", function () {
                     atualizarAuthorityState();
                     var qid = String($(this).data("qid") || primeiroQidValido((STATE.authority && STATE.authority.wikidata) || [])).toUpperCase();
                     if (!/^Q\d+$/.test(qid)) return;
                     var $area = $("#authsearch-graph-area");
+                    var $btn = $(this);
                     if ($area.children().length) {
                         $area.empty();
+                        $btn.text("Ver grafo de identidade");
                         return;
                     }
+                    $btn.text("Fechar grafo de identidade");
                     STATE.qidAtual = qid;
                     $area.html('<div class="authsearch-loading">A carregar grafo de identidade…</div>');
                     carregarEntidadeWikidata(qid, function (entidade) {
@@ -566,36 +701,37 @@
                         renderFichaAutoridade(entidade, qid);
                     });
                 })
-                .on("click.authsearchv140", "#authsearch-hide-graph", function () {
+                .on("click.authsearchv150", "#authsearch-hide-graph", function () {
                     $("#authsearch-graph-area").empty();
+                    $("#authsearch-toggle-graph").text("Ver grafo de identidade");
                 })
-                .on("click.authsearchv140", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv140", "#authsearch-retry-viaf", function () {
+                .on("click.authsearchv150", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv150", "#authsearch-retry-viaf", function () {
                     var termo = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
                     if (!termo) return;
                     STATE.tokenPesquisa++;
                     pesquisarVIAF(termo, STATE.tokenPesquisa);
                 })
-                .on("click.authsearchv140", "#authsearch-card-retry-viaf", function () {
+                .on("click.authsearchv150", "#authsearch-card-retry-viaf", function () {
                     var termo = limparTexto((STATE.authority && STATE.authority.nome) || "");
                     if (termo) pesquisarVIAFNaFicha(termo);
                 })
-                .on("click.authsearchv140", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv140", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv140", ".authsearch-apply", function () {
+                .on("click.authsearchv150", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv150", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv150", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv140 change.authsearchv140", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv150 change.authsearchv150", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv140", function (e) {
+                .on("keydown.authsearchv150", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
                 })
-                .on("resize.authsearchv140", debounce(function () {
+                .on("resize.authsearchv150", debounce(function () {
                     if (!STATE.aberto) return;
                     if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
                         $("body").removeClass("authsearch-docked authsearch-resizing");
