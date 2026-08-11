@@ -2,14 +2,14 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Isolado a partir do K●RE Identidade v6.0
    Objetivo: Wikidata + VIAF + UNIMARC 017 + ficha de entidade
-   v1.0 | 2026-08-11
+   v1.2 | 2026-08-11
    ========================================================== */
 
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V1_ATIVO) return;
-    window.AUTHSEARCH_V1_ATIVO = true;
+    if (window.AUTHSEARCH_V12_ATIVO) return;
+    window.AUTHSEARCH_V12_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -43,7 +43,8 @@
             entidadeAtual: null,
             qidAtual: "",
             cacheEntidades: {},
-            cacheLabels: {}
+            cacheLabels: {},
+            ultimaPesquisaAutomatica: ""
         };
 
         instalarInterface();
@@ -143,14 +144,18 @@
 
         function instalarInterface() {
             $("#authsearch-root, #authsearch-tab, #authsearch-style").remove();
+            $("body").removeClass("authsearch-docked");
+            document.documentElement.style.removeProperty("--authsearch-dock-width");
 
             var css = '' +
                 '<style id="authsearch-style">' +
                 ':root{--authsearch-accent:#007fae;--authsearch-border:#d0d7de;--authsearch-bg:#fff;--authsearch-muted:#667085;}' +
-                '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;border:1px solid #98a2b3;border-left:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:0 6px 6px 0;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
+                '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;transition:left .18s ease;border:1px solid #98a2b3;border-left:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:0 6px 6px 0;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
                 '#authsearch-tab:hover{background:#f8fafc;color:#007fae;}' +
                 '#authsearch-root{position:fixed;left:0;top:0;bottom:0;width:min(' + CONFIG.larguraPainel + ',' + CONFIG.larguraMaxima + 'px);min-width:' + CONFIG.larguraMinima + 'px;max-width:calc(100vw - 70px);z-index:10040;background:var(--authsearch-bg);border-right:1px solid #98a2b3;box-shadow:8px 0 24px rgba(15,23,42,.16);transform:translateX(-102%);transition:transform .18s ease;display:flex;flex-direction:column;color:#111827;}' +
                 '#authsearch-root.authsearch-open{transform:translateX(0);}' +
+                'body.authsearch-docked{box-sizing:border-box!important;width:100%!important;padding-left:var(--authsearch-dock-width)!important;transition:padding-left .18s ease!important;overflow-x:hidden!important;}' +
+                'body.authsearch-docked #authsearch-tab{left:var(--authsearch-dock-width);}' +
                 '#authsearch-root *{box-sizing:border-box;}' +
                 '.authsearch-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid #e5e7eb;background:#fff;flex:0 0 auto;}' +
                 '.authsearch-brand{display:flex;align-items:center;gap:8px;min-width:0;}' +
@@ -196,16 +201,19 @@
                 '.authsearch-local{padding:9px 12px;border-bottom:1px solid #e5e7eb;background:#fbfdff;font-size:11px;color:#475467;display:flex;gap:8px;flex-wrap:wrap;}' +
                 '.authsearch-chip{display:inline-flex;padding:3px 7px;border:1px solid #dbe3ec;border-radius:999px;background:#fff;font-weight:650;}' +
                 '.authsearch-newitem{margin-top:10px;padding-top:9px;border-top:1px solid #e5e7eb;}' +
-                '@media(max-width:800px){#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
+                '.authsearch-card-viaf{padding:10px 14px;border-top:1px solid #e5e7eb;background:#fbfdff;}' +
+                '.authsearch-warning{margin:10px 14px 0;padding:8px 9px;border:1px solid #fedf89;background:#fffaeb;color:#854a0e;border-radius:4px;font-size:11px;line-height:1.35;}' +
+                '.authsearch-search-actions{margin-top:-2px;margin-bottom:10px;}' +
+                '@media(max-width:800px){body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
                 '</style>';
 
             $("head").append(css);
 
             var html = '' +
-                '<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false">AuthSearch</button>' +
+                '<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false">Identificadores</button>' +
                 '<aside id="authsearch-root" aria-hidden="true">' +
                     '<div class="authsearch-head">' +
-                        '<div class="authsearch-brand"><strong>AuthSearch</strong><span class="authsearch-context" id="authsearch-context"></span></div>' +
+                        '<div class="authsearch-brand"><strong>Identificadores</strong><span class="authsearch-context" id="authsearch-context"></span></div>' +
                         '<button type="button" class="authsearch-close" id="authsearch-close" aria-label="Fechar">×</button>' +
                     '</div>' +
                     '<div class="authsearch-body" id="authsearch-body"></div>' +
@@ -218,6 +226,7 @@
             STATE.aberto = true;
             $("#authsearch-root").addClass("authsearch-open").attr("aria-hidden", "false");
             $("#authsearch-tab").attr("aria-expanded", "true");
+            aplicarDockLayout();
             atualizarAuthorityState();
             atualizarResumoLateral();
 
@@ -244,6 +253,25 @@
             STATE.aberto = false;
             $("#authsearch-root").removeClass("authsearch-open").attr("aria-hidden", "true");
             $("#authsearch-tab").attr("aria-expanded", "false");
+            removerDockLayout();
+        }
+
+        function aplicarDockLayout() {
+            if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
+                removerDockLayout();
+                return;
+            }
+            var largura = Math.round($("#authsearch-root").outerWidth() || 0);
+            if (!largura) return;
+            document.documentElement.style.setProperty("--authsearch-dock-width", largura + "px");
+            $("body").addClass("authsearch-docked");
+            try { window.dispatchEvent(new Event("resize")); } catch (e) {}
+        }
+
+        function removerDockLayout() {
+            $("body").removeClass("authsearch-docked");
+            document.documentElement.style.removeProperty("--authsearch-dock-width");
+            try { window.dispatchEvent(new Event("resize")); } catch (e) {}
         }
 
         function atualizarResumoLateral() {
@@ -266,18 +294,28 @@
                 '</div>' +
                 '<div class="authsearch-searchbar">' +
                     '<input type="text" id="authsearch-term" autocomplete="off" placeholder="Nome da autoridade">' +
+                '</div>' +
+                '<div class="authsearch-toolbar authsearch-search-actions">' +
                     '<button type="button" class="authsearch-btn authsearch-primary" id="authsearch-search">Pesquisar</button>' +
                 '</div>' +
-                '<div class="authsearch-state" id="authsearch-state">Confirme sempre a identidade antes de aplicar um identificador.</div>' +
+                '<div class="authsearch-state" id="authsearch-state">A pesquisa é feita dentro deste painel. Confirme sempre a identidade antes de aplicar um identificador.</div>' +
                 '<div class="authsearch-source-grid">' +
-                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>Wikidata</strong><a class="authsearch-link" id="authsearch-link-wikidata" target="_blank" rel="noopener">Abrir pesquisa</a></div><div class="authsearch-box-body" id="authsearch-wikidata"><div class="authsearch-empty">Aguardando pesquisa.</div></div></section>' +
-                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>VIAF</strong><a class="authsearch-link" id="authsearch-link-viaf" target="_blank" rel="noopener">Abrir pesquisa</a></div><div class="authsearch-box-body" id="authsearch-viaf"><div class="authsearch-empty">Aguardando pesquisa.</div></div></section>' +
+                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>Wikidata</strong><span class="authsearch-chip">entidades</span></div><div class="authsearch-box-body" id="authsearch-wikidata"><div class="authsearch-empty">A preparar pesquisa.</div></div></section>' +
+                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>VIAF</strong><span class="authsearch-chip">autoridades</span></div><div class="authsearch-box-body" id="authsearch-viaf"><div class="authsearch-empty">A preparar pesquisa.</div></div></section>' +
                 '</div>' +
-                '<div class="authsearch-newitem"><a class="authsearch-link" href="https://www.wikidata.org/wiki/Special:NewItem" target="_blank" rel="noopener">Criar novo item no Wikidata</a></div>';
+                '<div class="authsearch-newitem" id="authsearch-create-area"></div>';
 
             $("#authsearch-body").html(html);
             preencherPesquisa(a.nome || "");
-            atualizarLinksPesquisa();
+            renderAjudaCriacaoWikidata(false);
+
+            var termoAuto = limparTexto(a.nome || "");
+            if (termoAuto && !primeiroQidValido(a.wikidata || []) && STATE.ultimaPesquisaAutomatica !== termoAuto) {
+                STATE.ultimaPesquisaAutomatica = termoAuto;
+                setTimeout(function () {
+                    if (STATE.modo === "pesquisa" && limparTexto($("#authsearch-term").val()) === termoAuto) executarPesquisa();
+                }, 0);
+            }
         }
 
         function renderModoFichaLoading(qid) {
@@ -348,12 +386,19 @@
                 html += '</div>';
                 html += '</div></div>';
 
+                if (viafLocal && viafWd && viafLocal !== viafWd) {
+                    html += '<div class="authsearch-warning"><strong>Atenção:</strong> o VIAF do campo 017 (' + escaparHTML(viafLocal) + ') difere do VIAF indicado no Wikidata (' + escaparHTML(viafWd) + '). Confirme a identidade antes de alterar o registo.</div>';
+                }
+
                 html += '<div class="authsearch-card-actions">' +
                     '<a class="authsearch-link authsearch-primary" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener">Abrir Wikidata</a>' +
                     (wikipedia ? '<a class="authsearch-link" href="' + escaparAttr(wikipedia) + '" target="_blank" rel="noopener">Wikipedia</a>' : '') +
-                    (viafWd ? '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafWd) + '" target="_blank" rel="noopener">VIAF</a>' : '') +
+                    (viafLocal ? '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafLocal) + '" target="_blank" rel="noopener">Abrir VIAF</a>' : '') +
+                    (!viafLocal && viafWd ? '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafWd) + '" data-fonte="viaf">Adicionar VIAF ' + escaparHTML(viafWd) + '</button>' : '') +
+                    (!viafLocal && !viafWd ? '<button type="button" class="authsearch-btn" id="authsearch-search-viaf-card">Pesquisar VIAF</button>' : '') +
                     '<button type="button" class="authsearch-btn" id="authsearch-switch-search">Pesquisar outra identidade</button>' +
                     '</div>';
+                html += '<div id="authsearch-card-viaf-area"></div>';
                 html += '</div>';
 
                 $("#authsearch-body").html(html);
@@ -390,7 +435,6 @@
                         renderFichaAutoridade(entidade, qid);
                     });
                 })
-                .on("input.authsearchv1", "#authsearch-term", atualizarLinksPesquisa)
                 .on("keydown.authsearchv1", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
@@ -398,6 +442,8 @@
                     }
                 })
                 .on("click.authsearchv1", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv1", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv1", "#authsearch-copy-qs", copiarQuickStatements)
                 .on("click.authsearchv1", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
@@ -449,14 +495,14 @@
                     uselang: CONFIG.idiomaPrincipal,
                     type: "item",
                     limit: CONFIG.maxResultadosWikidata,
-                    search: termo,
-                    origin: "*"
+                    search: termo
                 }
             }).done(function (dados) {
                 if (token !== STATE.tokenPesquisa) return;
 
                 if (!dados || !dados.search || !dados.search.length) {
-                    $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados.</div>');
+                    $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados no Wikidata para esta pesquisa.</div>');
+                    renderAjudaCriacaoWikidata(true);
                     return;
                 }
 
@@ -472,8 +518,7 @@
                         format: "json",
                         ids: ids.join("|"),
                         props: "labels|descriptions|aliases|claims|sitelinks",
-                        languages: "pt|en",
-                        sitefilter: "ptwiki|enwiki"
+                        languages: "pt|en"
                     }
                 }).done(function (detalhes) {
                     if (token !== STATE.tokenPesquisa) return;
@@ -498,6 +543,7 @@
                     if (!resultados.length) {
                         var msg = tipoPessoa ? "Sem resultados confirmados como pessoa humana (P31 = Q5)." : "Sem resultados válidos.";
                         $("#authsearch-wikidata").html('<div class="authsearch-empty">' + escaparHTML(msg) + '</div>');
+                        renderAjudaCriacaoWikidata(true);
                         return;
                     }
 
@@ -660,9 +706,10 @@
             $("#authsearch-viaf").html('<div class="authsearch-loading">A pesquisar…</div>');
 
             var req = $.ajax({
-                url: "https://viaf.org/viaf/AutoSuggest?query=" + encodeURIComponent(termo),
-                dataType: "json",
-                timeout: CONFIG.timeout
+                url: "https://viaf.org/viaf/AutoSuggest",
+                dataType: "jsonp",
+                timeout: CONFIG.timeout,
+                data: { query: termo }
             }).done(function (dados) {
                 if (token !== STATE.tokenPesquisa) return;
 
@@ -692,7 +739,53 @@
             }).fail(function (_xhr, status) {
                 if (status === "abort" || token !== STATE.tokenPesquisa) return;
                 var link = "https://viaf.org/viaf/search?query=local.names+all+%22" + encodeURIComponent(termo) + "%22&sortKeys=holdingscount&recordSchema=BriefVIAF";
-                $("#authsearch-viaf").html('<div class="authsearch-error">A pesquisa automática VIAF falhou.</div><div class="authsearch-actions"><a class="authsearch-link" href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Pesquisar diretamente no VIAF</a></div>');
+                $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível obter resultados VIAF dentro do painel. Pode tentar novamente ou abrir a pesquisa externa.</div><div class="authsearch-actions"><a class="authsearch-link" href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Pesquisar diretamente no VIAF</a></div>');
+            });
+
+            registarPedido(req);
+        }
+
+        function pesquisarVIAFNaFicha(termo) {
+            termo = limparTexto(termo || "");
+            var $alvo = $("#authsearch-card-viaf-area");
+            if (!$alvo.length) return;
+            if (!termo) {
+                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível determinar o nome para pesquisar no VIAF.</div></div>');
+                return;
+            }
+
+            $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-loading">A pesquisar VIAF…</div></div>');
+
+            var req = $.ajax({
+                url: "https://viaf.org/viaf/AutoSuggest?query=" + encodeURIComponent(termo),
+                dataType: "jsonp",
+                timeout: CONFIG.timeout
+            }).done(function (dados) {
+                var lista = dados && dados.result ? dados.result : [];
+                if (!lista.length) {
+                    $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-empty">Sem resultados VIAF.</div></div>');
+                    return;
+                }
+
+                var html = '<div class="authsearch-card-viaf"><div class="authsearch-box-head" style="padding-left:0;padding-right:0"><strong>Resultados VIAF</strong><span class="authsearch-chip">selecione para adicionar ao 017</span></div>';
+                lista.slice(0, CONFIG.maxResultadosVIAF).forEach(function (item) {
+                    var viafid = limparTexto(item.viafid || "");
+                    var termoResultado = limparTexto(item.term || item.displayForm || "");
+                    if (!viafid) return;
+                    html += '<div class="authsearch-result">' +
+                        '<div class="authsearch-result-name">' + escaparHTML(termoResultado || "VIAF") + '</div>' +
+                        '<div class="authsearch-id">' + escaparHTML(viafid) + '</div>' +
+                        '<div class="authsearch-actions">' +
+                            '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafid) + '" target="_blank" rel="noopener">Abrir</a>' +
+                            '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafid) + '" data-fonte="viaf">Adicionar ao 017</button>' +
+                        '</div>' +
+                    '</div>';
+                });
+                html += '</div>';
+                $alvo.html(html);
+            }).fail(function (_xhr, status) {
+                if (status === "abort") return;
+                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível consultar o VIAF.</div></div>');
             });
 
             registarPedido(req);
@@ -893,7 +986,11 @@
                 atualizarResumoLateral();
                 setEstado("Aplicado no 017: " + valor + " · " + fonte + ".");
 
-                if (fonte === "wikidata") mostrarFichaDepoisDeAplicar(valor);
+                if (fonte === "wikidata") {
+                    mostrarFichaDepoisDeAplicar(valor);
+                } else if (fonte === "viaf" && STATE.modo === "ficha" && STATE.entidadeAtual && STATE.qidAtual) {
+                    renderFichaAutoridade(STATE.entidadeAtual, STATE.qidAtual);
+                }
             } catch (e) {
                 console.error("AuthSearch: erro ao aplicar 017", e);
                 setEstado("Não foi possível aplicar o identificador no campo 017.", true);
@@ -1023,6 +1120,76 @@
                 }
             }
             return "";
+        }
+
+        /* ======================================================
+           CRIAÇÃO ASSISTIDA NO WIKIDATA
+           ====================================================== */
+
+        function renderAjudaCriacaoWikidata(expandida) {
+            var $area = $("#authsearch-create-area");
+            if (!$area.length) return;
+
+            atualizarAuthorityState();
+            var a = STATE.authority || {};
+            var nome = limparTexto($("#authsearch-term").val() || a.nome || "");
+            var viaf = a.viaf && a.viaf.length ? limparTexto(a.viaf[0].valor || "") : "";
+
+            if (!expandida) {
+                $area.html('<button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button>');
+                return;
+            }
+
+            var newItemUrl = "https://www.wikidata.org/wiki/Special:NewItem?label=" + encodeURIComponent(nome);
+            var qs = construirQuickStatementsNovoItem(nome, viaf);
+            var qsUrl = "https://quickstatements.toolforge.org/#/v1=" + encodeURIComponent(qs.replace(/\n/g, "||"));
+
+            var html = '' +
+                '<div class="authsearch-box" style="margin-top:10px">' +
+                    '<div class="authsearch-box-head"><strong>Preparar novo item Wikidata</strong><span class="authsearch-chip">assistido</span></div>' +
+                    '<div class="authsearch-box-body">' +
+                        '<div class="authsearch-desc">Use apenas depois de confirmar que a pessoa não existe no Wikidata. O AuthSearch prepara os dados; a criação continua a exigir validação no Wikidata.</div>' +
+                        (nome ? meta("Nome", nome) : '') +
+                        '<div class="authsearch-meta"><strong>Tipo:</strong> ser humano (P31 = Q5)</div>' +
+                        (viaf ? meta("VIAF a transportar", viaf) : '<div class="authsearch-meta"><strong>VIAF:</strong> ainda não registado no 017. Pode aplicar primeiro um resultado VIAF e voltar a preparar o item.</div>') +
+                        '<div class="authsearch-actions">' +
+                            '<a class="authsearch-link authsearch-primary" href="' + escaparAttr(newItemUrl) + '" target="_blank" rel="noopener">Criar manualmente no Wikidata</a>' +
+                            '<a class="authsearch-link" href="' + escaparAttr(qsUrl) + '" target="_blank" rel="noopener">Abrir QuickStatements preparado</a>' +
+                            '<button type="button" class="authsearch-btn" id="authsearch-copy-qs" data-qs="' + escaparAttr(qs) + '">Copiar comandos</button>' +
+                        '</div>' +
+                        '<div class="authsearch-desc" style="margin-top:8px">Depois de criar o item, volte ao AuthSearch e pesquise novamente o nome. O novo QID poderá então ser aplicado ao 017.</div>' +
+                    '</div>' +
+                '</div>';
+
+            $area.html(html);
+        }
+
+        function construirQuickStatementsNovoItem(nome, viaf) {
+            nome = limparTexto(nome || "");
+            viaf = limparTexto(viaf || "");
+            var linhas = ["CREATE"];
+            if (nome) linhas.push('LAST|Lpt|"' + escaparQuickStatements(nome) + '"');
+            linhas.push("LAST|P31|Q5");
+            if (/^\d+$/.test(viaf)) linhas.push('LAST|P214|"' + viaf + '"');
+            return linhas.join("\n");
+        }
+
+        function escaparQuickStatements(valor) {
+            return String(valor || "").replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/[\r\n]+/g, " ");
+        }
+
+        function copiarQuickStatements() {
+            var qs = String($("#authsearch-copy-qs").attr("data-qs") || "");
+            if (!qs) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(qs).then(function () {
+                    setEstado("Comandos QuickStatements copiados. Reveja-os antes de executar.");
+                }).catch(function () {
+                    setEstado("Não foi possível copiar automaticamente. Abra o QuickStatements preparado.", true);
+                });
+            } else {
+                window.prompt("Copie os comandos QuickStatements:", qs);
+            }
         }
 
         /* ======================================================
