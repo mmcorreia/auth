@@ -2,14 +2,14 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Isolado a partir do K●RE Identidade v6.0
    Objetivo: Wikidata + VIAF + UNIMARC 017 + grafo de identidade
-   v1.4 | 2026-08-11
+   v1.5.1 | 2026-08-11
    ========================================================== */
 
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V140_ATIVO) return;
-    window.AUTHSEARCH_V140_ATIVO = true;
+    if (window.AUTHSEARCH_V151_ATIVO) return;
+    window.AUTHSEARCH_V151_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -261,7 +261,7 @@
         function abrirPainel() {
             STATE.aberto = true;
             $("#authsearch-root").addClass("authsearch-open").attr("aria-hidden", "false");
-            $("#authsearch-tab").attr("aria-expanded", "true");
+            $("#authsearch-tab").attr("aria-expanded", "true").hide();
             aplicarDockLayout();
             atualizarAuthorityState();
             atualizarResumoLateral();
@@ -280,7 +280,7 @@
         function fecharPainel() {
             STATE.aberto = false;
             $("#authsearch-root").removeClass("authsearch-open").attr("aria-hidden", "true");
-            $("#authsearch-tab").attr("aria-expanded", "false");
+            $("#authsearch-tab").attr("aria-expanded", "false").show();
             removerDockLayout();
         }
 
@@ -407,13 +407,8 @@
             STATE.modo = "pesquisa";
             var a = STATE.authority || {};
             var qid = primeiroQidValido(a.wikidata || []);
-            var tipoLabel = a.tipo === "person" ? "Pessoa física · Wikidata limitado a Q5" : "Tipologia não reconhecida · pesquisa Wikidata genérica";
-
             var html = '' +
-                '<div class="authsearch-toolbar">' +
-                    '<span class="authsearch-chip">' + escaparHTML(tipoLabel) + '</span>' +
-                '</div>' +
-                (qid ? '<div class="authsearch-graph-toggle"><div class="authsearch-graph-toggle-copy"><span class="authsearch-graph-toggle-title">Identidade ligada ao Wikidata</span><span class="authsearch-graph-toggle-sub">Informação enriquecida a partir do Wikidata, Commons e Wikipedia</span></div><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Ver grafo de identidade</button></div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>' : '') +
+                (qid ? '<div class="authsearch-graph-toggle"><div class="authsearch-graph-toggle-copy"><span class="authsearch-graph-toggle-title">Grafo de identidade</span><span class="authsearch-graph-toggle-sub">Informação enriquecida de projetos Wikimedia</span></div><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Ver</button></div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>' : '') +
                 '<div class="authsearch-searchbar">' +
                     '<input type="text" id="authsearch-term" autocomplete="off" placeholder="Nome da autoridade">' +
                 '</div>' +
@@ -687,10 +682,10 @@
                     var $btn = $(this);
                     if ($area.children().length) {
                         $area.empty();
-                        $btn.text("Ver grafo de identidade");
+                        $btn.text("Ver");
                         return;
                     }
-                    $btn.text("Fechar grafo de identidade");
+                    $btn.text("Fechar");
                     STATE.qidAtual = qid;
                     $area.html('<div class="authsearch-loading">A carregar grafo de identidade…</div>');
                     carregarEntidadeWikidata(qid, function (entidade) {
@@ -703,7 +698,7 @@
                 })
                 .on("click.authsearchv150", "#authsearch-hide-graph", function () {
                     $("#authsearch-graph-area").empty();
-                    $("#authsearch-toggle-graph").text("Ver grafo de identidade");
+                    $("#authsearch-toggle-graph").text("Ver");
                 })
                 .on("click.authsearchv150", "#authsearch-search", executarPesquisa)
                 .on("click.authsearchv150", "#authsearch-retry-viaf", function () {
