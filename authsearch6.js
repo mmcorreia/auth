@@ -1,15 +1,15 @@
 /* ==========================================================
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Isolado a partir do K●RE Identidade v6.0
-   Objetivo: Wikidata + VIAF + UNIMARC 017 + ficha de entidade
-   v1.3 | 2026-08-11
+   Objetivo: Wikidata + VIAF + UNIMARC 017 + grafo de identidade
+   v1.4 | 2026-08-11
    ========================================================== */
 
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V131_ATIVO) return;
-    window.AUTHSEARCH_V131_ATIVO = true;
+    if (window.AUTHSEARCH_V140_ATIVO) return;
+    window.AUTHSEARCH_V140_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -115,22 +115,14 @@
 
             preencherPesquisa(authority.nome || "");
             atualizarResumoLateral();
+            STATE.modo = "pesquisa";
+            STATE.qidAtual = qid || "";
+            renderModoPesquisa();
 
             if (qid) {
-                STATE.modo = "ficha";
-                STATE.qidAtual = qid;
-                renderModoFichaLoading(qid);
                 carregarEntidadeWikidata(qid, function (entidade) {
-                    if (!entidade) {
-                        renderErroFicha("Não foi possível carregar a entidade Wikidata " + qid + ".");
-                        return;
-                    }
-                    STATE.entidadeAtual = entidade;
-                    renderFichaAutoridade(entidade, qid);
+                    if (entidade) STATE.entidadeAtual = entidade;
                 });
-            } else {
-                STATE.modo = "pesquisa";
-                renderModoPesquisa();
             }
         }
 
@@ -215,7 +207,31 @@
                 '.authsearch-card-viaf{padding:10px 14px;border-top:1px solid #e5e7eb;background:#fbfdff;}' +
                 '.authsearch-warning{margin:10px 14px 0;padding:8px 9px;border:1px solid #fedf89;background:#fffaeb;color:#854a0e;border-radius:4px;font-size:11px;line-height:1.35;}' +
                 '.authsearch-search-actions{margin-top:-2px;margin-bottom:10px;}' +
-                '@media(max-width:800px){body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
+                '.authsearch-graph-slot{margin:0 0 11px 0;}' +
+                '.authsearch-graph-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid #d8dee6;background:#fff;border-radius:7px;margin-bottom:10px;}' +
+                '.authsearch-graph-toggle-copy{min-width:0;}' +
+                '.authsearch-graph-toggle-title{display:block;font-size:13px;font-weight:850;color:#111827;}' +
+                '.authsearch-graph-toggle-sub{display:block;font-size:11px;color:#667085;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+                '.authsearch-kp{background:#fff;border:1px solid #d8dee6;border-radius:12px;overflow:hidden;box-shadow:0 8px 26px rgba(15,23,42,.08);margin-bottom:12px;}' +
+                '.authsearch-kp-hero{display:grid;grid-template-columns:145px minmax(0,1fr);gap:16px;padding:15px;background:linear-gradient(135deg,#fff 0%,#f8fbfd 100%);}' +
+                '.authsearch-kp-photo,.authsearch-kp-placeholder{width:145px;height:184px;object-fit:cover;border-radius:10px;border:1px solid #d8dee6;background:#eef2f6;}' +
+                '.authsearch-kp-name{font-size:25px;line-height:1.05;font-weight:900;color:#111827;letter-spacing:-.02em;}' +
+                '.authsearch-kp-desc{font-size:13px;color:#475467;line-height:1.45;margin-top:6px;}' +
+                '.authsearch-kp-idline{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}' +
+                '.authsearch-kp-pill{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;border:1px solid #dbe3ec;background:#fff;font-size:11px;font-weight:700;color:#344054;}' +
+                '.authsearch-kp-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}' +
+                '.authsearch-kp-fact{padding:8px 9px;border:1px solid #e5e7eb;background:#fff;border-radius:8px;min-width:0;}' +
+                '.authsearch-kp-fact b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#667085;margin-bottom:3px;}' +
+                '.authsearch-kp-fact span{font-size:12px;color:#111827;line-height:1.35;}' +
+                '.authsearch-kp-section{padding:12px 15px;border-top:1px solid #e5e7eb;}' +
+                '.authsearch-kp-section-title{font-size:13px;font-weight:850;color:#111827;margin-bottom:8px;}' +
+                '.authsearch-kp-ids{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}' +
+                '.authsearch-kp-idcard{padding:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfdff;min-width:0;}' +
+                '.authsearch-kp-idcard b{display:block;font-size:10px;color:#667085;margin-bottom:3px;}' +
+                '.authsearch-kp-idcard span{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#174b75;overflow-wrap:anywhere;}' +
+                '.authsearch-kp-aliases{font-size:12px;color:#475467;line-height:1.5;}' +
+                '.authsearch-kp-actions{display:flex;gap:7px;flex-wrap:wrap;padding:11px 15px;border-top:1px solid #e5e7eb;background:#fbfdff;}' +
+                '@media(max-width:800px){.authsearch-kp-hero{grid-template-columns:92px 1fr}.authsearch-kp-photo,.authsearch-kp-placeholder{width:92px;height:118px}.authsearch-kp-name{font-size:19px}.authsearch-kp-facts{grid-template-columns:1fr}.authsearch-kp-ids{grid-template-columns:1fr 1fr}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
                 '</style>';
 
             $("head").append(css);
@@ -224,7 +240,7 @@
                 '<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false">Identificadores</button>' +
                 '<aside id="authsearch-root" aria-hidden="true">' +
                     '<div class="authsearch-head">' +
-                        '<div class="authsearch-brand"><strong>Identificadores</strong><span class="authsearch-context" id="authsearch-context"></span></div>' +
+                        '<div class="authsearch-brand"><strong id="authsearch-heading">AuthID #</strong></div>' +
                         '<button type="button" class="authsearch-close" id="authsearch-close" aria-label="Fechar">×</button>' +
                     '</div>' +
                     '<div class="authsearch-body" id="authsearch-body"></div>' +
@@ -244,22 +260,14 @@
             atualizarAuthorityState();
             atualizarResumoLateral();
 
-            var qid = primeiroQidValido(STATE.authority.wikidata || []);
-            if (qid && STATE.modo !== "pesquisa") {
-                if (STATE.qidAtual !== qid || !STATE.entidadeAtual) {
-                    STATE.qidAtual = qid;
-                    renderModoFichaLoading(qid);
-                    carregarEntidadeWikidata(qid, function (entidade) {
-                        if (!entidade) return renderErroFicha("Não foi possível carregar a entidade Wikidata.");
-                        STATE.entidadeAtual = entidade;
-                        renderFichaAutoridade(entidade, qid);
-                    });
-                } else {
-                    renderFichaAutoridade(STATE.entidadeAtual, qid);
-                }
-            } else if (!qid && STATE.modo !== "pesquisa") {
-                STATE.modo = "pesquisa";
-                renderModoPesquisa();
+            var qid = primeiroQidValido((STATE.authority && STATE.authority.wikidata) || []);
+            STATE.qidAtual = qid || "";
+            renderModoPesquisa();
+
+            if (qid && (!STATE.entidadeAtual || STATE.qidAtual !== qid)) {
+                carregarEntidadeWikidata(qid, function (entidade) {
+                    if (entidade) STATE.entidadeAtual = entidade;
+                });
             }
         }
 
@@ -386,41 +394,37 @@
 
         function atualizarResumoLateral() {
             var a = STATE.authority || {};
-            var partes = [];
-            if (a.nome) partes.push(a.nome);
-            if (a.authid) partes.push("Authid " + a.authid);
-            $("#authsearch-context").text(partes.join(" · "));
+            $("#authsearch-heading").text("AuthID #" + (a.authid || "—"));
         }
 
         function renderModoPesquisa() {
             STATE.modo = "pesquisa";
             var a = STATE.authority || {};
+            var qid = primeiroQidValido(a.wikidata || []);
             var tipoLabel = a.tipo === "person" ? "Pessoa física · Wikidata limitado a Q5" : "Tipologia não reconhecida · pesquisa Wikidata genérica";
 
             var html = '' +
                 '<div class="authsearch-toolbar">' +
-                    (primeiroQidValido(a.wikidata || []) ? '<button type="button" class="authsearch-btn" id="authsearch-back-card">Voltar à ficha</button>' : '') +
                     '<span class="authsearch-chip">' + escaparHTML(tipoLabel) + '</span>' +
                 '</div>' +
+                (qid ? '<div class="authsearch-graph-toggle"><div class="authsearch-graph-toggle-copy"><span class="authsearch-graph-toggle-title">Identidade ligada ao Wikidata</span><span class="authsearch-graph-toggle-sub">' + escaparHTML(qid) + ' · consultar o grafo de identidade</span></div><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Grafo de identidade</button></div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>' : '') +
                 '<div class="authsearch-searchbar">' +
                     '<input type="text" id="authsearch-term" autocomplete="off" placeholder="Nome da autoridade">' +
                 '</div>' +
                 '<div class="authsearch-toolbar authsearch-search-actions">' +
-                    '<button type="button" class="authsearch-btn authsearch-primary" id="authsearch-search">Pesquisar</button>' +
+                    '<button type="button" class="authsearch-btn authsearch-primary" id="authsearch-search">Pesquisar Wikidata + VIAF</button>' +
                 '</div>' +
-                '<div class="authsearch-state" id="authsearch-state">A pesquisa é feita dentro deste painel. Confirme sempre a identidade antes de aplicar um identificador.</div>' +
+                '<div class="authsearch-state" id="authsearch-state">Confirme sempre a identidade antes de aplicar um identificador.</div>' +
                 '<div class="authsearch-source-grid">' +
-                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>Wikidata</strong><span class="authsearch-chip">entidades</span></div><div class="authsearch-box-body" id="authsearch-wikidata"><div class="authsearch-empty">A preparar pesquisa.</div></div></section>' +
-                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>VIAF</strong><span class="authsearch-chip">autoridades</span></div><div class="authsearch-box-body" id="authsearch-viaf"><div class="authsearch-empty">A preparar pesquisa.</div></div></section>' +
-                '</div>' +
-                '<div class="authsearch-newitem" id="authsearch-create-area"></div>';
+                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>Wikidata</strong></div><div class="authsearch-box-body" id="authsearch-wikidata"><div class="authsearch-empty">Aguardando pesquisa.</div></div><div id="authsearch-create-area"></div></section>' +
+                    '<section class="authsearch-box"><div class="authsearch-box-head"><strong>VIAF</strong></div><div class="authsearch-box-body" id="authsearch-viaf"><div class="authsearch-empty">Aguardando pesquisa.</div></div></section>' +
+                '</div>';
 
             $("#authsearch-body").html(html);
             preencherPesquisa(a.nome || "");
-            renderAjudaCriacaoWikidata(false);
 
             var termoAuto = limparTexto(a.nome || "");
-            if (termoAuto && !primeiroQidValido(a.wikidata || []) && STATE.ultimaPesquisaAutomatica !== termoAuto) {
+            if (termoAuto && !qid && STATE.ultimaPesquisaAutomatica !== termoAuto) {
                 STATE.ultimaPesquisaAutomatica = termoAuto;
                 setTimeout(function () {
                     if (STATE.modo === "pesquisa" && limparTexto($("#authsearch-term").val()) === termoAuto) executarPesquisa();
@@ -440,17 +444,21 @@
         }
 
         function renderFichaAutoridade(entidade, qid) {
-            STATE.modo = "ficha";
             STATE.entidadeAtual = entidade;
             STATE.qidAtual = qid;
+
+            var $area = $("#authsearch-graph-area");
+            if (!$area.length) return;
+            $area.html('<div class="authsearch-loading">A construir grafo de identidade…</div>');
 
             var relatedIds = removerDuplicados(
                 obterIdsClaims(entidade, "P27").concat(obterIdsClaims(entidade, "P106"))
             );
 
             obterLabelsEntidades(relatedIds, function (labelsMap) {
-                if (STATE.modo !== "ficha" || STATE.qidAtual !== qid) return;
+                if (STATE.qidAtual !== qid || !$("#authsearch-graph-area").length) return;
 
+                atualizarAuthorityState();
                 var a = STATE.authority || {};
                 var label = obterLabelEntidade(entidade) || a.nome || qid;
                 var descricao = obterDescricaoEntidade(entidade);
@@ -459,7 +467,7 @@
                 var morte = obterPrimeiraDataClaims(entidade, "P570");
                 var paises = obterLabelsClaims(entidade, "P27", labelsMap);
                 var ocupacoes = obterLabelsClaims(entidade, "P106", labelsMap);
-                var aliases = obterAliases(entidade).slice(0, 8);
+                var aliases = obterAliases(entidade).slice(0, 10);
                 var pseudonimos = obterValoresTextoClaims(entidade, "P742");
                 var viafWd = obterPrimeiroValorTextoClaim(entidade, "P214");
                 var isni = obterPrimeiroValorTextoClaim(entidade, "P213");
@@ -469,49 +477,47 @@
                 var wikipedia = obterWikipediaUrlDaEntidade(entidade);
                 var viafLocal = a.viaf && a.viaf.length ? a.viaf[0].valor : "";
 
-                var html = '<div class="authsearch-card">';
-                html += '<div class="authsearch-local">';
-                if (a.authid) html += '<span class="authsearch-chip">Authid: ' + escaparHTML(a.authid) + '</span>';
-                html += '<span class="authsearch-chip">017 Wikidata: ' + escaparHTML(qid) + '</span>';
-                if (viafLocal) html += '<span class="authsearch-chip">017 VIAF: ' + escaparHTML(viafLocal) + '</span>';
-                html += '</div>';
-
-                html += '<div class="authsearch-card-main">';
-                html += imagem ? '<img class="authsearch-card-photo" src="' + escaparAttr(imagem) + '" alt="' + escaparAttr(label) + '">' : '<div class="authsearch-card-placeholder"></div>';
-                html += '<div>';
-                html += '<div class="authsearch-card-name">' + escaparHTML(label) + '</div>';
-                if (descricao) html += '<div class="authsearch-card-description">' + escaparHTML(descricao) + '</div>';
-                html += '<div class="authsearch-card-qid">' + escaparHTML(qid) + '</div>';
-                html += '<div class="authsearch-details">';
-                if (nascimento || morte) html += detalhe("Datas", [nascimento, morte].filter(Boolean).join(" – "));
-                if (paises.length) html += detalhe("Nacionalidade / país", paises.join(", "));
-                if (ocupacoes.length) html += detalhe("Ocupações", ocupacoes.join(", "));
-                if (pseudonimos.length) html += detalhe("Pseudónimos", pseudonimos.slice(0, 6).join(", "));
-                if (aliases.length) html += detalhe("Outros nomes", aliases.join(", "));
-                if (viafWd) html += detalhe("VIAF no Wikidata", viafWd);
-                if (isni) html += detalhe("ISNI", isni);
-                if (lccn) html += detalhe("LCNAF / LCCN", lccn);
-                if (gnd) html += detalhe("GND", gnd);
-                if (bnf) html += detalhe("BnF", bnf);
-                html += '</div>';
-                html += '</div></div>';
-
-                if (viafLocal && viafWd && viafLocal !== viafWd) {
-                    html += '<div class="authsearch-warning"><strong>Atenção:</strong> o VIAF do campo 017 (' + escaparHTML(viafLocal) + ') difere do VIAF indicado no Wikidata (' + escaparHTML(viafWd) + '). Confirme a identidade antes de alterar o registo.</div>';
+                function fact(t, v) {
+                    return v ? '<div class="authsearch-kp-fact"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></div>' : '';
+                }
+                function idcard(t, v) {
+                    return v ? '<div class="authsearch-kp-idcard"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></div>' : '';
                 }
 
-                html += '<div class="authsearch-card-actions">' +
-                    '<a class="authsearch-link authsearch-primary" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener">Abrir Wikidata</a>' +
+                var html = '<div class="authsearch-kp">';
+                html += '<div class="authsearch-kp-hero">';
+                html += imagem ? '<img class="authsearch-kp-photo" src="' + escaparAttr(imagem) + '" alt="' + escaparAttr(label) + '">' : '<div class="authsearch-kp-placeholder"></div>';
+                html += '<div><div class="authsearch-kp-name">' + escaparHTML(label) + '</div>';
+                if (descricao) html += '<div class="authsearch-kp-desc">' + escaparHTML(descricao) + '</div>';
+                html += '<div class="authsearch-kp-idline"><span class="authsearch-kp-pill">' + escaparHTML(qid) + '</span>';
+                if (viafLocal) html += '<span class="authsearch-kp-pill">VIAF ' + escaparHTML(viafLocal) + '</span>';
+                if (a.authid) html += '<span class="authsearch-kp-pill">AuthID #' + escaparHTML(a.authid) + '</span>';
+                html += '</div><div class="authsearch-kp-facts">';
+                html += fact('Datas', [nascimento, morte].filter(Boolean).join(' – '));
+                html += fact('Nacionalidade / país', paises.join(', '));
+                html += fact('Ocupações', ocupacoes.slice(0, 6).join(', '));
+                html += fact('Pseudónimos', pseudonimos.slice(0, 5).join(', '));
+                html += '</div></div></div>';
+
+                if (aliases.length) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Outros nomes</div><div class="authsearch-kp-aliases">' + escaparHTML(aliases.join(' · ')) + '</div></div>';
+
+                var idsHtml = idcard('Wikidata', qid) + idcard('VIAF', viafWd || viafLocal) + idcard('ISNI', isni) + idcard('LCNAF / LCCN', lccn) + idcard('GND', gnd) + idcard('BnF', bnf);
+                if (idsHtml) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Identificadores externos</div><div class="authsearch-kp-ids">' + idsHtml + '</div></div>';
+
+                if (viafLocal && viafWd && viafLocal !== viafWd) {
+                    html += '<div class="authsearch-warning"><strong>Atenção:</strong> o VIAF do 017 (' + escaparHTML(viafLocal) + ') difere do VIAF indicado no Wikidata (' + escaparHTML(viafWd) + ').</div>';
+                }
+
+                html += '<div class="authsearch-kp-actions">' +
+                    '<a class="authsearch-link authsearch-primary" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener">Wikidata</a>' +
                     (wikipedia ? '<a class="authsearch-link" href="' + escaparAttr(wikipedia) + '" target="_blank" rel="noopener">Wikipedia</a>' : '') +
-                    (viafLocal ? '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafLocal) + '" target="_blank" rel="noopener">Abrir VIAF</a>' : '') +
-                    (!viafLocal && viafWd ? '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafWd) + '" data-fonte="viaf">Adicionar VIAF ' + escaparHTML(viafWd) + '</button>' : '') +
-                    (!viafLocal && !viafWd ? '<button type="button" class="authsearch-btn" id="authsearch-search-viaf-card">Pesquisar VIAF</button>' : '') +
-                    '<button type="button" class="authsearch-btn" id="authsearch-switch-search">Pesquisar outra identidade</button>' +
+                    (viafLocal ? '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafLocal) + '" target="_blank" rel="noopener">VIAF</a>' : '') +
+                    (!viafLocal && viafWd ? '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafWd) + '" data-fonte="viaf">Adicionar VIAF ao 017</button>' : '') +
+                    '<button type="button" class="authsearch-btn" id="authsearch-hide-graph">Fechar grafo</button>' +
                     '</div>';
-                html += '<div id="authsearch-card-viaf-area"></div>';
                 html += '</div>';
 
-                $("#authsearch-body").html(html);
+                $("#authsearch-graph-area").html(html);
             });
         }
 
@@ -525,63 +531,71 @@
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv131")
-                .on("click.authsearchv131", "#authsearch-tab", function () {
+                .off(".authsearchv140")
+                .on("click.authsearchv140", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv131", "#authsearch-close", fecharPainel)
-                .on("pointerdown.authsearchv131", "#authsearch-resizer", iniciarRedimensionamento)
-                .on("pointermove.authsearchv131", moverRedimensionamento)
-                .on("pointerup.authsearchv1 pointercancel.authsearchv131", terminarRedimensionamento)
-                .on("keydown.authsearchv131", "#authsearch-resizer", redimensionarPorTeclado)
-                .on("click.authsearchv131", "#authsearch-switch-search", function () {
-                    atualizarAuthorityState();
-                    renderModoPesquisa();
-                })
-                .on("click.authsearchv131", "#authsearch-back-card", function () {
-                    atualizarAuthorityState();
-                    var qid = primeiroQidValido(STATE.authority.wikidata || []);
-                    if (!qid) return renderModoPesquisa();
-                    STATE.qidAtual = qid;
-                    renderModoFichaLoading(qid);
-                    carregarEntidadeWikidata(qid, function (entidade) {
-                        if (!entidade) return renderErroFicha("Não foi possível carregar a entidade Wikidata.");
-                        renderFichaAutoridade(entidade, qid);
-                    });
-                })
-                .on("keydown.authsearchv131", "#authsearch-term", function (e) {
+                .on("click.authsearchv140", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv140", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv140", moverRedimensionamento)
+                .on("pointerup.authsearchv140 pointercancel.authsearchv140", terminarRedimensionamento)
+                .on("keydown.authsearchv140", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("keydown.authsearchv140", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
-                .on("click.authsearchv131", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv131", "#authsearch-retry-viaf", function () {
+
+                .on("click.authsearchv140", "#authsearch-toggle-graph", function () {
+                    atualizarAuthorityState();
+                    var qid = String($(this).data("qid") || primeiroQidValido((STATE.authority && STATE.authority.wikidata) || [])).toUpperCase();
+                    if (!/^Q\d+$/.test(qid)) return;
+                    var $area = $("#authsearch-graph-area");
+                    if ($area.children().length) {
+                        $area.empty();
+                        return;
+                    }
+                    STATE.qidAtual = qid;
+                    $area.html('<div class="authsearch-loading">A carregar grafo de identidade…</div>');
+                    carregarEntidadeWikidata(qid, function (entidade) {
+                        if (!entidade) {
+                            $area.html('<div class="authsearch-error">Não foi possível carregar a entidade Wikidata.</div>');
+                            return;
+                        }
+                        renderFichaAutoridade(entidade, qid);
+                    });
+                })
+                .on("click.authsearchv140", "#authsearch-hide-graph", function () {
+                    $("#authsearch-graph-area").empty();
+                })
+                .on("click.authsearchv140", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv140", "#authsearch-retry-viaf", function () {
                     var termo = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
                     if (!termo) return;
                     STATE.tokenPesquisa++;
                     pesquisarVIAF(termo, STATE.tokenPesquisa);
                 })
-                .on("click.authsearchv131", "#authsearch-card-retry-viaf", function () {
+                .on("click.authsearchv140", "#authsearch-card-retry-viaf", function () {
                     var termo = limparTexto((STATE.authority && STATE.authority.nome) || "");
                     if (termo) pesquisarVIAFNaFicha(termo);
                 })
-                .on("click.authsearchv131", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv131", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv131", ".authsearch-apply", function () {
+                .on("click.authsearchv140", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv140", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv140", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv1 change.authsearchv131", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv140 change.authsearchv140", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv131", function (e) {
+                .on("keydown.authsearchv140", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
                 })
-                .on("resize.authsearchv131", debounce(function () {
+                .on("resize.authsearchv140", debounce(function () {
                     if (!STATE.aberto) return;
                     if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
                         $("body").removeClass("authsearch-docked authsearch-resizing");
@@ -606,6 +620,7 @@
             var token = STATE.tokenPesquisa;
 
             setEstado("A pesquisar. Confirme sempre os resultados antes de aplicar identificadores.");
+            $("#authsearch-create-area").empty();
             pesquisarWikidata(termo, token);
             pesquisarVIAF(termo, token);
         }
@@ -635,7 +650,7 @@
 
                 if (!dados || !dados.search || !dados.search.length) {
                     $("#authsearch-wikidata").html('<div class="authsearch-empty">Sem resultados no Wikidata para esta pesquisa.</div>');
-                    renderAjudaCriacaoWikidata(true);
+                    renderAjudaCriacaoWikidata(false);
                     return;
                 }
 
@@ -676,11 +691,12 @@
                     if (!resultados.length) {
                         var msg = tipoPessoa ? "Sem resultados confirmados como pessoa humana (P31 = Q5)." : "Sem resultados válidos.";
                         $("#authsearch-wikidata").html('<div class="authsearch-empty">' + escaparHTML(msg) + '</div>');
-                        renderAjudaCriacaoWikidata(true);
+                        renderAjudaCriacaoWikidata(false);
                         return;
                     }
 
                     resultados = resultados.slice(0, CONFIG.maxMostrarWikidata);
+                    $("#authsearch-create-area").empty();
                     enriquecerResultadosWikidata(resultados, token);
                 }).fail(function () {
                     if (token !== STATE.tokenPesquisa) return;
@@ -1152,8 +1168,11 @@
                 setEstado("Aplicado no 017: " + valor + " · " + fonte + ".");
 
                 if (fonte === "wikidata") {
-                    mostrarFichaDepoisDeAplicar(valor);
-                } else if (fonte === "viaf" && STATE.modo === "ficha" && STATE.entidadeAtual && STATE.qidAtual) {
+                    atualizarAuthorityState();
+                    var termoAtual = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
+                    renderModoPesquisa();
+                    if (termoAtual) $("#authsearch-term").val(termoAtual);
+                } else if (fonte === "viaf" && STATE.entidadeAtual && STATE.qidAtual && $("#authsearch-graph-area").children().length) {
                     renderFichaAutoridade(STATE.entidadeAtual, STATE.qidAtual);
                 }
             } catch (e) {
@@ -1163,12 +1182,9 @@
         }
 
         function mostrarFichaDepoisDeAplicar(qid) {
+            atualizarAuthorityState();
             STATE.qidAtual = qid;
-            renderModoFichaLoading(qid);
-            carregarEntidadeWikidata(qid, function (entidade) {
-                if (!entidade) return renderErroFicha("O identificador foi aplicado, mas a ficha Wikidata não pôde ser carregada.");
-                renderFichaAutoridade(entidade, qid);
-            });
+            renderModoPesquisa();
         }
 
         /* ======================================================
@@ -1301,7 +1317,7 @@
             var viaf = a.viaf && a.viaf.length ? limparTexto(a.viaf[0].valor || "") : "";
 
             if (!expandida) {
-                $area.html('<button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button>');
+                $area.html('<div style="padding:0 10px 10px"><button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button></div>');
                 return;
             }
 
