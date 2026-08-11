@@ -1508,7 +1508,8 @@
         biblionumber: bib,
         titulo: titulo,
         href: location.origin + '/cgi-bin/koha/opac-detail.pl?biblionumber=' + encodeURIComponent(bib),
-        capa: capa
+        capa: capa,
+        capas: obterCandidatosCapa(bib, capa)
       });
     });
 
@@ -1539,20 +1540,36 @@
     if (!bloco) return '';
 
     const imgs = Array.from(bloco.querySelectorAll('img'));
+    const atributos = ['src', 'data-src', 'data-original', 'data-lazy-src'];
+
+    function obterSrc(el) {
+      for (const attr of atributos) {
+        const valor = el.getAttribute(attr);
+        if (valor && !/^data:/i.test(valor)) return valor;
+      }
+
+      const srcset = el.getAttribute('srcset') || el.getAttribute('data-srcset') || '';
+      if (srcset) {
+        const primeiro = srcset.split(',')[0].trim().split(/\s+/)[0];
+        if (primeiro && !/^data:/i.test(primeiro)) return primeiro;
+      }
+
+      return '';
+    }
+
     const img = imgs.find(function (el) {
-      const src = el.getAttribute('src') || el.getAttribute('data-src') || '';
-      if (!src || /^data:/i.test(src)) return false;
-      return /cover|image|thumbnail|amazon|localcover|syndetics|openlibrary/i.test(src) ||
+      const src = obterSrc(el);
+      if (!src) return false;
+      return /cover|image|thumbnail|amazon|localcover|syndetics|openlibrary|google/i.test(src) ||
         /cover|capa/i.test(el.getAttribute('class') || '') ||
         /cover|capa/i.test(el.getAttribute('alt') || '');
     }) || imgs.find(function (el) {
-      const src = el.getAttribute('src') || el.getAttribute('data-src') || '';
-      return !!src && !/^data:/i.test(src);
+      return !!obterSrc(el);
     });
 
     if (!img) return '';
 
-    const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
+    const src = obterSrc(img);
     if (!src) return '';
 
     try {
@@ -1560,6 +1577,30 @@
     } catch (e) {
       return src;
     }
+  }
+
+  function obterCandidatosCapa(biblionumber, capaEncontrada) {
+    const candidatos = [];
+
+    function adicionar(url) {
+      if (!url) return;
+      try {
+        url = new URL(url, location.origin).href;
+      } catch (e) {}
+      if (!candidatos.includes(url)) candidatos.push(url);
+    }
+
+    adicionar(capaEncontrada);
+
+    if (biblionumber) {
+      adicionar(
+        location.origin +
+        '/cgi-bin/koha/opac-image.pl?thumbnail=1&biblionumber=' +
+        encodeURIComponent(biblionumber)
+      );
+    }
+
+    return candidatos;
   }
 
   function construirDescoberta(obras, nomeAutor) {
@@ -1615,12 +1656,35 @@
     const cover = document.createElement('div');
     cover.className = 'authoritybox-rbmo-work-cover';
 
-    if (obra.capa) {
+    const candidatos = Array.isArray(obra.capas)
+      ? obra.capas.slice()
+      : (obra.capa ? [obra.capa] : []);
+
+    if (candidatos.length) {
       const img = document.createElement('img');
-      img.src = obra.capa;
       img.alt = '';
       img.loading = 'lazy';
+      img.decoding = 'async';
+
+      let indiceCapa = 0;
+
+      function tentarCapaSeguinte() {
+        if (indiceCapa >= candidatos.length) {
+          img.remove();
+          if (!cover.querySelector('span')) {
+            const empty = document.createElement('span');
+            empty.textContent = 'Sem capa';
+            cover.appendChild(empty);
+          }
+          return;
+        }
+
+        img.src = candidatos[indiceCapa++];
+      }
+
+      img.addEventListener('error', tentarCapaSeguinte);
       cover.appendChild(img);
+      tentarCapaSeguinte();
     } else {
       const empty = document.createElement('span');
       empty.textContent = 'Sem capa';
