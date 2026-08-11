@@ -2557,58 +2557,88 @@ body.authsearch-resizing #authsearch-tab {
             if (!campo || !campo.length) return $();
             codigo = String(codigo || "").toLowerCase();
             var encontrado = $();
+            var labels = ROTULOS_SUBCAMPOS_PESSOA[codigo] || [];
 
-            // 1. Preferir a linha que contém explicitamente o input do código do subcampo.
-            campo.find("input.subfieldcode, input.subfield-code, input[data-subfieldcode], input[data-subfield]").each(function () {
-                var $codigo = $(this);
-                var valorCodigo = limparTexto($codigo.val() || $codigo.attr("data-subfieldcode") || $codigo.attr("data-subfield") || "").toLowerCase();
-                if (valorCodigo !== codigo) return;
+            /**
+             * No editor MARC do Koha, o código do subcampo e o respetivo valor são
+             * ambos inputs de texto. A marcação/classe desses inputs varia entre
+             * versões e frameworks, pelo que não podemos depender de .subfieldcode
+             * nem da largura do input.
+             *
+             * Regra: localizar primeiro um input cujo VALOR seja exatamente o código
+             * ($a/$b/$c/$f). Depois subir apenas até ao primeiro contentor que contenha
+             * esse código e pelo menos outro input de texto. O valor é o outro input,
+             * nunca o próprio código.
+             */
+            campo.find("input[type='text']").each(function () {
+                var $codeInput = $(this);
+                if (limparTexto($codeInput.val()).toLowerCase() !== codigo) return;
 
-                var $linha = $codigo.closest("li, tr, p, .subfield_line, .input_marceditor, .subfield");
-                if (!$linha.length) return;
+                var $node = $codeInput.parent();
+                var $row = $();
+                var guard = 0;
 
-                var $valor = $linha.find("input[type='text'], textarea").filter(function () {
+                while ($node.length && guard++ < 8) {
+                    if ($node[0] === campo[0]) break;
+
+                    var $texts = $node.find("input[type='text'], textarea").filter(function () {
+                        return this !== $codeInput[0];
+                    });
+
+                    // O primeiro ancestral pequeno com outro campo editável é a linha
+                    // do subcampo. Evita subir até à ocorrência 200 inteira.
+                    if ($texts.length) {
+                        $row = $node;
+                        break;
+                    }
+                    $node = $node.parent();
+                }
+
+                if (!$row.length) return;
+
+                var $candidatos = $row.find("input[type='text'], textarea").filter(function () {
+                    if (this === $codeInput[0]) return false;
                     var $x = $(this);
-                    if (this === $codigo[0]) return false;
-                    if ($x.hasClass("subfieldcode") || $x.hasClass("subfield-code")) return false;
                     var v = limparTexto($x.val());
-                    var largura = $x.outerWidth() || 0;
-                    return $x.is(":visible") && (largura > 70 || v.length > 1);
-                }).last();
 
-                if ($valor.length) {
-                    encontrado = $valor;
+                    // Excluir indicadores/códigos MARC e outros pequenos inputs de controlo.
+                    if (/^[a-z0-9]$/i.test(v) && String(v).toLowerCase() !== String(limparTexto($x.attr('data-value') || '')).toLowerCase()) {
+                        return false;
+                    }
+                    return true;
+                });
+
+                if ($candidatos.length) {
+                    // Em Koha o valor catalogado é, em regra, o último input editável da linha.
+                    // Preferir candidatos com texto > 1 carácter; aceitar vazio para subcampos
+                    // ainda não preenchidos sem devolver o código do subcampo.
+                    var $comConteudo = $candidatos.filter(function () {
+                        return limparTexto($(this).val()).length > 1;
+                    });
+                    encontrado = $comConteudo.length ? $comConteudo.last() : $candidatos.last();
                     return false;
                 }
             });
             if (encontrado.length) return encontrado;
 
-            // 2. Fallback pelos rótulos textuais do framework Koha.
-            var rotulos = ROTULOS_SUBCAMPOS_PESSOA[codigo] || [];
-            for (var i = 0; i < rotulos.length; i++) {
-                encontrado = encontrarCampoPorEtiquetaRobusto(campo, rotulos[i]);
-                if (encontrado.length) return encontrado;
+            // Fallback semântico: localizar a linha pelo rótulo do framework e escolher
+            // um input que não seja um código MARC de um carácter.
+            for (var i = 0; i < labels.length; i++) {
+                var alvo = labels[i].toLowerCase();
+                campo.find("li, tr, p, div").each(function () {
+                    if (encontrado.length) return false;
+                    var $linha = $(this);
+                    var txt = limparTexto($linha.text()).toLowerCase();
+                    if (txt.indexOf(alvo) === -1) return;
+
+                    var $vals = $linha.find("input[type='text'], textarea").filter(function () {
+                        var v = limparTexto($(this).val());
+                        return !/^[a-z]$/i.test(v);
+                    });
+                    if ($vals.length) encontrado = $vals.last();
+                });
+                if (encontrado.length) break;
             }
-
-            // 3. Último fallback: procurar uma linha cujo pequeno input tenha exatamente o código.
-            campo.find("li, tr, p, .subfield_line, .input_marceditor, .subfield").each(function () {
-                var $linha = $(this);
-                var temCodigo = $linha.find("input[type='text']").filter(function () {
-                    var $x = $(this);
-                    return ($x.outerWidth() || 0) <= 70 && limparTexto($x.val()).toLowerCase() === codigo;
-                }).length > 0;
-                if (!temCodigo) return;
-
-                var $valor = $linha.find("input[type='text'], textarea").filter(function () {
-                    var $x = $(this);
-                    if (($x.outerWidth() || 0) <= 70 && limparTexto($x.val()).toLowerCase() === codigo) return false;
-                    return $x.is(":visible") && (($x.outerWidth() || 0) > 70);
-                }).last();
-                if ($valor.length) {
-                    encontrado = $valor;
-                    return false;
-                }
-            });
 
             return encontrado;
         }
