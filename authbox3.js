@@ -116,7 +116,7 @@
       const label = mapearLabel(celulas[0].textContent);
       if (!CONFIG.camposValidos.includes(label)) return;
 
-      const links = Array.from(celulas[1].querySelectorAll('a[href*="opac-search.pl"][href*="q="]'));
+      const links = Array.from(celulas[1].querySelectorAll('a[href*="opac-search.pl"][href*="q="], a[href*="opac-authoritiesdetail.pl"][href*="authid="]'));
 
       links.forEach(function (a) {
         const texto = limparTexto(a.textContent);
@@ -136,7 +136,7 @@
 
     if (!autores.length) {
       const links = Array.from(
-        document.querySelectorAll('a[href*="opac-search.pl"][href*="q="]')
+        document.querySelectorAll('a[href*="opac-search.pl"][href*="q="], a[href*="opac-authoritiesdetail.pl"][href*="authid="]')
       );
 
       links.forEach(function (a) {
