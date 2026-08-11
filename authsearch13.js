@@ -145,7 +145,7 @@
             var css = '' +
                 '<style id="authsearch-style">' +
                 ':root{--authsearch-accent:#007fae;--authsearch-border:#d0d7de;--authsearch-bg:#fff;--authsearch-muted:#667085;}' +
-                '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;transition:left .18s ease;border:1px solid #98a2b3;border-left:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:0 6px 6px 0;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
+                '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;transition:left .18s ease;border:1px solid #98a2b3;border-right:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:6px 0 0 6px;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
                 '#authsearch-tab:hover{background:#f8fafc;color:#007fae;}' +
                 '#authsearch-root{position:fixed;left:0;top:0;bottom:0;width:var(--authsearch-dock-width,min(' + CONFIG.larguraPainel + ',' + CONFIG.larguraMaxima + 'px));min-width:' + CONFIG.larguraMinima + 'px;max-width:72vw;z-index:10040;background:var(--authsearch-bg);border-right:1px solid #98a2b3;box-shadow:8px 0 24px rgba(15,23,42,.16);transform:translateX(-102%);transition:transform .18s ease;display:flex;flex-direction:column;color:#111827;}' +
                 '#authsearch-root.authsearch-open{transform:translateX(0);}' +
