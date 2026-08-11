@@ -792,27 +792,45 @@ body.authsearch-docked #authsearch-tab {
 }
 
 /* Componentes colapsáveis internos do AuthBox. */
-.authsearch-accordion{border:1px solid #d8dee8;border-radius:6px;background:#fff;margin-bottom:10px;overflow:hidden}
-.authsearch-accordion-toggle{width:100%;border:0!important;background:#fff!important;color:#1f2937!important;padding:11px 12px!important;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;cursor:pointer;font-size:13px;font-weight:750}
-.authsearch-accordion-toggle:hover{background:#f8fafc!important}
+/* Navegação interna: três linhas discretas, fechadas por defeito. */
+.authsearch-accordion{border-top:1px solid #e5e7eb;background:transparent}
+.authsearch-accordion:last-child{border-bottom:1px solid #e5e7eb}
+.authsearch-accordion-toggle{min-height:58px;padding:10px 2px;display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;user-select:none;outline:none}
+.authsearch-accordion-toggle:hover .authsearch-accordion-title{color:#0b57d0}
+.authsearch-accordion-toggle:focus-visible{box-shadow:0 0 0 2px rgba(11,87,208,.18);border-radius:4px}
 .authsearch-accordion-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
-.authsearch-accordion-sub{font-size:11px;font-weight:500;color:#667085}
-.authsearch-accordion-chevron{font-size:15px;color:#667085;transition:transform .15s ease}
+.authsearch-accordion-title{font-size:13px;font-weight:750;color:#1f2937;line-height:1.3}
+.authsearch-accordion-sub{font-size:11px;font-weight:500;color:#7a8494;line-height:1.3}
+.authsearch-accordion-chevron{width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#98a2b3;transition:transform .16s ease}
 .authsearch-accordion.is-open .authsearch-accordion-chevron{transform:rotate(90deg)}
-.authsearch-accordion-body{padding:12px;border-top:1px solid #e5e7eb}
+.authsearch-accordion-body{padding:4px 0 14px}
 .authsearch-accordion:not(.is-open) .authsearch-accordion-body{display:none}
-.authsearch-variants-list{display:flex;flex-direction:column;gap:6px;margin-top:7px}
-.authsearch-variant-row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:7px 8px;border:1px solid #e5e7eb;border-radius:5px;background:#fff}
+.authsearch-variants-list{display:flex;flex-direction:column;gap:5px;margin-top:7px}
+.authsearch-variant-row{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid #eef1f5}
 .authsearch-variant-name{font-size:12px;line-height:1.35;min-width:0}
-.authsearch-works-meta{font-size:12px;color:#667085;margin-bottom:8px}
-.authsearch-works-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.authsearch-work{border:1px solid #e5e7eb;border-radius:6px;background:#fff;padding:8px;min-width:0}
-.authsearch-work-cover{width:100%;height:132px;object-fit:cover;object-position:center top;border-radius:4px;background:#f1f5f9;margin-bottom:7px}
-.authsearch-work-title{font-size:12px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.authsearch-inline-action{border:0;background:transparent;padding:0;color:#0b57d0;font-size:11px;font-weight:650;cursor:pointer;text-decoration:none}
+.authsearch-inline-action:hover{text-decoration:underline}
+.authsearch-result-variants{margin-top:7px;padding-top:6px;border-top:1px solid #eef1f5}
+.authsearch-result-variants-title{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#7a8494;margin-bottom:3px;font-weight:700}
+
+/* Obras: lista integral com scroll próprio; capa à esquerda e ISBD à direita. */
+.authsearch-works-toolbar{position:sticky;top:0;z-index:2;background:#fff;padding:0 0 8px;border-bottom:1px solid #eef1f5;margin-bottom:4px}
+.authsearch-works-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+.authsearch-works-meta{font-size:12px;color:#667085}
+.authsearch-works-filter{width:100%;border:1px solid #cfd6df;border-radius:5px;padding:7px 9px;font-size:12px;background:#fff}
+.authsearch-works-list{max-height:560px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-right:4px}
+.authsearch-work{display:grid;grid-template-columns:64px minmax(0,1fr);gap:11px;padding:10px 2px;border-bottom:1px solid #e8ecf1;min-width:0}
+.authsearch-work:last-child{border-bottom:0}
+.authsearch-work-cover{width:64px;height:96px;object-fit:cover;object-position:center top;border-radius:3px;background:#f1f5f9}
+.authsearch-work-placeholder{width:64px;height:96px;border-radius:3px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#98a2b3;font-size:9px;text-align:center;padding:5px}
+.authsearch-work-body{min-width:0}
+.authsearch-work-title{font-size:12px;font-weight:750;line-height:1.35;margin-bottom:5px}
 .authsearch-work-title a{text-decoration:none!important}
-.authsearch-work-meta{font-size:11px;color:#667085;line-height:1.35}
-.authsearch-work-placeholder{height:132px;border-radius:4px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#98a2b3;font-size:11px;margin-bottom:7px;text-align:center;padding:8px}
-.authsearch-works-actions{margin-top:9px}
+.authsearch-work-isbd{font-size:11.5px;color:#475467;line-height:1.48;white-space:normal}
+.authsearch-work-isbd.is-loading{color:#98a2b3;font-style:italic}
+.authsearch-work-id{font-size:10px;color:#98a2b3;margin-top:5px}
+.authsearch-works-actions{margin-top:8px;font-size:11px}
+.authsearch-works-hidden{display:none!important}
 
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
 .authsearch-toolbar-spaced { margin-top: 10px; }
@@ -1131,6 +1149,7 @@ body.authsearch-docked #authsearch-tab {
         }
 
         function renderModoPesquisa() {
+            STATE.obrasCarregadas = false;
             var a = STATE.authority || {};
             var qid = primeiroQidValido(a.wikidata || []);
             var pesquisa = '' +
@@ -1144,11 +1163,11 @@ body.authsearch-docked #authsearch-tab {
 
             var html = '';
             if (qid) {
-                html += criarAccordion('graph', 'Grafo de identidade', 'Informação enriquecida de projetos Wikimedia', false,
+                html += criarAccordion('graph', 'Painel de Identidade', 'Wikidata, Wikimedia Commons e Wikipedia', false,
                     '<div id="authsearch-graph-area" class="authsearch-graph-slot" data-qid="' + escaparAttr(qid) + '"></div>');
             }
-            html += criarAccordion('search', 'Identificadores e reconciliação', 'Pesquisa Wikidata + VIAF', true, pesquisa);
-            html += criarAccordion('works', 'Obras no catálogo', 'Registos bibliográficos ligados a esta autoridade', false,
+            html += criarAccordion('search', 'Identificadores e reconciliação', 'Pesquisa Wikidata + VIAF e formas variantes 400', false, pesquisa);
+            html += criarAccordion('works', 'Obras no catálogo', 'Lista integral dos bibliográficos ligados à autoridade', false,
                 '<div id="authsearch-works"><div class="authsearch-empty">Abra esta secção para carregar as obras ligadas.</div></div>');
 
             $("#authsearch-body").html(html);
@@ -1158,10 +1177,10 @@ body.authsearch-docked #authsearch-tab {
 
         function criarAccordion(id, titulo, subtitulo, aberto, conteudo) {
             return '<section class="authsearch-accordion' + (aberto ? ' is-open' : '') + '" data-accordion="' + escaparAttr(id) + '">' +
-                '<button type="button" class="authsearch-accordion-toggle" aria-expanded="' + (aberto ? 'true' : 'false') + '">' +
-                    '<span class="authsearch-accordion-copy"><span>' + escaparHTML(titulo) + '</span><span class="authsearch-accordion-sub">' + escaparHTML(subtitulo || '') + '</span></span>' +
-                    '<span class="authsearch-accordion-chevron">›</span>' +
-                '</button>' +
+                '<div class="authsearch-accordion-toggle" role="button" tabindex="0" aria-expanded="' + (aberto ? 'true' : 'false') + '">' +
+                    '<span class="authsearch-accordion-copy"><span class="authsearch-accordion-title">' + escaparHTML(titulo) + '</span><span class="authsearch-accordion-sub">' + escaparHTML(subtitulo || '') + '</span></span>' +
+                    '<span class="authsearch-accordion-chevron" aria-hidden="true">›</span>' +
+                '</div>' +
                 '<div class="authsearch-accordion-body">' + conteudo + '</div>' +
             '</section>';
         }
@@ -1174,7 +1193,7 @@ body.authsearch-docked #authsearch-tab {
 
             var $area = $("#authsearch-graph-area");
             if (!$area.length) return;
-            $area.html('<div class="authsearch-loading">A construir grafo de identidade…</div>');
+            $area.html('<div class="authsearch-loading">A construir Painel de Identidade…</div>');
 
             var relatedIds = removerDuplicados(
                 obterIdsClaims(entidade, "P27").concat(obterIdsClaims(entidade, "P106"))
@@ -1224,20 +1243,6 @@ body.authsearch-docked #authsearch-tab {
                 html += '<div class="authsearch-kp-section" id="authsearch-kp-wikipedia"><div class="authsearch-kp-wiki">A carregar resumo…</div></div>';
 
                 if (aliases.length) html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Outros nomes</div><div class="authsearch-kp-aliases">' + escaparHTML(aliases.join(' · ')) + '</div></div>';
-
-                var variantes = removerDuplicados(aliases.concat(pseudonimos)).filter(function (nomeVariante) {
-                    return limparTexto(nomeVariante).toLowerCase() !== limparTexto(label).toLowerCase();
-                }).slice(0, 12);
-                if (variantes.length) {
-                    html += '<div class="authsearch-kp-section"><div class="authsearch-kp-section-title">Formas variantes sugeridas</div><div class="authsearch-desc">Candidatos do Wikidata para eventual preenchimento do campo 400. Confirme sempre a forma antes de aplicar.</div><div class="authsearch-variants-list">';
-                    variantes.forEach(function (nomeVariante) {
-                        var comp = decomporVariantePara400(nomeVariante);
-                        html += '<div class="authsearch-variant-row"><span class="authsearch-variant-name">' + escaparHTML(nomeVariante) + '</span>' +
-                            (comp ? '<button type="button" class="authsearch-btn authsearch-add-400" data-forma="' + escaparAttr(nomeVariante) + '">Adicionar ao 400</button>' : '<span class="authsearch-muted" title="Forma não decomponível com segurança">Rever</span>') +
-                            '</div>';
-                    });
-                    html += '</div></div>';
-                }
 
                 var idsHtml = '';
                 idsHtml += idButton('Wikidata', qid, 'https://www.wikidata.org/wiki/' + encodeURIComponent(qid));
@@ -1497,47 +1502,164 @@ body.authsearch-docked #authsearch-tab {
             atualizarAuthorityState();
             var qid=String($area.attr("data-qid") || primeiroQidValido((STATE.authority&&STATE.authority.wikidata)||[])).toUpperCase();
             if (!/^Q\d+$/.test(qid)) return;
-            $area.html('<div class="authsearch-loading">A carregar grafo de identidade…</div>');
+            $area.html('<div class="authsearch-loading">A carregar Painel de Identidade…</div>');
             carregarEntidadeWikidata(qid,function(entidade){
                 if(!entidade){$area.html('<div class="authsearch-error">Não foi possível carregar a entidade Wikidata.</div>');return;}
                 renderFichaAutoridade(entidade,qid);
             });
         }
 
-        /** Pesquisa no catálogo staff pelo número da autoridade e extrai os resultados da própria página Koha. */
-        function carregarObrasCatalogo() {
-            var $alvo=$("#authsearch-works"); if(!$alvo.length || STATE.obrasCarregadas) return;
-            atualizarAuthorityState();
-            var authid=String((STATE.authority&&STATE.authority.authid)||"");
-            if(!/^\d+$/.test(authid)){ $alvo.html('<div class="authsearch-empty">A autoridade ainda não tem AuthID persistido.</div>'); return; }
-            $alvo.html('<div class="authsearch-loading">A carregar obras ligadas…</div>');
-            var url='/cgi-bin/koha/catalogue/search.pl?q='+encodeURIComponent('an:'+authid)+'&count=40';
-            var req=$.ajax({url:url,dataType:'html',timeout:CONFIG.timeout}).done(function(html){
-                var doc=$.parseHTML(html,document,true), $doc=$(doc), vistos={}, obras=[];
-                $doc.find('a[href*="/cgi-bin/koha/catalogue/detail.pl?biblionumber="], a[href*="detail.pl?biblionumber="]').each(function(){
-                    var $a=$(this), href=String($a.attr('href')||''), m=href.match(/[?&]biblionumber=(\d+)/); if(!m||vistos[m[1]]) return;
-                    var titulo=limparTexto($a.text()); if(!titulo) return; vistos[m[1]]=true;
-                    var $ctx=$a.closest('tr,li,.searchresults,.bibliocol,.result'); if(!$ctx.length) $ctx=$a.parent();
-                    var img=$ctx.find('img').first().attr('src')||'';
-                    if(img && !/^https?:\/\//i.test(img) && img.charAt(0)!=='/') img='';
-                    var txt=limparTexto($ctx.text()).slice(0,320);
-                    obras.push({biblionumber:m[1],titulo:titulo,href:href,img:img,meta:txt});
-                });
-                STATE.obrasCarregadas=true;
-                if(!obras.length){
-                    $alvo.html('<div class="authsearch-empty">Não foram encontrados bibliográficos ligados nesta pesquisa.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="'+escaparAttr(url)+'" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>'); return;
-                }
-                var out='<div class="authsearch-works-meta"><strong>'+obras.length+'</strong> registos apresentados</div><div class="authsearch-works-grid">';
-                obras.slice(0,12).forEach(function(o){
-                    out+='<article class="authsearch-work">'+(o.img?'<img class="authsearch-work-cover" src="'+escaparAttr(o.img)+'" alt="">':'<div class="authsearch-work-placeholder">Sem capa</div>')+
-                        '<div class="authsearch-work-title"><a href="'+escaparAttr(o.href)+'" target="_blank" rel="noopener noreferrer">'+escaparHTML(o.titulo)+'</a></div></article>';
-                });
-                out+='</div><div class="authsearch-works-actions"><a class="authsearch-link" href="'+escaparAttr(url)+'" target="_blank" rel="noopener noreferrer">Ver todos no catálogo</a></div>';
-                $alvo.html(out);
-            }).fail(function(){
-                $alvo.html('<div class="authsearch-error">Não foi possível consultar os bibliográficos ligados.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="'+escaparAttr(url)+'" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
+        /**
+         * Extrai bibliográficos de uma página de resultados do catálogo staff.
+         * A descrição recolhida aqui serve apenas de fallback até o ISBD real ser carregado.
+         */
+        function extrairObrasPagina(html) {
+            var doc = $.parseHTML(html, document, true), $doc = $(doc), obras = [], vistos = {};
+            $doc.find('a[href*="/cgi-bin/koha/catalogue/detail.pl?biblionumber="], a[href*="detail.pl?biblionumber="]').each(function () {
+                var $a = $(this), href = String($a.attr('href') || ''), m = href.match(/[?&]biblionumber=(\d+)/);
+                if (!m || vistos[m[1]]) return;
+                var titulo = limparTexto($a.text());
+                if (!titulo) return;
+                vistos[m[1]] = true;
+                var $ctx = $a.closest('tr, li, .searchresults, .bibliocol, .result, .bibliographic-information');
+                if (!$ctx.length) $ctx = $a.parent();
+                var img = String($ctx.find('img').first().attr('src') || '');
+                if (img && !/^https?:\/\//i.test(img) && img.charAt(0) !== '/') img = '';
+                var fallback = limitarTexto(limparTexto($ctx.text()), 700);
+                obras.push({ biblionumber: m[1], titulo: titulo, href: href, img: img, fallback: fallback });
             });
+            return obras;
+        }
+
+        function encontrarProximaPaginaCatalogo(html, urlAtual) {
+            var doc = $.parseHTML(html, document, true), $doc = $(doc), href = '';
+            var $next = $doc.find('a[rel="next"]').first();
+            if (!$next.length) {
+                $doc.find('.pagination a, nav a').each(function () {
+                    var txt = limparTexto($(this).text()).toLowerCase();
+                    var title = limparTexto($(this).attr('title') || '').toLowerCase();
+                    if (/^(next|próximo|seguinte|›|»)$/.test(txt) || /next|próxim|seguinte/.test(title)) {
+                        $next = $(this); return false;
+                    }
+                });
+            }
+            href = $next.length ? String($next.attr('href') || '') : '';
+            if (!href) return '';
+            try { return new URL(href, new URL(urlAtual, window.location.origin)).pathname + new URL(href, new URL(urlAtual, window.location.origin)).search; }
+            catch (_e) { return ''; }
+        }
+
+        /** Carrega todas as páginas de resultados ligadas à autoridade, com limite de segurança. */
+        function carregarTodasObrasCatalogo(urlInicial, callback) {
+            var obras = [], vistos = {}, paginas = {}, pagina = 0, maxPaginas = 50;
+            function carregar(url) {
+                if (!url || paginas[url] || pagina >= maxPaginas) { callback(null, obras); return; }
+                paginas[url] = true; pagina++;
+                var req = $.ajax({ url: url, dataType: 'html', timeout: CONFIG.timeout }).done(function (html) {
+                    extrairObrasPagina(html).forEach(function (o) {
+                        if (!vistos[o.biblionumber]) { vistos[o.biblionumber] = true; obras.push(o); }
+                    });
+                    var proxima = encontrarProximaPaginaCatalogo(html, url);
+                    if (proxima && !paginas[proxima]) carregar(proxima); else callback(null, obras);
+                }).fail(function () { callback(new Error('catalogue'), obras); });
+                registarPedido(req);
+            }
+            carregar(urlInicial);
+        }
+
+        function renderObrasCatalogo(obras, urlPesquisa) {
+            var $alvo = $('#authsearch-works');
+            if (!$alvo.length) return;
+            if (!obras.length) {
+                $alvo.html('<div class="authsearch-empty">Não foram encontrados bibliográficos ligados nesta pesquisa.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="' + escaparAttr(urlPesquisa) + '" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
+                return;
+            }
+
+            var out = '<div class="authsearch-works-toolbar"><div class="authsearch-works-head"><div class="authsearch-works-meta"><strong>' + obras.length + '</strong> registos ligados</div><a class="authsearch-link" href="' + escaparAttr(urlPesquisa) + '" target="_blank" rel="noopener noreferrer">Abrir no catálogo</a></div>' +
+                '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar esta lista…"></div>' +
+                '<div class="authsearch-works-list" id="authsearch-works-list">';
+
+            obras.forEach(function (o) {
+                var textoFiltro = limparTexto((o.titulo || '') + ' ' + (o.fallback || '')).toLowerCase();
+                out += '<article class="authsearch-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '" data-filter="' + escaparAttr(textoFiltro) + '">' +
+                    (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
+                    '<div class="authsearch-work-body"><div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(o.titulo) + '</a></div>' +
+                    '<div class="authsearch-work-isbd is-loading" data-fallback="' + escaparAttr(o.fallback || '') + '">A carregar ISBD…</div>' +
+                    '<div class="authsearch-work-id">Registo #' + escaparHTML(o.biblionumber) + '</div></div></article>';
+            });
+            out += '</div>';
+            $alvo.html(out);
+            observarISBDVisivel();
+        }
+
+        function extrairTextoISBD(html) {
+            var doc = $.parseHTML(html, document, true), $doc = $(doc);
+            var $isbd = $doc.find('#isbdcontents, #isbd, .isbd').first();
+            var texto = $isbd.length ? limparTexto($isbd.text()) : '';
+            return limitarTexto(texto, 2400);
+        }
+
+        function carregarISBDObra($obra) {
+            if (!$obra || !$obra.length || $obra.attr('data-isbd-loaded') === '1' || $obra.attr('data-isbd-loading') === '1') return;
+            var biblionumber = String($obra.attr('data-biblionumber') || '');
+            if (!/^\d+$/.test(biblionumber)) return;
+            $obra.attr('data-isbd-loading', '1');
+            var $dest = $obra.find('.authsearch-work-isbd');
+            var fallback = limitarTexto(String($dest.attr('data-fallback') || ''), 700);
+            var req = $.ajax({ url: '/cgi-bin/koha/catalogue/ISBDdetail.pl?biblionumber=' + encodeURIComponent(biblionumber), dataType: 'html', timeout: CONFIG.timeout })
+                .done(function (html) {
+                    var texto = extrairTextoISBD(html) || fallback || 'Descrição ISBD não disponível.';
+                    $dest.text(texto).removeClass('is-loading');
+                    $obra.attr('data-isbd-loaded', '1');
+                }).fail(function () {
+                    $dest.text(fallback || 'Descrição ISBD não disponível.').removeClass('is-loading');
+                    $obra.attr('data-isbd-loaded', '1');
+                }).always(function () { $obra.removeAttr('data-isbd-loading'); });
             registarPedido(req);
+        }
+
+        function observarISBDVisivel() {
+            var root = document.getElementById('authsearch-works-list');
+            if (!root) return;
+            var itens = root.querySelectorAll('.authsearch-work[data-biblionumber]');
+            if (!('IntersectionObserver' in window)) {
+                $(itens).each(function () { carregarISBDObra($(this)); });
+                return;
+            }
+            var observer = new IntersectionObserver(function (entries, obs) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    carregarISBDObra($(entry.target));
+                    obs.unobserve(entry.target);
+                });
+            }, { root: root, rootMargin: '160px 0px' });
+            Array.prototype.forEach.call(itens, function (item) { observer.observe(item); });
+        }
+
+        function filtrarObrasCatalogo(valor) {
+            var termo = limparTexto(valor || '').toLowerCase();
+            $('#authsearch-works-list .authsearch-work').each(function () {
+                var texto = String($(this).attr('data-filter') || '');
+                $(this).toggleClass('authsearch-works-hidden', !!termo && texto.indexOf(termo) === -1);
+            });
+        }
+
+        function carregarObrasCatalogo() {
+            var $alvo = $('#authsearch-works');
+            if (!$alvo.length || STATE.obrasCarregadas) return;
+            atualizarAuthorityState();
+            var authid = String((STATE.authority && STATE.authority.authid) || '');
+            if (!/^\d+$/.test(authid)) { $alvo.html('<div class="authsearch-empty">A autoridade ainda não tem AuthID persistido.</div>'); return; }
+            $alvo.html('<div class="authsearch-loading">A carregar a lista integral de obras ligadas…</div>');
+            var url = '/cgi-bin/koha/catalogue/search.pl?q=' + encodeURIComponent('an:' + authid) + '&count=50';
+            carregarTodasObrasCatalogo(url, function (erro, obras) {
+                STATE.obrasCarregadas = !erro;
+                if (erro && !obras.length) {
+                    $alvo.html('<div class="authsearch-error">Não foi possível consultar os bibliográficos ligados.</div><div class="authsearch-works-actions"><a class="authsearch-link" href="' + escaparAttr(url) + '" target="_blank" rel="noopener noreferrer">Abrir pesquisa no catálogo</a></div>');
+                    return;
+                }
+                renderObrasCatalogo(obras, url);
+            });
         }
 
         /* ======================================================
@@ -1562,27 +1684,10 @@ body.authsearch-docked #authsearch-tab {
                     }
                 })
 
-                .on("click.authsearchv2", "#authsearch-toggle-graph", function () {
-                    atualizarAuthorityState();
-                    var qid = String($(this).data("qid") || primeiroQidValido((STATE.authority && STATE.authority.wikidata) || [])).toUpperCase();
-                    if (!/^Q\d+$/.test(qid)) return;
-                    var $area = $("#authsearch-graph-area");
-                    var $btn = $(this);
-                    if ($area.children().length) {
-                        $area.empty();
-                        $btn.text("Ver");
-                        return;
-                    }
-                    $btn.text("Fechar");
-                    STATE.qidAtual = qid;
-                    $area.html('<div class="authsearch-loading">A carregar grafo de identidade…</div>');
-                    carregarEntidadeWikidata(qid, function (entidade) {
-                        if (!entidade) {
-                            $area.html('<div class="authsearch-error">Não foi possível carregar a entidade Wikidata.</div>');
-                            return;
-                        }
-                        renderFichaAutoridade(entidade, qid);
-                    });
+                .on("keydown.authsearchv2", ".authsearch-accordion-toggle", function (e) {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    $(this).trigger("click");
                 })
                 .on("click.authsearchv2", ".authsearch-accordion-toggle", function () {
                     var $acc = $(this).closest(".authsearch-accordion");
@@ -1593,6 +1698,9 @@ body.authsearch-docked #authsearch-tab {
                     var tipo = String($acc.attr("data-accordion") || "");
                     if (tipo === "graph") carregarGrafoAccordion();
                     if (tipo === "works") carregarObrasCatalogo();
+                })
+                .on("input.authsearchv2", "#authsearch-works-filter", function () {
+                    filtrarObrasCatalogo($(this).val());
                 })
                 .on("click.authsearchv2", ".authsearch-add-400", function (e) {
                     e.preventDefault(); e.stopPropagation();
@@ -1789,6 +1897,21 @@ body.authsearch-docked #authsearch-tab {
                 if (ocupacoes.length) html += meta("Ocupação", ocupacoes.join(", "));
                 if (aliases.length) html += meta("Outros nomes", aliases.join(", "));
                 if (viaf) html += meta("VIAF", viaf);
+
+                var variantes400 = removerDuplicados(aliases.concat(obterValoresTextoClaims(entidade, "P742"))).filter(function (nomeVariante) {
+                    return limparTexto(nomeVariante).toLowerCase() !== limparTexto(label).toLowerCase();
+                }).slice(0, 8);
+                if (variantes400.length) {
+                    html += '<div class="authsearch-result-variants"><div class="authsearch-result-variants-title">Candidatos ao 400</div><div class="authsearch-variants-list">';
+                    variantes400.forEach(function (nomeVariante) {
+                        var comp400 = decomporVariantePara400(nomeVariante);
+                        html += '<div class="authsearch-variant-row"><span class="authsearch-variant-name">' + escaparHTML(nomeVariante) + '</span>' +
+                            (comp400 ? '<button type="button" class="authsearch-inline-action authsearch-add-400" data-forma="' + escaparAttr(nomeVariante) + '">Adicionar ao 400</button>' : '<span class="authsearch-muted" title="Forma não decomponível com segurança">Rever</span>') +
+                            '</div>';
+                    });
+                    html += '</div></div>';
+                }
+
                 html += '<div class="authsearch-actions">' +
                     '<a class="authsearch-link" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
                     '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(qid) + '" data-fonte="wikidata">Aplicar Wikidata</button>' +
@@ -2237,34 +2360,24 @@ body.authsearch-docked #authsearch-tab {
 
 
         /**
-         * Garante o controlo do grafo sem reconstruir a pesquisa.
+         * Garante a secção do Painel de Identidade sem reconstruir a pesquisa.
          * É usado após aplicar um QID para manter Wikidata e VIAF visíveis no mesmo DOM.
          */
         function garantirControloGrafo(qid) {
             qid = String(qid || "").toUpperCase();
             if (!/^Q\d+$/.test(qid)) return;
-
             STATE.qidAtual = qid;
 
-            var $toggle = $("#authsearch-toggle-graph");
-            if ($toggle.length) {
-                $toggle.attr("data-qid", qid).data("qid", qid);
+            var $acc = $('.authsearch-accordion[data-accordion="graph"]');
+            if ($acc.length) {
+                $acc.find('#authsearch-graph-area').attr('data-qid', qid);
                 return;
             }
 
-            var html = '<div class="authsearch-graph-toggle">' +
-                '<div class="authsearch-graph-toggle-copy">' +
-                    '<span class="authsearch-graph-toggle-title">Grafo de identidade</span>' +
-                    '<span class="authsearch-graph-toggle-sub">Informação enriquecida de projetos Wikimedia</span>' +
-                '</div>' +
-                '<button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Ver</button>' +
-            '</div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>';
-
-            $("#authsearch-body").prepend(html);
-
-            carregarEntidadeWikidata(qid, function (entidade) {
-                if (entidade) STATE.entidadeAtual = entidade;
-            });
+            var html = criarAccordion('graph', 'Painel de Identidade', 'Wikidata, Wikimedia Commons e Wikipedia', false,
+                '<div id="authsearch-graph-area" class="authsearch-graph-slot" data-qid="' + escaparAttr(qid) + '"></div>');
+            $('#authsearch-body').prepend(html);
+            carregarEntidadeWikidata(qid, function (entidade) { if (entidade) STATE.entidadeAtual = entidade; });
         }
 
         /**
