@@ -20,7 +20,8 @@
 
     camposValidos: [
       'autor',
-      'co-autor'
+      'co-autor',
+      'autor secundário'
     ],
 
     camposExcluidos: [
@@ -116,7 +117,7 @@
       const label = mapearLabel(celulas[0].textContent);
       if (!CONFIG.camposValidos.includes(label)) return;
 
-      const links = Array.from(celulas[1].querySelectorAll('a[href*="opac-search.pl"][href*="q="], a[href*="opac-authoritiesdetail.pl"][href*="authid="]'));
+      const links = Array.from(celulas[1].querySelectorAll('a[href*="opac-search.pl"][href*="q="]'));
 
       links.forEach(function (a) {
         const texto = limparTexto(a.textContent);
@@ -136,7 +137,7 @@
 
     if (!autores.length) {
       const links = Array.from(
-        document.querySelectorAll('a[href*="opac-search.pl"][href*="q="], a[href*="opac-authoritiesdetail.pl"][href*="authid="]')
+        document.querySelectorAll('a[href*="opac-search.pl"][href*="q="]')
       );
 
       links.forEach(function (a) {
@@ -1870,239 +1871,335 @@
   }
 })();
 
-
 /* ==========================================================
-   AUTHBOX — Exploração de obras do autor
-   Módulo adicional e independente da caixa original.
+   EXTENSÃO: descoberta de obras do autor
+   Acrescentada ao código funcional original sem alterar a sua lógica.
+   Funciona apenas na página pública da autoridade.
    ========================================================== */
 (function () {
   'use strict';
 
-  function paginaEhAutoridade() {
-    return window.location.pathname.indexOf('/cgi-bin/koha/opac-authoritiesdetail.pl') !== -1;
-  }
+  if (!window.location.pathname.includes('/cgi-bin/koha/opac-authoritiesdetail.pl')) return;
 
-  if (!paginaEhAutoridade()) return;
+  const authid = new URLSearchParams(window.location.search).get('authid');
+  if (!authid || !/^\d+$/.test(authid)) return;
 
-  const CFG = {
-    maxPaginas: 5,
-    maxRegistos: 100,
-    timeout: 12000
-  };
+  const ID = 'authbox-obras-autor';
+  const STYLE_ID = 'authbox-obras-autor-style';
+  const SEARCH_LIMIT = 200;
+  const CONCURRENCY = 5;
 
-  function arrancar() {
-    const authid = obterAuthid();
-    if (!authid) return;
-    esperarCaixaOriginal(0, function (caixa) {
-      if (!caixa || document.getElementById('authbox-discovery')) return;
-      instalarEstilos();
-      const bloco = criarBloco(authid);
-      caixa.insertAdjacentElement('afterend', bloco);
-      carregar(authid, bloco);
+  function start() {
+    if (document.getElementById(ID)) return;
+
+    const authorityBox = document.querySelector('#authority-entity-opac');
+    if (!authorityBox) {
+      setTimeout(start, 600);
+      return;
+    }
+
+    const catalogueBox = authorityBox.querySelector('.authority-entity-catalogue');
+    if (!catalogueBox) {
+      setTimeout(start, 400);
+      return;
+    }
+
+    installStyles();
+    const shell = buildShell();
+    catalogueBox.appendChild(shell);
+    loadWorks(shell).catch(function (err) {
+      console.error('AuthBox obras:', err);
+      const status = shell.querySelector('.authbox-obras-status');
+      if (status) status.textContent = 'Não foi possível carregar as obras do autor.';
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', arrancar, { once: true });
-  } else {
-    arrancar();
+  function buildShell() {
+    const shell = document.createElement('div');
+    shell.id = ID;
+    shell.innerHTML =
+      '<div class="authbox-obras-head">' +
+        '<div class="authbox-obras-title">Obras do autor</div>' +
+        '<div class="authbox-obras-status">A procurar obras no catálogo…</div>' +
+      '</div>' +
+      '<div class="authbox-obras-wrap" hidden>' +
+        '<button type="button" class="authbox-obras-nav authbox-obras-prev" aria-label="Anterior">‹</button>' +
+        '<div class="authbox-obras-carousel"></div>' +
+        '<button type="button" class="authbox-obras-nav authbox-obras-next" aria-label="Seguinte">›</button>' +
+      '</div>';
+
+    const carousel = shell.querySelector('.authbox-obras-carousel');
+    shell.querySelector('.authbox-obras-prev').addEventListener('click', function () {
+      carousel.scrollBy({ left: -Math.max(320, carousel.clientWidth * 0.8), behavior: 'smooth' });
+    });
+    shell.querySelector('.authbox-obras-next').addEventListener('click', function () {
+      carousel.scrollBy({ left: Math.max(320, carousel.clientWidth * 0.8), behavior: 'smooth' });
+    });
+
+    return shell;
   }
 
-  function obterAuthid() {
+  async function loadWorks(shell) {
+    const records = await fetchLinkedRecords();
+    const status = shell.querySelector('.authbox-obras-status');
+
+    if (!records.length) {
+      status.textContent = 'Não foram encontrados registos associados.';
+      return;
+    }
+
+    status.textContent = 'A identificar obras do autor…';
+    const works = await filterAuthorWorks(records);
+
+    if (!works.length) {
+      status.textContent = 'Não foram encontradas obras do autor.';
+      return;
+    }
+
+    status.textContent = works.length + ' obra' + (works.length === 1 ? '' : 's') + ' encontrada' + (works.length === 1 ? '' : 's');
+
+    const carousel = shell.querySelector('.authbox-obras-carousel');
+    works.forEach(function (work) {
+      carousel.appendChild(buildCard(work));
+    });
+    shell.querySelector('.authbox-obras-wrap').hidden = false;
+  }
+
+  async function fetchLinkedRecords() {
+    const firstUrl = '/cgi-bin/koha/opac-search.pl?idx=an,ext&q=' + encodeURIComponent(authid) + '&count=50';
+    const out = [];
+    const seen = new Set();
+    let url = firstUrl;
+    let pages = 0;
+
+    while (url && out.length < SEARCH_LIMIT && pages < 6) {
+      pages++;
+      const html = await fetchText(url);
+      const doc = parseHtml(html);
+
+      Array.from(doc.querySelectorAll('a[href*="opac-detail.pl?biblionumber="]')).forEach(function (a) {
+        const bib = getBiblionumber(a.getAttribute('href'));
+        if (!bib || seen.has(bib)) return;
+
+        const block = a.closest('tr, .searchresults, .result, .bibliocol, li, article, .search-result') || a.parentElement;
+        const titleLink = findTitleLink(block, bib) || a;
+        const title = cleanText(titleLink.textContent);
+        if (!title || title.length < 2) return;
+
+        seen.add(bib);
+        out.push({
+          biblionumber: bib,
+          title: title,
+          href: '/cgi-bin/koha/opac-detail.pl?biblionumber=' + encodeURIComponent(bib),
+          marcHref: '/cgi-bin/koha/opac-MARCdetail.pl?biblionumber=' + encodeURIComponent(bib),
+          cover: findCover(block),
+          year: findYear(block)
+        });
+      });
+
+      url = findNextPage(doc, url);
+    }
+
+    return out;
+  }
+
+  function findTitleLink(block, bib) {
+    if (!block) return null;
+    const links = Array.from(block.querySelectorAll('a[href*="opac-detail.pl?biblionumber="]'));
+    return links.find(function (a) {
+      return getBiblionumber(a.getAttribute('href')) === bib && cleanText(a.textContent).length > 2;
+    }) || null;
+  }
+
+  function findCover(block) {
+    if (!block) return '';
+    const images = Array.from(block.querySelectorAll('img'));
+    for (const img of images) {
+      const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
+      const alt = cleanText(img.getAttribute('alt')).toLowerCase();
+      if (!src || /logo|spinner|icon|icone|ícone/i.test(src + ' ' + alt)) continue;
+      try { return new URL(src, window.location.origin).href; } catch (_e) {}
+    }
+    return '';
+  }
+
+  function findYear(block) {
+    const text = cleanText(block ? block.textContent : '');
+    const m = text.match(/\b(1[5-9]\d{2}|20\d{2}|21\d{2})\b/);
+    return m ? m[1] : '';
+  }
+
+  function findNextPage(doc, currentUrl) {
+    let next = doc.querySelector('a[rel="next"]');
+    if (!next) {
+      next = Array.from(doc.querySelectorAll('.pagination a, nav a')).find(function (a) {
+        const text = cleanText(a.textContent).toLowerCase();
+        const label = cleanText(a.getAttribute('aria-label') || a.getAttribute('title')).toLowerCase();
+        return /^(seguinte|próximo|proximo|next|›|»)$/.test(text) || /seguinte|próximo|proximo|next/.test(label);
+      });
+    }
+    if (!next || !next.getAttribute('href')) return '';
     try {
-      const v = new URL(window.location.href).searchParams.get('authid') || '';
-      return /^\d+$/.test(v) ? v : '';
-    } catch (e) {
+      const u = new URL(next.getAttribute('href'), new URL(currentUrl, window.location.origin));
+      return u.pathname + u.search;
+    } catch (_e) {
       return '';
     }
   }
 
-  function esperarCaixaOriginal(n, callback) {
-    const caixa = document.getElementById('authority-entity-opac');
-    if (caixa) return callback(caixa);
-    if (n >= 40) return callback(null);
-    window.setTimeout(function () { esperarCaixaOriginal(n + 1, callback); }, 200);
+  async function filterAuthorWorks(records) {
+    const works = [];
+    let index = 0;
+
+    async function worker() {
+      while (index < records.length) {
+        const record = records[index++];
+        try {
+          const html = await fetchText(record.marcHref);
+          if (hasAuthorityIn700(html, authid)) works.push(record);
+        } catch (err) {
+          console.warn('AuthBox obras: não foi possível verificar o registo ' + record.biblionumber, err);
+        }
+      }
+    }
+
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, records.length) }, function () { return worker(); }));
+
+    const seen = new Set();
+    return works
+      .filter(function (w) {
+        if (seen.has(w.biblionumber)) return false;
+        seen.add(w.biblionumber);
+        return true;
+      })
+      .sort(function (a, b) {
+        const ay = parseInt(a.year || '0', 10);
+        const by = parseInt(b.year || '0', 10);
+        if (ay !== by) return by - ay;
+        return a.title.localeCompare(b.title, 'pt');
+      });
   }
 
-  function criarBloco(authid) {
-    const sec = document.createElement('section');
-    sec.id = 'authbox-discovery';
-    sec.innerHTML =
-      '<div class="authbox-discovery-head">' +
-        '<div><div class="authbox-discovery-kicker">No catálogo</div><h2>Obras do autor</h2></div>' +
-        '<a class="authbox-discovery-all" href="/cgi-bin/koha/opac-search.pl?idx=an,ext&q=' + encodeURIComponent(authid) + '">Ver todos os títulos</a>' +
-      '</div>' +
-      '<div class="authbox-discovery-status">A procurar obras associadas…</div>' +
-      '<div class="authbox-discovery-shell" hidden>' +
-        '<button type="button" class="authbox-discovery-nav prev" aria-label="Anterior">‹</button>' +
-        '<div class="authbox-discovery-track"></div>' +
-        '<button type="button" class="authbox-discovery-nav next" aria-label="Seguinte">›</button>' +
-      '</div>';
+  function hasAuthorityIn700(html, id) {
+    const doc = parseHtml(html);
+    Array.from(doc.querySelectorAll('script, style')).forEach(function (el) { el.remove(); });
+    const idRe = new RegExp('(?:\\$?9\\s*[:=]?\\s*|\\b9\\s+)' + escapeRegex(id) + '(?:\\b|$)', 'i');
 
-    const track = sec.querySelector('.authbox-discovery-track');
-    sec.querySelector('.prev').addEventListener('click', function () {
-      track.scrollBy({ left: -Math.max(320, track.clientWidth * 0.8), behavior: 'smooth' });
+    const rows = Array.from(doc.querySelectorAll('tr'));
+    for (const row of rows) {
+      const text = cleanText(row.textContent).replace(/\u00a0/g, ' ');
+      if (/(?:^|\s)700(?:\s|$)/.test(text) && idRe.test(text)) return true;
+    }
+
+    const lines = String(doc.body ? doc.body.innerText : doc.documentElement.textContent || '')
+      .replace(/\u00a0/g, ' ')
+      .split(/\n+/)
+      .map(cleanText)
+      .filter(Boolean);
+
+    return lines.some(function (line) {
+      return /^700(?:\s|$)/.test(line) && idRe.test(line);
     });
-    sec.querySelector('.next').addEventListener('click', function () {
-      track.scrollBy({ left: Math.max(320, track.clientWidth * 0.8), behavior: 'smooth' });
-    });
-    return sec;
   }
 
-  async function carregar(authid, sec) {
-    const status = sec.querySelector('.authbox-discovery-status');
+  function buildCard(work) {
+    const a = document.createElement('a');
+    a.className = 'authbox-obras-card';
+    a.href = work.href;
+    a.title = work.title;
+
+    const cover = document.createElement('div');
+    cover.className = 'authbox-obras-cover';
+    if (work.cover) {
+      const img = document.createElement('img');
+      img.src = work.cover;
+      img.alt = '';
+      img.loading = 'lazy';
+      cover.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'authbox-obras-placeholder';
+      placeholder.textContent = 'Sem capa';
+      cover.appendChild(placeholder);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'authbox-obras-card-title';
+    title.textContent = work.title;
+
+    a.appendChild(cover);
+    a.appendChild(title);
+
+    if (work.year) {
+      const year = document.createElement('div');
+      year.className = 'authbox-obras-year';
+      year.textContent = work.year;
+      a.appendChild(year);
+    }
+
+    return a;
+  }
+
+  async function fetchText(url) {
+    const response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('HTTP ' + response.status + ' em ' + url);
+    return response.text();
+  }
+
+  function parseHtml(html) {
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  function getBiblionumber(href) {
     try {
-      const obras = await pesquisarResultados(authid);
-      if (!obras.length) {
-        status.textContent = 'Não foram encontrados títulos associados a esta autoridade.';
-        return;
-      }
-      renderizar(obras, sec);
-      status.remove();
-    } catch (e) {
-      console.warn('AUTHBOX: erro ao carregar obras do autor', e);
-      status.textContent = 'Não foi possível carregar as obras do autor.';
+      const u = new URL(href || '', window.location.origin);
+      const bib = u.searchParams.get('biblionumber');
+      return bib && /^\d+$/.test(bib) ? bib : '';
+    } catch (_e) {
+      const m = String(href || '').match(/[?&]biblionumber=(\d+)/i);
+      return m ? m[1] : '';
     }
   }
 
-  async function pesquisarResultados(authid) {
-    let url = '/cgi-bin/koha/opac-search.pl?idx=an,ext&q=' + encodeURIComponent(authid) + '&count=50';
-    const out = [];
-    const vistos = new Set();
-    let paginas = 0;
-
-    while (url && paginas < CFG.maxPaginas && out.length < CFG.maxRegistos) {
-      paginas++;
-      const controller = new AbortController();
-      const timer = window.setTimeout(function () { controller.abort(); }, CFG.timeout);
-      let response;
-      try {
-        response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
-      } finally {
-        window.clearTimeout(timer);
-      }
-      if (!response.ok) break;
-      const html = await response.text();
-      const parsed = extrairResultados(html);
-      parsed.forEach(function (obra) {
-        if (!obra.biblionumber || vistos.has(obra.biblionumber)) return;
-        vistos.add(obra.biblionumber);
-        out.push(obra);
-      });
-      url = obterProximaPagina(html);
-    }
-    return out.slice(0, CFG.maxRegistos);
+  function cleanText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
   }
 
-  function extrairResultados(html) {
-    const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-    const obras = [];
-    const vistos = new Set();
-    const links = Array.from(doc.querySelectorAll('a[href*="opac-detail.pl?biblionumber="]'));
-
-    links.forEach(function (a) {
-      const href = a.getAttribute('href') || '';
-      const m = href.match(/[?&]biblionumber=(\d+)/i);
-      if (!m || vistos.has(m[1])) return;
-
-      const titulo = limparTexto(a.textContent || '');
-      if (!titulo || titulo.length < 2) return;
-
-      const contexto = a.closest('.searchresults, .bibliocol, .result, li, tr, article') || a.parentElement;
-      let capa = '';
-      if (contexto) {
-        const img = contexto.querySelector('img[src]');
-        if (img) capa = normalizarUrl(img.getAttribute('src') || '');
-      }
-
-      vistos.add(m[1]);
-      obras.push({
-        biblionumber: m[1],
-        titulo: titulo,
-        href: normalizarUrl(href),
-        capa: capa
-      });
-    });
-
-    return obras;
+  function escapeRegex(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  function obterProximaPagina(html) {
-    const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-    let a = doc.querySelector('a[rel="next"]');
-    if (!a) {
-      a = Array.from(doc.querySelectorAll('.pagination a, nav a')).find(function (el) {
-        const t = limparTexto(el.textContent || '').toLowerCase();
-        const title = limparTexto(el.getAttribute('title') || '').toLowerCase();
-        return /^(seguinte|próximo|next|›|»)$/.test(t) || /seguinte|próxim|next/.test(title);
-      });
-    }
-    return a ? normalizarUrl(a.getAttribute('href') || '') : '';
-  }
-
-  function renderizar(obras, sec) {
-    const shell = sec.querySelector('.authbox-discovery-shell');
-    const track = sec.querySelector('.authbox-discovery-track');
-    shell.hidden = false;
-    track.innerHTML = obras.map(function (obra) {
-      const capa = obra.capa
-        ? '<img loading="lazy" src="' + escapeAttr(obra.capa) + '" alt="">'
-        : '<span class="authbox-discovery-placeholder">Sem capa</span>';
-      return '<a class="authbox-discovery-book" href="' + escapeAttr(obra.href) + '">' +
-        '<span class="authbox-discovery-cover">' + capa + '</span>' +
-        '<span class="authbox-discovery-title">' + escapeHtml(obra.titulo) + '</span>' +
-      '</a>';
-    }).join('');
-  }
-
-  function normalizarUrl(url) {
-    if (!url) return '';
-    try {
-      const u = new URL(url, window.location.origin);
-      if (u.origin !== window.location.origin) return url;
-      return u.pathname + u.search + u.hash;
-    } catch (e) {
-      return url;
-    }
-  }
-
-  function limparTexto(s) {
-    return String(s || '').replace(/\s+/g, ' ').trim();
-  }
-
-  function escapeHtml(s) {
-    return String(s || '').replace(/[&<>"']/g, function (c) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[c];
-    });
-  }
-
-  function escapeAttr(s) {
-    return escapeHtml(s);
-  }
-
-  function instalarEstilos() {
-    if (document.getElementById('authbox-discovery-style')) return;
+  function installStyles() {
+    if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
-    style.id = 'authbox-discovery-style';
+    style.id = STYLE_ID;
     style.textContent = `
-#authbox-discovery{margin:18px 0 28px;padding:18px 20px;border:1px solid #d9e2ea;border-radius:10px;background:#fff}
-.authbox-discovery-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px}
-.authbox-discovery-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:700;margin-bottom:2px}
-#authbox-discovery h2{font-size:20px;line-height:1.25;margin:0;color:#25364a}
-.authbox-discovery-all{font-size:12px;font-weight:700;white-space:nowrap}
-.authbox-discovery-status{padding:18px 0;color:#64748b;font-size:13px}
-.authbox-discovery-shell{position:relative}
-.authbox-discovery-track{display:flex;gap:16px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:thin;padding:2px 2px 12px}
-.authbox-discovery-book{flex:0 0 138px;min-width:138px;color:inherit;text-decoration:none!important}
-.authbox-discovery-cover{display:flex;width:138px;height:205px;background:#eef2f6;border-radius:6px;overflow:hidden;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(15,23,42,.13)}
-.authbox-discovery-cover img{width:100%;height:100%;object-fit:cover;display:block}
-.authbox-discovery-placeholder{font-size:11px;color:#7b8794;text-align:center;padding:12px}
-.authbox-discovery-title{display:block;margin-top:8px;font-size:12px;font-weight:700;line-height:1.35;color:#24577a}
-.authbox-discovery-book:hover .authbox-discovery-title{text-decoration:underline}
-.authbox-discovery-nav{position:absolute;top:84px;z-index:3;width:34px;height:34px;border-radius:50%;border:1px solid #cfd8e2;background:#fff;box-shadow:0 2px 7px rgba(15,23,42,.15);font-size:22px;line-height:1;cursor:pointer}
-.authbox-discovery-nav.prev{left:-15px}.authbox-discovery-nav.next{right:-15px}
-@media(max-width:700px){.authbox-discovery-nav{display:none}.authbox-discovery-book{flex-basis:116px;min-width:116px}.authbox-discovery-cover{width:116px;height:174px}}
-`;
+      #${ID} { margin-top:14px; padding-top:12px; border-top:1px solid #e5e7eb; }
+      #${ID} .authbox-obras-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:9px; }
+      #${ID} .authbox-obras-title { font-size:13px; font-weight:700; color:#111827; }
+      #${ID} .authbox-obras-status { font-size:11px; color:#6b7280; text-align:right; }
+      #${ID} .authbox-obras-wrap { position:relative; display:flex; align-items:center; gap:7px; }
+      #${ID} .authbox-obras-carousel { display:flex; gap:12px; overflow-x:auto; scroll-behavior:smooth; scrollbar-width:thin; padding:2px 1px 8px; flex:1; }
+      #${ID} .authbox-obras-card { flex:0 0 116px; width:116px; color:#111827; text-decoration:none !important; }
+      #${ID} .authbox-obras-cover { width:116px; height:174px; border:1px solid #e5e7eb; border-radius:7px; overflow:hidden; background:#f8fafc; box-shadow:0 1px 3px rgba(15,23,42,.08); }
+      #${ID} .authbox-obras-cover img { width:100%; height:100%; display:block; object-fit:cover; }
+      #${ID} .authbox-obras-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:12px; box-sizing:border-box; text-align:center; font-size:11px; color:#94a3b8; }
+      #${ID} .authbox-obras-card-title { margin-top:6px; font-size:11.5px; line-height:1.25; font-weight:600; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+      #${ID} .authbox-obras-year { margin-top:3px; font-size:10.5px; color:#6b7280; }
+      #${ID} .authbox-obras-nav { flex:0 0 28px; width:28px; height:38px; border:1px solid #dbe3ec; border-radius:999px; background:#fff; color:#475569; font-size:22px; line-height:1; cursor:pointer; }
+      #${ID} .authbox-obras-nav:hover { background:#f8fafc; }
+      @media (max-width:700px) {
+        #${ID} .authbox-obras-nav { display:none; }
+        #${ID} .authbox-obras-card { flex-basis:104px; width:104px; }
+        #${ID} .authbox-obras-cover { width:104px; height:156px; }
+      }
+    `;
     document.head.appendChild(style);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(start, 1200); }, { once: true });
+  } else {
+    setTimeout(start, 1200);
   }
 })();
