@@ -8,8 +8,8 @@
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V13_ATIVO) return;
-    window.AUTHSEARCH_V13_ATIVO = true;
+    if (window.AUTHSEARCH_V131_ATIVO) return;
+    window.AUTHSEARCH_V131_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -525,20 +525,20 @@
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv13")
-                .on("click.authsearchv13", "#authsearch-tab", function () {
+                .off(".authsearchv131")
+                .on("click.authsearchv131", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv13", "#authsearch-close", fecharPainel)
-                .on("pointerdown.authsearchv13", "#authsearch-resizer", iniciarRedimensionamento)
-                .on("pointermove.authsearchv13", moverRedimensionamento)
-                .on("pointerup.authsearchv1 pointercancel.authsearchv13", terminarRedimensionamento)
-                .on("keydown.authsearchv13", "#authsearch-resizer", redimensionarPorTeclado)
-                .on("click.authsearchv13", "#authsearch-switch-search", function () {
+                .on("click.authsearchv131", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv131", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv131", moverRedimensionamento)
+                .on("pointerup.authsearchv1 pointercancel.authsearchv131", terminarRedimensionamento)
+                .on("keydown.authsearchv131", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("click.authsearchv131", "#authsearch-switch-search", function () {
                     atualizarAuthorityState();
                     renderModoPesquisa();
                 })
-                .on("click.authsearchv13", "#authsearch-back-card", function () {
+                .on("click.authsearchv131", "#authsearch-back-card", function () {
                     atualizarAuthorityState();
                     var qid = primeiroQidValido(STATE.authority.wikidata || []);
                     if (!qid) return renderModoPesquisa();
@@ -549,35 +549,39 @@
                         renderFichaAutoridade(entidade, qid);
                     });
                 })
-                .on("keydown.authsearchv13", "#authsearch-term", function (e) {
+                .on("keydown.authsearchv131", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
-                .on("click.authsearchv13", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv13", "#authsearch-retry-viaf", function () {
+                .on("click.authsearchv131", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv131", "#authsearch-retry-viaf", function () {
                     var termo = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
                     if (!termo) return;
                     STATE.tokenPesquisa++;
                     pesquisarVIAF(termo, STATE.tokenPesquisa);
                 })
-                .on("click.authsearchv13", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv13", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv13", ".authsearch-apply", function () {
+                .on("click.authsearchv131", "#authsearch-card-retry-viaf", function () {
+                    var termo = limparTexto((STATE.authority && STATE.authority.nome) || "");
+                    if (termo) pesquisarVIAFNaFicha(termo);
+                })
+                .on("click.authsearchv131", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv131", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv131", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv1 change.authsearchv13", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv1 change.authsearchv131", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv13", function (e) {
+                .on("keydown.authsearchv131", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
                 })
-                .on("resize.authsearchv13", debounce(function () {
+                .on("resize.authsearchv131", debounce(function () {
                     if (!STATE.aberto) return;
                     if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
                         $("body").removeClass("authsearch-docked authsearch-resizing");
@@ -831,20 +835,62 @@
            VIAF
            ====================================================== */
 
+        function requisitarVIAF(termo, sucesso, falha) {
+            termo = limparTexto(termo || "");
+            if (!termo) {
+                if (typeof falha === "function") falha("empty");
+                return null;
+            }
+
+            var terminado = false;
+            var reqPrincipal = $.ajax({
+                url: "https://viaf.org/viaf/AutoSuggest?query=" + encodeURIComponent(termo),
+                dataType: "json",
+                method: "GET",
+                crossDomain: true,
+                timeout: CONFIG.timeout,
+                cache: true
+            }).done(function (dados) {
+                if (terminado) return;
+                terminado = true;
+                if (typeof sucesso === "function") sucesso(dados || {});
+            }).fail(function (_xhr, status) {
+                if (terminado || status === "abort") return;
+
+                /* Fallback para instalações/browser em que a chamada JSON
+                   direta ao VIAF seja bloqueada por CORS. */
+                var reqFallback = $.ajax({
+                    url: "https://viaf.org/viaf/AutoSuggest",
+                    dataType: "jsonp",
+                    timeout: CONFIG.timeout,
+                    cache: true,
+                    data: { query: termo }
+                }).done(function (dados) {
+                    if (terminado) return;
+                    terminado = true;
+                    if (typeof sucesso === "function") sucesso(dados || {});
+                }).fail(function (_xhr2, status2) {
+                    if (terminado || status2 === "abort") return;
+                    terminado = true;
+                    if (typeof falha === "function") falha(status2 || status || "error");
+                });
+
+                registarPedido(reqFallback);
+            });
+
+            registarPedido(reqPrincipal);
+            return reqPrincipal;
+        }
+
         function pesquisarVIAF(termo, token) {
             $("#authsearch-viaf").html('<div class="authsearch-loading">A pesquisar…</div>');
 
-            var req = $.ajax({
-                url: "https://viaf.org/viaf/AutoSuggest",
-                dataType: "jsonp",
-                timeout: CONFIG.timeout,
-                data: { query: termo }
-            }).done(function (dados) {
+            requisitarVIAF(termo, function (dados) {
                 if (token !== STATE.tokenPesquisa) return;
 
                 var lista = dados && dados.result ? dados.result : [];
                 if (!lista.length) {
-                    $("#authsearch-viaf").html('<div class="authsearch-empty">Sem resultados.</div>');
+                    $("#authsearch-viaf").html('<div class="authsearch-empty">Sem resultados VIAF.</div>');
                     return;
                 }
 
@@ -864,13 +910,11 @@
                     '</div>';
                 });
 
-                $("#authsearch-viaf").html(html || '<div class="authsearch-empty">Sem resultados.</div>');
-            }).fail(function (_xhr, status) {
-                if (status === "abort" || token !== STATE.tokenPesquisa) return;
-                $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível obter resultados VIAF dentro do painel.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-retry-viaf">Tentar novamente</button></div>');
+                $("#authsearch-viaf").html(html || '<div class="authsearch-empty">Sem resultados VIAF.</div>');
+            }, function () {
+                if (token !== STATE.tokenPesquisa) return;
+                $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível consultar o VIAF.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-retry-viaf">Tentar novamente</button></div>');
             });
-
-            registarPedido(req);
         }
 
         function pesquisarVIAFNaFicha(termo) {
@@ -884,11 +928,7 @@
 
             $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-loading">A pesquisar VIAF…</div></div>');
 
-            var req = $.ajax({
-                url: "https://viaf.org/viaf/AutoSuggest?query=" + encodeURIComponent(termo),
-                dataType: "jsonp",
-                timeout: CONFIG.timeout
-            }).done(function (dados) {
+            requisitarVIAF(termo, function (dados) {
                 var lista = dados && dados.result ? dados.result : [];
                 if (!lista.length) {
                     $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-empty">Sem resultados VIAF.</div></div>');
@@ -911,12 +951,9 @@
                 });
                 html += '</div>';
                 $alvo.html(html);
-            }).fail(function (_xhr, status) {
-                if (status === "abort") return;
-                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível consultar o VIAF.</div></div>');
+            }, function () {
+                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível consultar o VIAF.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-card-retry-viaf">Tentar novamente</button></div></div>');
             });
-
-            registarPedido(req);
         }
 
         /* ======================================================
