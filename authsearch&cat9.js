@@ -861,6 +861,16 @@ body.authsearch-resizing #authsearch-tab {
             obrasPesquisaUrl: ""
         };
 
+        // Rótulos usados pelo parser UNIMARC. Têm de estar inicializados ANTES
+        // da primeira chamada a atualizarAuthorityState(), porque essa leitura ocorre
+        // imediatamente durante o arranque do módulo.
+        var ROTULOS_SUBCAMPOS_PESSOA = {
+            a: ["Palavra de ordem", "Elemento de entrada", "Entry element"],
+            b: ["Outra parte do nome", "Parte do nome", "Part of name other than entry element"],
+            c: ["Aditamentos ao nome", "Adições ao nome", "Adicoes ao nome", "Qualificação", "Qualificacao", "Additions to name"],
+            f: ["Datas", "Datas associadas ao nome", "Dates"]
+        };
+
         // Inicialização: estilos -> UI -> eventos -> leitura do registo -> estado inicial.
         instalarEstilos();
         instalarInterface();
@@ -2539,13 +2549,6 @@ body.authsearch-resizing #authsearch-tab {
         /* ======================================================
            LEITURA UNIMARC 200 / 400
            ====================================================== */
-
-        var ROTULOS_SUBCAMPOS_PESSOA = {
-            a: ["Palavra de ordem", "Elemento de entrada", "Entry element"],
-            b: ["Outra parte do nome", "Parte do nome", "Part of name other than entry element"],
-            c: ["Aditamentos ao nome", "Adições ao nome", "Adicoes ao nome", "Qualificação", "Qualificacao", "Additions to name"],
-            f: ["Datas", "Datas associadas ao nome", "Dates"]
-        };
 
         /**
          * Localiza o VALOR de um subcampo MARC dentro de uma ocorrência 200/400.
