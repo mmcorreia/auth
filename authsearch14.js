@@ -1,15 +1,21 @@
 /* ==========================================================
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
-   Isolado a partir do K●RE Identidade v6.0
-   Objetivo: Wikidata + VIAF + UNIMARC 017 + grafo de identidade
-   v1.5.1 | 2026-08-11
+   Koha authority editor · Wikidata + VIAF + UNIMARC 017
+
+   Versão unificada v2.1 · 2026-08-11
+   CSS e JavaScript no mesmo ficheiro, organizados por secções.
+
+   Princípios:
+   - o catalogador confirma sempre antes de preencher o 017;
+   - falhas externas nunca devem impedir a edição normal no Koha;
+   - dados externos são validados/escapados antes de entrar no DOM.
    ========================================================== */
 
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V151_ATIVO) return;
-    window.AUTHSEARCH_V151_ATIVO = true;
+    if (window.AUTHSEARCH_V2_ATIVO) return;
+    window.AUTHSEARCH_V2_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -17,6 +23,795 @@
     }
 
     var $ = window.jQuery;
+
+    /* ======================================================
+       CSS / APRESENTAÇÃO
+       ======================================================
+       O CSS fica concentrado neste bloco único. O JavaScript apenas
+       o injeta uma vez no <head>, evitando estilos dispersos pelo código.
+    */
+
+    var AUTHSEARCH_CSS = `
+:root {
+    --authsearch-css-version: 2;
+    --authsearch-accent:#007fae;
+    --authsearch-border:#d0d7de;
+    --authsearch-bg:#fff;
+    --authsearch-muted:#667085;
+}
+
+#authsearch-tab {
+    position:fixed;
+    left:0;
+    top:34%;
+    z-index:10050;
+    transition:left .18s ease;
+    border:1px solid #98a2b3;
+    border-right:0;
+    background:#fff;
+    color:#1f2937;
+    padding:12px 7px;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.04em;
+    cursor:pointer;
+    border-radius:6px 0 0 6px;
+    box-shadow:0 3px 12px rgba(15,23,42,.12);
+}
+
+#authsearch-tab:hover {
+    background:#f8fafc;
+    color:#007fae;
+}
+
+#authsearch-root {
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:var(--authsearch-dock-width,min(42vw,980px));
+    min-width:340px;
+    max-width:72vw;
+    z-index:10040;
+    background:var(--authsearch-bg);
+    border-right:1px solid #98a2b3;
+    box-shadow:8px 0 24px rgba(15,23,42,.16);
+    transform:translateX(-102%);
+    transition:transform .18s ease;
+    display:flex;
+    flex-direction:column;
+    color:#111827;
+}
+
+#authsearch-root.authsearch-open {
+    transform:translateX(0);
+}
+
+#authsearch-resizer {
+    position:absolute;
+    top:0;
+    right:-5px;
+    width:10px;
+    height:100%;
+    z-index:3;
+    cursor:col-resize;
+    background:transparent;
+    touch-action:none;
+}
+
+#authsearch-resizer:after {
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:4px;
+    width:2px;
+    background:transparent;
+    transition:background .12s ease;
+}
+
+#authsearch-resizer:hover:after,body.authsearch-resizing #authsearch-resizer:after {
+    background:#007fae;
+}
+
+body.authsearch-resizing {
+    cursor:col-resize!important;
+    user-select:none!important;
+}
+
+body.authsearch-resizing * {
+    cursor:col-resize!important;
+}
+
+body.authsearch-docked {
+    box-sizing:border-box!important;
+    width:100%!important;
+    padding-left:var(--authsearch-dock-width)!important;
+    transition:padding-left .18s ease!important;
+    overflow-x:hidden!important;
+}
+
+body.authsearch-resizing.authsearch-docked {
+    transition:none!important;
+}
+
+body.authsearch-docked #authsearch-tab {
+    left:var(--authsearch-dock-width);
+}
+
+body.authsearch-resizing #authsearch-tab {
+    transition:none!important;
+}
+
+#authsearch-root * {
+    box-sizing:border-box;
+}
+
+.authsearch-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:11px 13px;
+    border-bottom:1px solid #e5e7eb;
+    background:#fff;
+    flex:0 0 auto;
+}
+
+.authsearch-brand {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+}
+
+.authsearch-brand strong {
+    font-size:15px;
+    white-space:nowrap;
+}
+
+.authsearch-context {
+    font-size:11px;
+    color:#667085;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.authsearch-close {
+    border:1px solid #cbd5e1;
+    background:#fff;
+    border-radius:4px;
+    padding:5px 8px;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+}
+
+.authsearch-close:hover {
+    background:#f8fafc;
+}
+
+.authsearch-body {
+    flex:1 1 auto;
+    overflow:auto;
+    padding:12px;
+    background:#f8fafc;
+}
+
+.authsearch-toolbar {
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+.authsearch-btn,.authsearch-link {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    border:1px solid #cbd5e1!important;
+    background:#fff!important;
+    color:#344054!important;
+    border-radius:4px!important;
+    padding:6px 9px!important;
+    font-size:12px!important;
+    font-weight:650!important;
+    text-decoration:none!important;
+    cursor:pointer!important;
+    line-height:1.2!important;
+    box-shadow:none!important;
+}
+
+.authsearch-btn:hover,.authsearch-link:hover {
+    background:#f1f5f9!important;
+    border-color:#94a3b8!important;
+    color:#111827!important;
+    text-decoration:none!important;
+}
+
+.authsearch-primary {
+    border-color:#007fae!important;
+    color:#006b92!important;
+    background:#f2fbff!important;
+}
+
+.authsearch-searchbar {
+    display:flex;
+    gap:7px;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+#authsearch-term {
+    flex:1;
+    min-width:0;
+    padding:8px 9px;
+    border:1px solid #b8c2cc;
+    border-radius:4px;
+    background:#fff;
+    font-size:13px;
+}
+
+.authsearch-state {
+    font-size:12px;
+    color:#475467;
+    margin:3px 0 10px 0;
+    min-height:17px;
+}
+
+.authsearch-source-grid {
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+}
+
+.authsearch-box {
+    background:#fff;
+    border:1px solid #d8dee6;
+    border-radius:6px;
+    overflow:hidden;
+}
+
+.authsearch-box-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    padding:9px 10px;
+    border-bottom:1px solid #e5e7eb;
+    background:#fff;
+}
+
+.authsearch-box-head strong {
+    font-size:13px;
+}
+
+.authsearch-box-body {
+    padding:9px 10px;
+}
+
+.authsearch-result {
+    padding:10px 0;
+    border-top:1px solid #edf0f2;
+}
+
+.authsearch-result:first-child {
+    border-top:0;
+    padding-top:0;
+}
+
+.authsearch-wd-layout {
+    display:grid;
+    grid-template-columns:76px 1fr;
+    gap:10px;
+    align-items:start;
+}
+
+.authsearch-photo,.authsearch-placeholder {
+    width:76px;
+    height:98px;
+    border:1px solid #e5e7eb;
+    border-radius:3px;
+    background:#f8fafc;
+    object-fit:cover;
+}
+
+.authsearch-result-name {
+    font-size:14px;
+    font-weight:800;
+    color:#111827;
+    line-height:1.25;
+}
+
+.authsearch-desc {
+    font-size:12px;
+    color:#667085;
+    line-height:1.35;
+    margin-top:3px;
+}
+
+.authsearch-id {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;
+    color:#174b75;
+    margin-top:5px;
+}
+
+.authsearch-meta {
+    font-size:12px;
+    color:#344054;
+    line-height:1.4;
+    margin-top:4px;
+}
+
+.authsearch-meta strong {
+    color:#111827;
+}
+
+.authsearch-actions {
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-top:7px;
+}
+
+.authsearch-empty,.authsearch-error,.authsearch-loading {
+    padding:9px;
+    color:#667085;
+    font-size:12px;
+}
+
+.authsearch-error {
+    color:#b42318;
+    background:#fff6f5;
+    border:1px solid #fecdca;
+    border-radius:4px;
+}
+
+.authsearch-card {
+    background:#fff;
+    border:1px solid #d8dee6;
+    border-radius:8px;
+    overflow:hidden;
+}
+
+.authsearch-card-main {
+    display:grid;
+    grid-template-columns:112px 1fr;
+    gap:14px;
+    padding:14px;
+}
+
+.authsearch-card-photo,.authsearch-card-placeholder {
+    width:112px;
+    height:146px;
+    border:1px solid #d8dee6;
+    border-radius:5px;
+    background:#f8fafc;
+    object-fit:cover;
+}
+
+.authsearch-card-name {
+    font-size:22px;
+    line-height:1.08;
+    font-weight:900;
+    color:#0f172a;
+}
+
+.authsearch-card-description {
+    font-size:13px;
+    color:#475467;
+    line-height:1.4;
+    margin-top:5px;
+}
+
+.authsearch-card-qid {
+    font-size:12px;
+    color:#174b75;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    margin-top:7px;
+}
+
+.authsearch-details {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:12px;
+}
+
+.authsearch-detail {
+    border:1px solid #edf0f2;
+    background:#fbfdff;
+    border-radius:4px;
+    padding:7px 8px;
+    font-size:11px;
+    line-height:1.35;
+}
+
+.authsearch-detail strong {
+    display:block;
+    color:#111827;
+    margin-bottom:2px;
+}
+
+.authsearch-card-actions {
+    display:flex;
+    gap:7px;
+    flex-wrap:wrap;
+    padding:10px 14px;
+    border-top:1px solid #e5e7eb;
+    background:#fff;
+}
+
+.authsearch-local {
+    padding:9px 12px;
+    border-bottom:1px solid #e5e7eb;
+    background:#fbfdff;
+    font-size:11px;
+    color:#475467;
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+.authsearch-chip {
+    display:inline-flex;
+    padding:3px 7px;
+    border:1px solid #dbe3ec;
+    border-radius:999px;
+    background:#fff;
+    font-weight:650;
+}
+
+.authsearch-newitem {
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px solid #e5e7eb;
+}
+
+.authsearch-card-viaf {
+    padding:10px 14px;
+    border-top:1px solid #e5e7eb;
+    background:#fbfdff;
+}
+
+.authsearch-warning {
+    margin:10px 14px 0;
+    padding:8px 9px;
+    border:1px solid #fedf89;
+    background:#fffaeb;
+    color:#854a0e;
+    border-radius:4px;
+    font-size:11px;
+    line-height:1.35;
+}
+
+.authsearch-search-actions {
+    margin-top:-2px;
+    margin-bottom:10px;
+}
+
+.authsearch-graph-slot {
+    margin:0 0 11px 0;
+}
+
+.authsearch-graph-toggle {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 11px;
+    border:1px solid #d8dee6;
+    background:#fff;
+    border-radius:7px;
+    margin-bottom:10px;
+}
+
+.authsearch-graph-toggle-copy {
+    min-width:0;
+}
+
+.authsearch-graph-toggle-title {
+    display:block;
+    font-size:13px;
+    font-weight:850;
+    color:#111827;
+}
+
+.authsearch-graph-toggle-sub {
+    display:block;
+    font-size:11px;
+    color:#667085;
+    margin-top:2px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.authsearch-kp {
+    background:#fff;
+    border:1px solid #d8dee6;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 8px 26px rgba(15,23,42,.08);
+    margin-bottom:12px;
+}
+
+.authsearch-kp-gallery {
+    display:grid;
+    grid-template-columns:minmax(180px,1.35fr) minmax(95px,1fr) minmax(95px,1fr);
+    grid-template-rows:136px 136px;
+    gap:5px;
+    background:#eef2f6;
+    min-height:277px;
+}
+
+.authsearch-kp-gallery-item {
+    position:relative;
+    overflow:hidden;
+    background:#e8edf3;
+    display:block;
+    border-radius:3px;
+    min-width:0;
+}
+
+.authsearch-kp-gallery-item:first-child {
+    grid-column:1;
+    grid-row:1/3;
+}
+
+.authsearch-kp-gallery-item:nth-child(2) {
+    grid-column:2;
+    grid-row:1;
+}
+
+.authsearch-kp-gallery-item:nth-child(3) {
+    grid-column:3;
+    grid-row:1;
+}
+
+.authsearch-kp-gallery-item:nth-child(4) {
+    grid-column:2;
+    grid-row:2;
+}
+
+.authsearch-kp-gallery-item:nth-child(5) {
+    grid-column:3;
+    grid-row:2;
+}
+
+.authsearch-kp-gallery-item img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center center;
+    display:block;
+    transition:transform .18s ease;
+}
+
+.authsearch-kp-gallery-item:first-child img {
+    object-position:center top;
+}
+
+.authsearch-kp-gallery-item:hover img {
+    transform:scale(1.025);
+}
+
+.authsearch-kp-gallery-empty {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:180px;
+    background:#f8fafc;
+    color:#98a2b3;
+    font-size:12px;
+    border-radius:3px;
+}
+
+.authsearch-kp-main {
+    padding:15px 16px 4px;
+    background:linear-gradient(135deg,#fff 0%,#f8fbfd 100%);
+}
+
+.authsearch-kp-name {
+    font-size:26px;
+    line-height:1.05;
+    font-weight:900;
+    color:#111827;
+    letter-spacing:-.02em;
+}
+
+.authsearch-kp-desc {
+    font-size:13px;
+    color:#475467;
+    line-height:1.45;
+    margin-top:6px;
+}
+
+.authsearch-kp-facts-text {
+    padding:10px 16px 13px;
+    font-size:12.5px;
+    color:#344054;
+    line-height:1.55;
+}
+
+.authsearch-kp-fact-line {
+    margin-top:5px;
+}
+
+.authsearch-kp-fact-line:first-child {
+    margin-top:0;
+}
+
+.authsearch-kp-fact-line b {
+    color:#111827;
+}
+
+.authsearch-kp-section {
+    padding:12px 16px;
+    border-top:1px solid #e5e7eb;
+}
+
+.authsearch-kp-section-title {
+    font-size:13px;
+    font-weight:850;
+    color:#111827;
+    margin-bottom:7px;
+}
+
+.authsearch-kp-wiki {
+    font-size:12.5px;
+    color:#344054;
+    line-height:1.55;
+}
+
+.authsearch-kp-wiki p {
+    margin:0;
+}
+
+.authsearch-kp-wiki a {
+    display:inline-block;
+    margin-top:7px;
+    font-weight:750;
+    color:#1769aa;
+    text-decoration:none;
+}
+
+.authsearch-kp-wiki a:hover {
+    text-decoration:underline;
+}
+
+.authsearch-kp-ids {
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+}
+
+.authsearch-kp-idbtn {
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 7px;
+    border:1px solid #dbe3ec;
+    border-radius:5px;
+    background:#f8fafc;
+    color:#344054!important;
+    text-decoration:none!important;
+    font-size:10.5px;
+    font-weight:700;
+    line-height:1.2;
+}
+
+.authsearch-kp-idbtn:hover {
+    background:#eef4f8;
+    border-color:#aebdca;
+    text-decoration:none!important;
+}
+
+.authsearch-kp-idbtn span {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-weight:600;
+    color:#174b75;
+}
+
+.authsearch-kp-aliases {
+    font-size:12px;
+    color:#475467;
+    line-height:1.5;
+}
+
+@media(max-width:800px) {
+    .authsearch-kp-gallery{grid-template-columns:1.45fr 1fr 1fr;
+    grid-template-rows:96px 96px;
+    gap:4px;
+}
+
+.authsearch-kp-gallery-item:first-child {
+    grid-column:1;
+    grid-row:1/3;
+}
+
+.authsearch-kp-gallery-item:nth-child(2) {
+    grid-column:2;
+    grid-row:1;
+}
+
+.authsearch-kp-gallery-item:nth-child(3) {
+    grid-column:3;
+    grid-row:1;
+}
+
+.authsearch-kp-gallery-item:nth-child(4) {
+    grid-column:2;
+    grid-row:2;
+}
+
+.authsearch-kp-gallery-item:nth-child(5) {
+    grid-column:3;
+    grid-row:2;
+}
+
+.authsearch-kp-name {
+    font-size:20px;
+}
+
+body.authsearch-docked {
+    padding-left:0!important;
+}
+
+body.authsearch-docked #authsearch-tab {
+    left:0;
+}
+
+#authsearch-root {
+    width:calc(100vw - 34px);
+    min-width:0;
+    max-width:none;
+}
+
+.authsearch-card-main {
+    grid-template-columns:86px 1fr;
+}
+
+.authsearch-card-photo,.authsearch-card-placeholder {
+    width:86px;
+    height:112px;
+}
+
+.authsearch-details {
+    grid-template-columns:1fr;
+}
+
+.authsearch-card-name {
+    font-size:18px;
+}
+
+/* Utilitários de layout que substituem estilos inline do JavaScript. */
+.authsearch-toolbar-spaced { margin-top: 10px; }
+.authsearch-box-head-flush { padding-left: 0; padding-right: 0; }
+.authsearch-create-trigger { padding: 0 10px 10px; }
+.authsearch-box-spaced { margin-top: 10px; }
+.authsearch-desc-spaced { margin-top: 8px; }
+`;
+
+    function instalarEstilos() {
+        if (document.getElementById("authsearch-v2-styles")) return;
+
+        var style = document.createElement("style");
+        style.id = "authsearch-v2-styles";
+        style.type = "text/css";
+        style.textContent = AUTHSEARCH_CSS;
+        document.head.appendChild(style);
+    }
+
+    /* ======================================================
+       JAVASCRIPT / COMPORTAMENTO
+       ====================================================== */
 
     $(document).ready(function () {
         if (!paginaAtualEhEditorAutoridade()) return;
@@ -33,13 +828,14 @@
             storageKeyLargura: "authsearch-panel-width",
             idiomaPrincipal: "pt",
             idiomasFallback: ["pt", "en"],
-            wikidataHumanQid: "Q5"
+            wikidataHumanQid: "Q5",
+            maxTermLength: 200,
+            permitirFallbackJsonpVIAF: true
         };
 
         var STATE = {
             authority: null,
             aberto: false,
-            modo: "pesquisa", // pesquisa | ficha
             xhr: [],
             tokenPesquisa: 0,
             entidadeAtual: null,
@@ -50,6 +846,8 @@
             redimensionando: false
         };
 
+        // Inicialização: estilos -> UI -> eventos -> leitura do registo -> estado inicial.
+        instalarEstilos();
         instalarInterface();
         bindEventos();
         atualizarAuthorityState();
@@ -86,6 +884,7 @@
             STATE.authority = obterDadosAutoridade();
         }
 
+        /** Lê do formulário Koha apenas os dados necessários ao AuthSearch. */
         function obterDadosAutoridade() {
             var campo200 = obterCampo200Autoridade();
             var nomeB = obterValorSubcampo(campo200, "Outra parte do nome");
@@ -114,7 +913,6 @@
 
             preencherPesquisa(authority.nome || "");
             atualizarResumoLateral();
-            STATE.modo = "pesquisa";
             STATE.qidAtual = qid || "";
             renderModoPesquisa();
 
@@ -137,114 +935,11 @@
            INTERFACE LATERAL
            ====================================================== */
 
+        /** Cria a estrutura HTML do módulo. Os estilos estão concentrados no bloco AUTHSEARCH_CSS. */
         function instalarInterface() {
-            $("#authsearch-root, #authsearch-tab, #authsearch-style").remove();
+            $("#authsearch-root, #authsearch-tab").remove();
             $("body").removeClass("authsearch-docked authsearch-resizing");
             document.documentElement.style.removeProperty("--authsearch-dock-width");
-
-            var css = '' +
-                '<style id="authsearch-style">' +
-                ':root{--authsearch-accent:#007fae;--authsearch-border:#d0d7de;--authsearch-bg:#fff;--authsearch-muted:#667085;}' +
-                '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;transition:left .18s ease;border:1px solid #98a2b3;border-right:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:6px 0 0 6px;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
-                '#authsearch-tab:hover{background:#f8fafc;color:#007fae;}' +
-                '#authsearch-root{position:fixed;left:0;top:0;bottom:0;width:var(--authsearch-dock-width,min(' + CONFIG.larguraPainel + ',' + CONFIG.larguraMaxima + 'px));min-width:' + CONFIG.larguraMinima + 'px;max-width:72vw;z-index:10040;background:var(--authsearch-bg);border-right:1px solid #98a2b3;box-shadow:8px 0 24px rgba(15,23,42,.16);transform:translateX(-102%);transition:transform .18s ease;display:flex;flex-direction:column;color:#111827;}' +
-                '#authsearch-root.authsearch-open{transform:translateX(0);}' +
-                '#authsearch-resizer{position:absolute;top:0;right:-5px;width:10px;height:100%;z-index:3;cursor:col-resize;background:transparent;touch-action:none;}' +
-                '#authsearch-resizer:after{content:"";position:absolute;top:0;bottom:0;left:4px;width:2px;background:transparent;transition:background .12s ease;}' +
-                '#authsearch-resizer:hover:after,body.authsearch-resizing #authsearch-resizer:after{background:#007fae;}' +
-                'body.authsearch-resizing{cursor:col-resize!important;user-select:none!important;}' +
-                'body.authsearch-resizing *{cursor:col-resize!important;}' +
-                'body.authsearch-docked{box-sizing:border-box!important;width:100%!important;padding-left:var(--authsearch-dock-width)!important;transition:padding-left .18s ease!important;overflow-x:hidden!important;}' +
-                'body.authsearch-resizing.authsearch-docked{transition:none!important;}' +
-                'body.authsearch-docked #authsearch-tab{left:var(--authsearch-dock-width);}' +
-                'body.authsearch-resizing #authsearch-tab{transition:none!important;}' +
-                '#authsearch-root *{box-sizing:border-box;}' +
-                '.authsearch-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid #e5e7eb;background:#fff;flex:0 0 auto;}' +
-                '.authsearch-brand{display:flex;align-items:center;gap:8px;min-width:0;}' +
-                '.authsearch-brand strong{font-size:15px;white-space:nowrap;}' +
-                '.authsearch-context{font-size:11px;color:#667085;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-                '.authsearch-close{border:1px solid #cbd5e1;background:#fff;border-radius:4px;padding:5px 8px;cursor:pointer;font-size:16px;line-height:1;}' +
-                '.authsearch-close:hover{background:#f8fafc;}' +
-                '.authsearch-body{flex:1 1 auto;overflow:auto;padding:12px;background:#f8fafc;}' +
-                '.authsearch-toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}' +
-                '.authsearch-btn,.authsearch-link{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid #cbd5e1!important;background:#fff!important;color:#344054!important;border-radius:4px!important;padding:6px 9px!important;font-size:12px!important;font-weight:650!important;text-decoration:none!important;cursor:pointer!important;line-height:1.2!important;box-shadow:none!important;}' +
-                '.authsearch-btn:hover,.authsearch-link:hover{background:#f1f5f9!important;border-color:#94a3b8!important;color:#111827!important;text-decoration:none!important;}' +
-                '.authsearch-primary{border-color:#007fae!important;color:#006b92!important;background:#f2fbff!important;}' +
-                '.authsearch-searchbar{display:flex;gap:7px;align-items:center;margin-bottom:10px;}' +
-                '#authsearch-term{flex:1;min-width:0;padding:8px 9px;border:1px solid #b8c2cc;border-radius:4px;background:#fff;font-size:13px;}' +
-                '.authsearch-state{font-size:12px;color:#475467;margin:3px 0 10px 0;min-height:17px;}' +
-                '.authsearch-source-grid{display:grid;grid-template-columns:1fr;gap:10px;}' +
-                '.authsearch-box{background:#fff;border:1px solid #d8dee6;border-radius:6px;overflow:hidden;}' +
-                '.authsearch-box-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 10px;border-bottom:1px solid #e5e7eb;background:#fff;}' +
-                '.authsearch-box-head strong{font-size:13px;}' +
-                '.authsearch-box-body{padding:9px 10px;}' +
-                '.authsearch-result{padding:10px 0;border-top:1px solid #edf0f2;}' +
-                '.authsearch-result:first-child{border-top:0;padding-top:0;}' +
-                '.authsearch-wd-layout{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:start;}' +
-                '.authsearch-photo,.authsearch-placeholder{width:76px;height:98px;border:1px solid #e5e7eb;border-radius:3px;background:#f8fafc;object-fit:cover;}' +
-                '.authsearch-result-name{font-size:14px;font-weight:800;color:#111827;line-height:1.25;}' +
-                '.authsearch-desc{font-size:12px;color:#667085;line-height:1.35;margin-top:3px;}' +
-                '.authsearch-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#174b75;margin-top:5px;}' +
-                '.authsearch-meta{font-size:12px;color:#344054;line-height:1.4;margin-top:4px;}' +
-                '.authsearch-meta strong{color:#111827;}' +
-                '.authsearch-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}' +
-                '.authsearch-empty,.authsearch-error,.authsearch-loading{padding:9px;color:#667085;font-size:12px;}' +
-                '.authsearch-error{color:#b42318;background:#fff6f5;border:1px solid #fecdca;border-radius:4px;}' +
-                '.authsearch-card{background:#fff;border:1px solid #d8dee6;border-radius:8px;overflow:hidden;}' +
-                '.authsearch-card-main{display:grid;grid-template-columns:112px 1fr;gap:14px;padding:14px;}' +
-                '.authsearch-card-photo,.authsearch-card-placeholder{width:112px;height:146px;border:1px solid #d8dee6;border-radius:5px;background:#f8fafc;object-fit:cover;}' +
-                '.authsearch-card-name{font-size:22px;line-height:1.08;font-weight:900;color:#0f172a;}' +
-                '.authsearch-card-description{font-size:13px;color:#475467;line-height:1.4;margin-top:5px;}' +
-                '.authsearch-card-qid{font-size:12px;color:#174b75;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:7px;}' +
-                '.authsearch-details{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px;}' +
-                '.authsearch-detail{border:1px solid #edf0f2;background:#fbfdff;border-radius:4px;padding:7px 8px;font-size:11px;line-height:1.35;}' +
-                '.authsearch-detail strong{display:block;color:#111827;margin-bottom:2px;}' +
-                '.authsearch-card-actions{display:flex;gap:7px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid #e5e7eb;background:#fff;}' +
-                '.authsearch-local{padding:9px 12px;border-bottom:1px solid #e5e7eb;background:#fbfdff;font-size:11px;color:#475467;display:flex;gap:8px;flex-wrap:wrap;}' +
-                '.authsearch-chip{display:inline-flex;padding:3px 7px;border:1px solid #dbe3ec;border-radius:999px;background:#fff;font-weight:650;}' +
-                '.authsearch-newitem{margin-top:10px;padding-top:9px;border-top:1px solid #e5e7eb;}' +
-                '.authsearch-card-viaf{padding:10px 14px;border-top:1px solid #e5e7eb;background:#fbfdff;}' +
-                '.authsearch-warning{margin:10px 14px 0;padding:8px 9px;border:1px solid #fedf89;background:#fffaeb;color:#854a0e;border-radius:4px;font-size:11px;line-height:1.35;}' +
-                '.authsearch-search-actions{margin-top:-2px;margin-bottom:10px;}' +
-                '.authsearch-graph-slot{margin:0 0 11px 0;}' +
-                '.authsearch-graph-toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px;border:1px solid #d8dee6;background:#fff;border-radius:7px;margin-bottom:10px;}' +
-                '.authsearch-graph-toggle-copy{min-width:0;}' +
-                '.authsearch-graph-toggle-title{display:block;font-size:13px;font-weight:850;color:#111827;}' +
-                '.authsearch-graph-toggle-sub{display:block;font-size:11px;color:#667085;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
-                '.authsearch-kp{background:#fff;border:1px solid #d8dee6;border-radius:12px;overflow:hidden;box-shadow:0 8px 26px rgba(15,23,42,.08);margin-bottom:12px;}' +
-                '.authsearch-kp-gallery{display:grid;grid-template-columns:minmax(180px,1.35fr) minmax(95px,1fr) minmax(95px,1fr);grid-template-rows:136px 136px;gap:5px;background:#eef2f6;min-height:277px;}' +
-                '.authsearch-kp-gallery-item{position:relative;overflow:hidden;background:#e8edf3;display:block;border-radius:3px;min-width:0;}' +
-                '.authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3;}' +
-                '.authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1;}' +
-                '.authsearch-kp-gallery-item:nth-child(3){grid-column:3;grid-row:1;}' +
-                '.authsearch-kp-gallery-item:nth-child(4){grid-column:2;grid-row:2;}' +
-                '.authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2;}' +
-                '.authsearch-kp-gallery-item img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;transition:transform .18s ease;}' +
-                '.authsearch-kp-gallery-item:first-child img{object-position:center top;}' +
-                '.authsearch-kp-gallery-item:hover img{transform:scale(1.025);}' +
-                '.authsearch-kp-gallery-empty{display:flex;align-items:center;justify-content:center;min-height:180px;background:#f8fafc;color:#98a2b3;font-size:12px;border-radius:3px;}' +
-                '.authsearch-kp-main{padding:15px 16px 4px;background:linear-gradient(135deg,#fff 0%,#f8fbfd 100%);}' +
-                '.authsearch-kp-name{font-size:26px;line-height:1.05;font-weight:900;color:#111827;letter-spacing:-.02em;}' +
-                '.authsearch-kp-desc{font-size:13px;color:#475467;line-height:1.45;margin-top:6px;}' +
-                '.authsearch-kp-facts-text{padding:10px 16px 13px;font-size:12.5px;color:#344054;line-height:1.55;}' +
-                '.authsearch-kp-fact-line{margin-top:5px;}' +
-                '.authsearch-kp-fact-line:first-child{margin-top:0;}' +
-                '.authsearch-kp-fact-line b{color:#111827;}' +
-                '.authsearch-kp-section{padding:12px 16px;border-top:1px solid #e5e7eb;}' +
-                '.authsearch-kp-section-title{font-size:13px;font-weight:850;color:#111827;margin-bottom:7px;}' +
-                '.authsearch-kp-wiki{font-size:12.5px;color:#344054;line-height:1.55;}' +
-                '.authsearch-kp-wiki p{margin:0;}' +
-                '.authsearch-kp-wiki a{display:inline-block;margin-top:7px;font-weight:750;color:#1769aa;text-decoration:none;}' +
-                '.authsearch-kp-wiki a:hover{text-decoration:underline;}' +
-                '.authsearch-kp-ids{display:flex;gap:6px;flex-wrap:wrap;}' +
-                '.authsearch-kp-idbtn{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border:1px solid #dbe3ec;border-radius:5px;background:#f8fafc;color:#344054!important;text-decoration:none!important;font-size:10.5px;font-weight:700;line-height:1.2;}' +
-                '.authsearch-kp-idbtn:hover{background:#eef4f8;border-color:#aebdca;text-decoration:none!important;}' +
-                '.authsearch-kp-idbtn span{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:#174b75;}' +
-                '.authsearch-kp-aliases{font-size:12px;color:#475467;line-height:1.5;}' +
-                '@media(max-width:800px){.authsearch-kp-gallery{grid-template-columns:1.45fr 1fr 1fr;grid-template-rows:96px 96px;gap:4px}.authsearch-kp-gallery-item:first-child{grid-column:1;grid-row:1/3}.authsearch-kp-gallery-item:nth-child(2){grid-column:2;grid-row:1}.authsearch-kp-gallery-item:nth-child(3){grid-column:3;grid-row:1}.authsearch-kp-gallery-item:nth-child(4){grid-column:2;grid-row:2}.authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2}.authsearch-kp-name{font-size:20px}body.authsearch-docked{padding-left:0!important}body.authsearch-docked #authsearch-tab{left:0}#authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}.authsearch-card-main{grid-template-columns:86px 1fr}.authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}.authsearch-details{grid-template-columns:1fr}.authsearch-card-name{font-size:18px}}' +
-                '</style>';
-
-            $("head").append(css);
 
             var html = '' +
                 '<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false">Identificadores</button>' +
@@ -283,6 +978,8 @@
 
         function fecharPainel() {
             STATE.aberto = false;
+            // Cancela pedidos pendentes para evitar alterações de UI após fechar o painel.
+            abortarPedidos();
             $("#authsearch-root").removeClass("authsearch-open").attr("aria-hidden", "true");
             $("#authsearch-tab").attr("aria-expanded", "false").show();
             removerDockLayout();
@@ -408,7 +1105,6 @@
         }
 
         function renderModoPesquisa() {
-            STATE.modo = "pesquisa";
             var a = STATE.authority || {};
             var qid = primeiroQidValido(a.wikidata || []);
             var html = '' +
@@ -430,16 +1126,7 @@
 
         }
 
-        function renderModoFichaLoading(qid) {
-            STATE.modo = "ficha";
-            $("#authsearch-body").html('<div class="authsearch-loading">A carregar entidade Wikidata ' + escaparHTML(qid) + '…</div>');
-        }
 
-        function renderErroFicha(msg) {
-            $("#authsearch-body").html('' +
-                '<div class="authsearch-error">' + escaparHTML(msg) + '</div>' +
-                '<div class="authsearch-toolbar" style="margin-top:10px"><button type="button" class="authsearch-btn authsearch-primary" id="authsearch-switch-search">Pesquisar outra identidade</button></div>');
-        }
 
         function renderFichaAutoridade(entidade, qid) {
             STATE.entidadeAtual = entidade;
@@ -478,7 +1165,7 @@
                 }
                 function idButton(t, v, url) {
                     if (!v || !url) return '';
-                    return '<a class="authsearch-kp-idbtn" href="' + escaparAttr(url) + '" target="_blank" rel="noopener" title="Abrir ' + escaparAttr(t) + '"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></a>';
+                    return '<a class="authsearch-kp-idbtn" href="' + escaparAttr(url) + '" target="_blank" rel="noopener noreferrer" title="Abrir ' + escaparAttr(t) + '"><b>' + escaparHTML(t) + '</b><span>' + escaparHTML(v) + '</span></a>';
                 }
 
                 var html = '<div class="authsearch-kp">';
@@ -539,7 +1226,7 @@
 
             var req = $.ajax({
                 url: "https://commons.wikimedia.org/w/api.php",
-                dataType: "jsonp",
+                dataType: "json",
                 timeout: CONFIG.timeout,
                 data: {
                     action: "query",
@@ -550,7 +1237,8 @@
                     gsrlimit: 12,
                     prop: "imageinfo",
                     iiprop: "url",
-                    iiurlwidth: 700
+                    iiurlwidth: 700,
+                    origin: "*"
                 }
             }).done(function (data) {
                 if (!$("#authsearch-kp-gallery").length) return;
@@ -569,7 +1257,8 @@
                 }
 
                 function add(url, page, title) {
-                    url = String(url || "");
+                    url = sanitizarUrlExterna(url, ["upload.wikimedia.org", "commons.wikimedia.org"]);
+                    page = sanitizarUrlExterna(page, ["commons.wikimedia.org"]) || url;
                     if (!url) return;
                     if (!/\.(?:jpe?g|png|webp)(?:\?|$)/i.test(url)) return;
                     var key = chaveImagem(url, page, title);
@@ -597,13 +1286,13 @@
 
                 var html = '';
                 imagens.forEach(function (img) {
-                    html += '<a class="authsearch-kp-gallery-item" href="' + escaparAttr(img.page) + '" target="_blank" rel="noopener" title="Abrir imagem no Wikimedia Commons"><img src="' + escaparAttr(img.url) + '" alt="' + escaparAttr(label) + '"></a>';
+                    html += '<a class="authsearch-kp-gallery-item" href="' + escaparAttr(img.page) + '" target="_blank" rel="noopener noreferrer" title="Abrir imagem no Wikimedia Commons"><img src="' + escaparAttr(img.url) + '" alt="' + escaparAttr(label) + '"></a>';
                 });
                 $galeria.html(html);
             }).fail(function () {
                 if (!$("#authsearch-kp-gallery").length) return;
                 if (principalUrl) {
-                    $galeria.html('<a class="authsearch-kp-gallery-item" href="' + escaparAttr(principalPage) + '" target="_blank" rel="noopener"><img src="' + escaparAttr(principalUrl) + '" alt="' + escaparAttr(label) + '"></a>');
+                    $galeria.html('<a class="authsearch-kp-gallery-item" href="' + escaparAttr(principalPage) + '" target="_blank" rel="noopener noreferrer"><img src="' + escaparAttr(principalUrl) + '" alt="' + escaparAttr(label) + '"></a>');
                 } else {
                     $galeria.html('<div class="authsearch-kp-gallery-empty">Sem imagens disponíveis.</div>');
                 }
@@ -618,10 +1307,11 @@
                 var sl = sites[ordem[i]];
                 if (!sl || !sl.title) continue;
                 var lang = ordem[i].replace("wiki", "");
+                var fallback = "https://" + lang + ".wikipedia.org/wiki/" + encodeURIComponent(sl.title.replace(/ /g, "_"));
                 return {
                     lang: lang,
                     title: sl.title,
-                    url: sl.url || ("https://" + lang + ".wikipedia.org/wiki/" + encodeURIComponent(sl.title.replace(/ /g, "_")))
+                    url: sanitizarUrlExterna(sl.url, [lang + ".wikipedia.org"]) || fallback
                 };
             }
             return null;
@@ -644,23 +1334,21 @@
             }).done(function (data) {
                 if (!$("#authsearch-kp-wikipedia").length) return;
                 var resumo = limparTexto(data && data.extract || "");
-                var link = data && data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page ? data.content_urls.desktop.page : ref.url;
+                var linkRecebido = data && data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page ? data.content_urls.desktop.page : "";
+                var link = sanitizarUrlExterna(linkRecebido, [ref.lang + ".wikipedia.org"]) || ref.url;
                 if (!resumo) {
                     $sec.remove();
                     return;
                 }
                 if (resumo.length > 900) resumo = resumo.slice(0, 897).replace(/\s+\S*$/, "") + "…";
-                $sec.html('<div class="authsearch-kp-wiki"><p>' + escaparHTML(resumo) + ' <a href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Ler mais</a></p></div>');
+                $sec.html('<div class="authsearch-kp-wiki"><p>' + escaparHTML(resumo) + ' <a href="' + escaparAttr(link) + '" target="_blank" rel="noopener noreferrer">Ler mais</a></p></div>');
             }).fail(function () {
                 if (!$("#authsearch-kp-wikipedia").length) return;
-                $sec.html('<div class="authsearch-kp-wiki"><a href="' + escaparAttr(ref.url) + '" target="_blank" rel="noopener">Ler mais</a></div>');
+                $sec.html('<div class="authsearch-kp-wiki"><a href="' + escaparAttr(ref.url) + '" target="_blank" rel="noopener noreferrer">Ler mais</a></div>');
             });
             registarPedido(req);
         }
 
-        function detalhe(titulo, valor) {
-            return '<div class="authsearch-detail"><strong>' + escaparHTML(titulo) + '</strong>' + escaparHTML(valor) + '</div>';
-        }
 
         /* ======================================================
            EVENTOS
@@ -668,23 +1356,23 @@
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv150")
-                .on("click.authsearchv150", "#authsearch-tab", function () {
+                .off(".authsearchv2")
+                .on("click.authsearchv2", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv150", "#authsearch-close", fecharPainel)
-                .on("pointerdown.authsearchv150", "#authsearch-resizer", iniciarRedimensionamento)
-                .on("pointermove.authsearchv150", moverRedimensionamento)
-                .on("pointerup.authsearchv150 pointercancel.authsearchv150", terminarRedimensionamento)
-                .on("keydown.authsearchv150", "#authsearch-resizer", redimensionarPorTeclado)
-                .on("keydown.authsearchv150", "#authsearch-term", function (e) {
+                .on("click.authsearchv2", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv2", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv2", moverRedimensionamento)
+                .on("pointerup.authsearchv2 pointercancel.authsearchv2", terminarRedimensionamento)
+                .on("keydown.authsearchv2", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("keydown.authsearchv2", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
 
-                .on("click.authsearchv150", "#authsearch-toggle-graph", function () {
+                .on("click.authsearchv2", "#authsearch-toggle-graph", function () {
                     atualizarAuthorityState();
                     var qid = String($(this).data("qid") || primeiroQidValido((STATE.authority && STATE.authority.wikidata) || [])).toUpperCase();
                     if (!/^Q\d+$/.test(qid)) return;
@@ -706,37 +1394,29 @@
                         renderFichaAutoridade(entidade, qid);
                     });
                 })
-                .on("click.authsearchv150", "#authsearch-hide-graph", function () {
-                    $("#authsearch-graph-area").empty();
-                    $("#authsearch-toggle-graph").text("Ver");
-                })
-                .on("click.authsearchv150", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv150", "#authsearch-retry-viaf", function () {
-                    var termo = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
+                .on("click.authsearchv2", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv2", "#authsearch-retry-viaf", function () {
+                    var termo = normalizarTermoPesquisa($("#authsearch-term").val()) || normalizarTermoPesquisa((STATE.authority && STATE.authority.nome) || "");
                     if (!termo) return;
                     STATE.tokenPesquisa++;
                     pesquisarVIAF(termo, STATE.tokenPesquisa);
                 })
-                .on("click.authsearchv150", "#authsearch-card-retry-viaf", function () {
-                    var termo = limparTexto((STATE.authority && STATE.authority.nome) || "");
-                    if (termo) pesquisarVIAFNaFicha(termo);
-                })
-                .on("click.authsearchv150", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv150", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv150", ".authsearch-apply", function () {
+                .on("click.authsearchv2", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv2", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv2", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv150 change.authsearchv150", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv2 change.authsearchv2", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv150", function (e) {
+                .on("keydown.authsearchv2", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
                 })
-                .on("resize.authsearchv150", debounce(function () {
+                .on("resize.authsearchv2", debounce(function () {
                     if (!STATE.aberto) return;
                     if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
                         $("body").removeClass("authsearch-docked authsearch-resizing");
@@ -747,9 +1427,10 @@
                 }, 80));
         }
 
+        /** Dispara Wikidata e VIAF em paralelo; token evita resultados obsoletos. */
         function executarPesquisa() {
             atualizarAuthorityState();
-            var termo = limparTexto($("#authsearch-term").val());
+            var termo = normalizarTermoPesquisa($("#authsearch-term").val());
 
             if (!termo) {
                 setEstado("Indique um termo de pesquisa.");
@@ -775,7 +1456,7 @@
 
             var req = $.ajax({
                 url: "https://www.wikidata.org/w/api.php",
-                dataType: "jsonp",
+                dataType: "json",
                 timeout: CONFIG.timeout,
                 data: {
                     action: "wbsearchentities",
@@ -784,7 +1465,8 @@
                     uselang: CONFIG.idiomaPrincipal,
                     type: "item",
                     limit: CONFIG.maxResultadosWikidata,
-                    search: termo
+                    search: termo,
+                    origin: "*"
                 }
             }).done(function (dados) {
                 if (token !== STATE.tokenPesquisa) return;
@@ -800,14 +1482,15 @@
 
                 var req2 = $.ajax({
                     url: "https://www.wikidata.org/w/api.php",
-                    dataType: "jsonp",
+                    dataType: "json",
                     timeout: CONFIG.timeout,
                     data: {
                         action: "wbgetentities",
                         format: "json",
                         ids: ids.join("|"),
                         props: "labels|descriptions|aliases|claims|sitelinks",
-                        languages: "pt|en"
+                        languages: "pt|en",
+                        origin: "*"
                     }
                 }).done(function (detalhes) {
                     if (token !== STATE.tokenPesquisa) return;
@@ -823,8 +1506,8 @@
 
                         resultados.push({
                             id: item.id,
-                            label: obterLabelEntidade(entidade) || item.label || "",
-                            description: obterDescricaoEntidade(entidade) || item.description || "",
+                            label: limitarTexto(obterLabelEntidade(entidade) || item.label || "", 180),
+                            description: limitarTexto(obterDescricaoEntidade(entidade) || item.description || "", 500),
                             entidade: entidade
                         });
                     });
@@ -893,7 +1576,7 @@
                 if (aliases.length) html += meta("Outros nomes", aliases.join(", "));
                 if (viaf) html += meta("VIAF", viaf);
                 html += '<div class="authsearch-actions">' +
-                    '<a class="authsearch-link" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener">Abrir</a>' +
+                    '<a class="authsearch-link" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
                     '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(qid) + '" data-fonte="wikidata">Aplicar Wikidata</button>' +
                     '</div></div></div></div>';
             });
@@ -925,14 +1608,15 @@
 
             var req = $.ajax({
                 url: "https://www.wikidata.org/w/api.php",
-                dataType: "jsonp",
+                dataType: "json",
                 timeout: CONFIG.timeout,
                 data: {
                     action: "wbgetentities",
                     format: "json",
                     ids: qid,
                     props: "labels|descriptions|aliases|claims|sitelinks",
-                    languages: "pt|en"
+                    languages: "pt|en",
+                    origin: "*"
                 }
             }).done(function (data) {
                 var entidade = data && data.entities ? data.entities[qid] : null;
@@ -965,14 +1649,15 @@
 
             var req = $.ajax({
                 url: "https://www.wikidata.org/w/api.php",
-                dataType: "jsonp",
+                dataType: "json",
                 timeout: CONFIG.timeout,
                 data: {
                     action: "wbgetentities",
                     format: "json",
                     ids: faltam.join("|"),
                     props: "labels",
-                    languages: "pt|en"
+                    languages: "pt|en",
+                    origin: "*"
                 }
             }).done(function (data) {
                 var entidades = (data && data.entities) || {};
@@ -993,7 +1678,7 @@
            ====================================================== */
 
         function requisitarVIAF(termo, sucesso, falha) {
-            termo = limparTexto(termo || "");
+            termo = normalizarTermoPesquisa(termo);
             if (!termo) {
                 if (typeof falha === "function") falha("empty");
                 return null;
@@ -1014,8 +1699,15 @@
             }).fail(function (_xhr, status) {
                 if (terminado || status === "abort") return;
 
-                /* Fallback para instalações/browser em que a chamada JSON
-                   direta ao VIAF seja bloqueada por CORS. */
+                /* JSONP executa código remoto no contexto da página. Mantém-se apenas
+                   como fallback explícito para o VIAF, porque algumas instalações bloqueiam
+                   a resposta JSON por CORS. Pode ser desativado em CONFIG. */
+                if (!CONFIG.permitirFallbackJsonpVIAF) {
+                    terminado = true;
+                    if (typeof falha === "function") falha(status || "cors");
+                    return;
+                }
+
                 var reqFallback = $.ajax({
                     url: "https://viaf.org/viaf/AutoSuggest",
                     dataType: "jsonp",
@@ -1055,13 +1747,13 @@
                 lista.slice(0, CONFIG.maxResultadosVIAF).forEach(function (item) {
                     var viafid = limparTexto(item.viafid || "");
                     var termoResultado = limparTexto(item.term || item.displayForm || "");
-                    if (!viafid) return;
+                    if (!/^\d+$/.test(viafid)) return;
 
                     html += '<div class="authsearch-result">' +
                         '<div class="authsearch-result-name">' + escaparHTML(termoResultado || "VIAF") + '</div>' +
                         '<div class="authsearch-id">' + escaparHTML(viafid) + '</div>' +
                         '<div class="authsearch-actions">' +
-                            '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafid) + '" target="_blank" rel="noopener">Abrir</a>' +
+                            '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafid) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
                             '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafid) + '" data-fonte="viaf">Aplicar VIAF</button>' +
                         '</div>' +
                     '</div>';
@@ -1074,44 +1766,6 @@
             });
         }
 
-        function pesquisarVIAFNaFicha(termo) {
-            termo = limparTexto(termo || "");
-            var $alvo = $("#authsearch-card-viaf-area");
-            if (!$alvo.length) return;
-            if (!termo) {
-                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível determinar o nome para pesquisar no VIAF.</div></div>');
-                return;
-            }
-
-            $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-loading">A pesquisar VIAF…</div></div>');
-
-            requisitarVIAF(termo, function (dados) {
-                var lista = dados && dados.result ? dados.result : [];
-                if (!lista.length) {
-                    $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-empty">Sem resultados VIAF.</div></div>');
-                    return;
-                }
-
-                var html = '<div class="authsearch-card-viaf"><div class="authsearch-box-head" style="padding-left:0;padding-right:0"><strong>Resultados VIAF</strong><span class="authsearch-chip">selecione para adicionar ao 017</span></div>';
-                lista.slice(0, CONFIG.maxResultadosVIAF).forEach(function (item) {
-                    var viafid = limparTexto(item.viafid || "");
-                    var termoResultado = limparTexto(item.term || item.displayForm || "");
-                    if (!viafid) return;
-                    html += '<div class="authsearch-result">' +
-                        '<div class="authsearch-result-name">' + escaparHTML(termoResultado || "VIAF") + '</div>' +
-                        '<div class="authsearch-id">' + escaparHTML(viafid) + '</div>' +
-                        '<div class="authsearch-actions">' +
-                            '<a class="authsearch-link" href="https://viaf.org/viaf/' + encodeURIComponent(viafid) + '" target="_blank" rel="noopener">Abrir</a>' +
-                            '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(viafid) + '" data-fonte="viaf">Adicionar ao 017</button>' +
-                        '</div>' +
-                    '</div>';
-                });
-                html += '</div>';
-                $alvo.html(html);
-            }, function () {
-                $alvo.html('<div class="authsearch-card-viaf"><div class="authsearch-error">Não foi possível consultar o VIAF.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-card-retry-viaf">Tentar novamente</button></div></div>');
-            });
-        }
 
         /* ======================================================
            UNIMARC 200 / 017
@@ -1172,6 +1826,7 @@
             return identificadores;
         }
 
+        /** Localiza campos 017 no DOM sem depender de IDs gerados pelo Koha. */
         function encontrarCampos017ParaAplicacao() {
             var campos = [];
             var vistos = {};
@@ -1254,6 +1909,26 @@
             return "outro";
         }
 
+        function capturarEstadoResultadosPesquisa() {
+            return {
+                termo: limparTexto($("#authsearch-term").val() || ""),
+                wikidataHtml: $("#authsearch-wikidata").length ? $("#authsearch-wikidata").html() : "",
+                viafHtml: $("#authsearch-viaf").length ? $("#authsearch-viaf").html() : "",
+                createHtml: $("#authsearch-create-area").length ? $("#authsearch-create-area").html() : "",
+                estadoHtml: $("#authsearch-state").length ? $("#authsearch-state").html() : ""
+            };
+        }
+
+        function restaurarEstadoResultadosPesquisa(snapshot) {
+            if (!snapshot) return;
+            if (snapshot.termo && $("#authsearch-term").length) $("#authsearch-term").val(snapshot.termo);
+            if (snapshot.wikidataHtml && $("#authsearch-wikidata").length) $("#authsearch-wikidata").html(snapshot.wikidataHtml);
+            if (snapshot.viafHtml && $("#authsearch-viaf").length) $("#authsearch-viaf").html(snapshot.viafHtml);
+            if (snapshot.createHtml && $("#authsearch-create-area").length) $("#authsearch-create-area").html(snapshot.createHtml);
+            if (snapshot.estadoHtml && $("#authsearch-state").length) $("#authsearch-state").html(snapshot.estadoHtml);
+        }
+
+        /** Preenche apenas um 017 completamente vazio; nunca substitui dados existentes. */
         function aplicarNoCampo017(valor, fonte) {
             valor = limparTexto(valor);
             fonte = limparTexto(fonte).toLowerCase();
@@ -1270,6 +1945,8 @@
                 return;
             }
 
+            var resultadosAntesDeAplicar = capturarEstadoResultadosPesquisa();
+
             atualizarAuthorityState();
             var jaExiste = (STATE.authority.ids017 || []).some(function (id) {
                 return limparTexto(id.valor).toUpperCase() === valor.toUpperCase() && limparTexto(id.fonte).toLowerCase() === fonte;
@@ -1277,7 +1954,7 @@
 
             if (jaExiste) {
                 setEstado("O identificador " + valor + " já existe no campo 017.");
-                if (fonte === "wikidata") mostrarFichaDepoisDeAplicar(valor);
+                if (fonte === "wikidata") mostrarFichaDepoisDeAplicar(valor, resultadosAntesDeAplicar);
                 return;
             }
 
@@ -1310,9 +1987,9 @@
 
                 if (fonte === "wikidata") {
                     atualizarAuthorityState();
-                    var termoAtual = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
                     renderModoPesquisa();
-                    if (termoAtual) $("#authsearch-term").val(termoAtual);
+                    restaurarEstadoResultadosPesquisa(resultadosAntesDeAplicar);
+                    setEstado("Wikidata aplicado no 017. Pode agora aplicar o VIAF a partir dos resultados já apresentados.");
                 } else if (fonte === "viaf" && STATE.entidadeAtual && STATE.qidAtual && $("#authsearch-graph-area").children().length) {
                     renderFichaAutoridade(STATE.entidadeAtual, STATE.qidAtual);
                 }
@@ -1322,10 +1999,11 @@
             }
         }
 
-        function mostrarFichaDepoisDeAplicar(qid) {
+        function mostrarFichaDepoisDeAplicar(qid, snapshot) {
             atualizarAuthorityState();
             STATE.qidAtual = qid;
             renderModoPesquisa();
+            restaurarEstadoResultadosPesquisa(snapshot);
         }
 
         /* ======================================================
@@ -1430,19 +2108,6 @@
             }
         }
 
-        function obterWikipediaUrlDaEntidade(entidade) {
-            var sites = entidade && entidade.sitelinks ? entidade.sitelinks : {};
-            var ordem = ["ptwiki", "enwiki", "eswiki", "frwiki"];
-            for (var i = 0; i < ordem.length; i++) {
-                var sl = sites[ordem[i]];
-                if (sl && sl.url) return sl.url;
-                if (sl && sl.title) {
-                    var host = ordem[i].replace("wiki", "") + ".wikipedia.org";
-                    return "https://" + host + "/wiki/" + encodeURIComponent(sl.title.replace(/ /g, "_"));
-                }
-            }
-            return "";
-        }
 
         /* ======================================================
            CRIAÇÃO ASSISTIDA NO WIKIDATA
@@ -1454,11 +2119,11 @@
 
             atualizarAuthorityState();
             var a = STATE.authority || {};
-            var nome = limparTexto($("#authsearch-term").val() || a.nome || "");
+            var nome = normalizarTermoPesquisa($("#authsearch-term").val() || a.nome || "");
             var viaf = a.viaf && a.viaf.length ? limparTexto(a.viaf[0].valor || "") : "";
 
             if (!expandida) {
-                $area.html('<div style="padding:0 10px 10px"><button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button></div>');
+                $area.html('<div class="authsearch-create-trigger"><button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button></div>');
                 return;
             }
 
@@ -1467,7 +2132,7 @@
             var qsUrl = "https://quickstatements.toolforge.org/#/v1=" + encodeURIComponent(qs.replace(/\n/g, "||"));
 
             var html = '' +
-                '<div class="authsearch-box" style="margin-top:10px">' +
+                '<div class="authsearch-box authsearch-box-spaced">' +
                     '<div class="authsearch-box-head"><strong>Preparar novo item Wikidata</strong><span class="authsearch-chip">assistido</span></div>' +
                     '<div class="authsearch-box-body">' +
                         '<div class="authsearch-desc">Use apenas depois de confirmar que a pessoa não existe no Wikidata. O AuthSearch prepara os dados; a criação continua a exigir validação no Wikidata.</div>' +
@@ -1475,11 +2140,11 @@
                         '<div class="authsearch-meta"><strong>Tipo:</strong> ser humano (P31 = Q5)</div>' +
                         (viaf ? meta("VIAF a transportar", viaf) : '<div class="authsearch-meta"><strong>VIAF:</strong> ainda não registado no 017. Pode aplicar primeiro um resultado VIAF e voltar a preparar o item.</div>') +
                         '<div class="authsearch-actions">' +
-                            '<a class="authsearch-link authsearch-primary" href="' + escaparAttr(newItemUrl) + '" target="_blank" rel="noopener">Criar manualmente no Wikidata</a>' +
-                            '<a class="authsearch-link" href="' + escaparAttr(qsUrl) + '" target="_blank" rel="noopener">Abrir QuickStatements preparado</a>' +
+                            '<a class="authsearch-link authsearch-primary" href="' + escaparAttr(newItemUrl) + '" target="_blank" rel="noopener noreferrer">Criar manualmente no Wikidata</a>' +
+                            '<a class="authsearch-link" href="' + escaparAttr(qsUrl) + '" target="_blank" rel="noopener noreferrer">Abrir QuickStatements preparado</a>' +
                             '<button type="button" class="authsearch-btn" id="authsearch-copy-qs" data-qs="' + escaparAttr(qs) + '">Copiar comandos</button>' +
                         '</div>' +
-                        '<div class="authsearch-desc" style="margin-top:8px">Depois de criar o item, volte ao AuthSearch e pesquise novamente o nome. O novo QID poderá então ser aplicado ao 017.</div>' +
+                        '<div class="authsearch-desc authsearch-desc-spaced">Depois de criar o item, volte ao AuthSearch e pesquise novamente o nome. O novo QID poderá então ser aplicado ao 017.</div>' +
                     '</div>' +
                 '</div>';
 
@@ -1524,12 +2189,6 @@
             }
         }
 
-        function atualizarLinksPesquisa() {
-            var termo = limparTexto($("#authsearch-term").val());
-            var termoURL = encodeURIComponent(termo);
-            $("#authsearch-link-wikidata").attr("href", termo ? "https://www.wikidata.org/w/index.php?search=" + termoURL : "https://www.wikidata.org/");
-            $("#authsearch-link-viaf").attr("href", termo ? "https://viaf.org/viaf/search?query=local.names+all+%22" + termoURL + "%22&sortKeys=holdingscount&recordSchema=BriefVIAF" : "https://viaf.org/");
-        }
 
         function setEstado(msg, erro) {
             var $el = $("#authsearch-state");
@@ -1541,8 +2200,36 @@
             return '<div class="authsearch-meta"><strong>' + escaparHTML(titulo) + ':</strong> ' + escaparHTML(valor) + '</div>';
         }
 
+        /** Limita e normaliza texto enviado a APIs externas. */
+        function normalizarTermoPesquisa(txt) {
+            return limparTexto(txt).slice(0, CONFIG.maxTermLength);
+        }
+
+        /** Aceita apenas HTTPS e hosts explicitamente autorizados. */
+        function sanitizarUrlExterna(valor, hostsPermitidos) {
+            try {
+                var u = new URL(String(valor || ""), window.location.href);
+                if (u.protocol !== "https:") return "";
+                var host = u.hostname.toLowerCase();
+                var permitido = (hostsPermitidos || []).some(function (h) {
+                    h = String(h || "").toLowerCase();
+                    return host === h || host.endsWith("." + h);
+                });
+                return permitido ? u.href : "";
+            } catch (_e) {
+                return "";
+            }
+        }
+
+
         function limparTexto(txt) {
             return $.trim(String(txt == null ? "" : txt).replace(/\s+/g, " "));
+        }
+
+        function limitarTexto(txt, max) {
+            txt = limparTexto(txt);
+            max = Number(max) || 500;
+            return txt.length > max ? txt.slice(0, max) : txt;
         }
 
         function removerDuplicados(lista) {
