@@ -1,8 +1,8 @@
 /* ==========================================================
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
-   Koha authority editor · Wikidata + VIAF + UNIMARC 017
+   Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão unificada v2.1 · 2026-08-11
+   Versão 3.0 · reconstrução estrutural · 2026-08-11
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -14,8 +14,8 @@
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V2_ATIVO) return;
-    window.AUTHSEARCH_V2_ATIVO = true;
+    if (window.AUTHSEARCH_V3_ATIVO) return;
+    window.AUTHSEARCH_V3_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -33,7 +33,7 @@
 
     var AUTHSEARCH_CSS = `
 :root {
-    --authsearch-css-version: 2;
+    --authsearch-css-version: 3;
     --authsearch-accent:#007fae;
     --authsearch-border:#d0d7de;
     --authsearch-bg:#fff;
@@ -895,14 +895,20 @@ body.authsearch-resizing #authsearch-tab {
             STATE.authority = obterDadosAutoridade();
         }
 
-        /** Lê do formulário Koha apenas os dados necessários ao AuthSearch. */
+        /**
+         * Constrói o estado local da autoridade a partir do UNIMARC visível no editor.
+         * O nome pessoal deixa de depender de uma combinação fixa: $a é obrigatório,
+         * enquanto $b e $c são incorporados apenas quando existem.
+         */
         function obterDadosAutoridade() {
             var campo200 = obterCampo200Autoridade();
-            var nomeB = obterValorSubcampo(campo200, "Outra parte do nome");
-            var nomeA = obterValorSubcampo(campo200, "Palavra de ordem");
-            var datas = obterValorSubcampo(campo200, "Datas");
-            var nome = limparTexto([nomeB, nomeA].filter(Boolean).join(" "));
+            var nomeA = obterSubcampoPessoa(campo200, "a");
+            var nomeB = obterSubcampoPessoa(campo200, "b");
+            var nomeC = obterSubcampoPessoa(campo200, "c");
+            var datas = obterSubcampoPessoa(campo200, "f");
+            var nome = construirFormaNaturalPessoa(nomeA, nomeB, nomeC);
             var ids017 = obterIdentificadores017Atuais();
+            var variantes400 = obterVariantes400Atuais();
 
             return {
                 authid: obterAuthidAtual(),
@@ -910,8 +916,10 @@ body.authsearch-resizing #authsearch-tab {
                 campo200: campo200,
                 nomeA: nomeA,
                 nomeB: nomeB,
+                nomeC: nomeC,
                 nome: nome,
                 datas: datas,
+                variantes400: variantes400,
                 ids017: ids017,
                 wikidata: ids017.filter(function (id) { return id.tipo === "wikidata"; }),
                 viaf: ids017.filter(function (id) { return id.tipo === "viaf"; })
@@ -1400,13 +1408,14 @@ body.authsearch-resizing #authsearch-tab {
             $("li, div, tr").each(function () {
                 var bloco = $(this), texto = limparTexto(bloco.text());
                 if (texto.indexOf("400") === -1 || texto.indexOf("Palavra de ordem") === -1) return;
-                var a = encontrarCampoPorEtiquetaRobusto(bloco, "Palavra de ordem");
-                var b = encontrarCampoPorEtiquetaRobusto(bloco, "Outra parte do nome");
+                var a = obterElementoSubcampoPessoa(bloco, "a");
+                var b = obterElementoSubcampoPessoa(bloco, "b");
+                var c = obterElementoSubcampoPessoa(bloco, "c");
                 if (!a.length) return;
-                var chave = (a.attr("id") || a.attr("name") || "") + "|" + (b.attr("id") || b.attr("name") || "");
+                var chave = (a.attr("id") || a.attr("name") || "") + "|" + (b.attr("id") || b.attr("name") || "") + "|" + (c.attr("id") || c.attr("name") || "");
                 if (!chave || vistos[chave]) return;
                 vistos[chave] = true;
-                campos.push({ bloco: bloco, campoA: a, campoB: b, indicador1: encontrarIndicador017Robusto(bloco) });
+                campos.push({ bloco: bloco, campoA: a, campoB: b, campoC: c, indicador1: encontrarIndicador017Robusto(bloco) });
             });
             return campos;
         }
@@ -1941,28 +1950,28 @@ body.authsearch-resizing #authsearch-tab {
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv2")
-                .on("click.authsearchv2", "#authsearch-tab", function () {
+                .off(".authsearchv3")
+                .on("click.authsearchv3", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv2", "#authsearch-close", fecharPainel)
-                .on("pointerdown.authsearchv2", "#authsearch-resizer", iniciarRedimensionamento)
-                .on("pointermove.authsearchv2", moverRedimensionamento)
-                .on("pointerup.authsearchv2 pointercancel.authsearchv2", terminarRedimensionamento)
-                .on("keydown.authsearchv2", "#authsearch-resizer", redimensionarPorTeclado)
-                .on("keydown.authsearchv2", "#authsearch-term", function (e) {
+                .on("click.authsearchv3", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv3", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv3", moverRedimensionamento)
+                .on("pointerup.authsearchv3 pointercancel.authsearchv3", terminarRedimensionamento)
+                .on("keydown.authsearchv3", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("keydown.authsearchv3", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
 
-                .on("keydown.authsearchv2", ".authsearch-accordion-toggle", function (e) {
+                .on("keydown.authsearchv3", ".authsearch-accordion-toggle", function (e) {
                     if (e.key !== "Enter" && e.key !== " ") return;
                     e.preventDefault();
                     $(this).trigger("click");
                 })
-                .on("click.authsearchv2", ".authsearch-accordion-toggle", function () {
+                .on("click.authsearchv3", ".authsearch-accordion-toggle", function () {
                     var $acc = $(this).closest(".authsearch-accordion");
                     var abrir = !$acc.hasClass("is-open");
                     $acc.toggleClass("is-open", abrir);
@@ -1972,23 +1981,23 @@ body.authsearch-resizing #authsearch-tab {
                     if (tipo === "graph") carregarGrafoAccordion();
                     if (tipo === "works") carregarObrasCatalogo();
                 })
-                .on("input.authsearchv2", "#authsearch-works-filter", function () {
+                .on("input.authsearchv3", "#authsearch-works-filter", function () {
                     filtrarObrasCatalogo($(this).val());
                 })
-                .on("click.authsearchv2", ".authsearch-add-400", function (e) {
+                .on("click.authsearchv3", ".authsearch-add-400", function (e) {
                     e.preventDefault(); e.stopPropagation();
                     aplicarVariante400(String($(this).attr("data-forma") || ""));
                 })
-                .on("click.authsearchv2", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv2", "#authsearch-retry-viaf", function () {
+                .on("click.authsearchv3", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv3", "#authsearch-retry-viaf", function () {
                     var termo = normalizarTermoPesquisa($("#authsearch-term").val()) || normalizarTermoPesquisa((STATE.authority && STATE.authority.nome) || "");
                     if (!termo) return;
                     STATE.tokenPesquisa++;
                     pesquisarVIAF(termo, STATE.tokenPesquisa);
                 })
-                .on("click.authsearchv2", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv2", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv2", ".authsearch-apply", function (e) {
+                .on("click.authsearchv3", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv3", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv3", ".authsearch-apply", function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     // Ler os atributos diretamente evita problemas de cache do jQuery em resultados restaurados no DOM.
@@ -1996,15 +2005,15 @@ body.authsearch-resizing #authsearch-tab {
                     var fonte = String($(this).attr("data-fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv2 change.authsearchv2", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv3 change.authsearchv3", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv2", function (e) {
+                .on("keydown.authsearchv3", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
                 })
-                .on("resize.authsearchv2", debounce(function () {
+                .on("resize.authsearchv3", debounce(function () {
                     if (!STATE.aberto) return;
                     if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
                         $("body").removeClass("authsearch-docked authsearch-resizing");
@@ -2387,8 +2396,88 @@ body.authsearch-resizing #authsearch-tab {
 
 
         /* ======================================================
-           UNIMARC 200 / 017
+           UNIMARC 017 / 200 / 400
            ====================================================== */
+
+        /* ======================================================
+           LEITURA UNIMARC 200 / 400
+           ====================================================== */
+
+        var ROTULOS_SUBCAMPOS_PESSOA = {
+            a: ["Palavra de ordem", "Elemento de entrada", "Entry element"],
+            b: ["Outra parte do nome", "Parte do nome", "Part of name other than entry element"],
+            c: ["Aditamentos ao nome", "Adições ao nome", "Adicoes ao nome", "Qualificação", "Qualificacao", "Additions to name"],
+            f: ["Datas", "Datas associadas ao nome", "Dates"]
+        };
+
+        /** Localiza um subcampo pelo código MARC quando o DOM o expõe; usa rótulos como fallback. */
+        function obterElementoSubcampoPessoa(campo, codigo) {
+            if (!campo || !campo.length) return $();
+            codigo = String(codigo || "").toLowerCase();
+            var encontrado = $();
+
+            campo.find("input[type='text'], textarea").each(function () {
+                var $el = $(this);
+                var attrs = [
+                    $el.attr("data-subfieldcode"), $el.attr("data-subfield"), $el.attr("data-code"),
+                    $el.attr("id"), $el.attr("name")
+                ].filter(Boolean).join(" ").toLowerCase();
+                if (attrs === codigo || new RegExp("(?:subfield|code)[_-]?" + codigo + "(?:[_-]|$)", "i").test(attrs)) {
+                    encontrado = $el; return false;
+                }
+                var $linha = $el.closest("li, tr, p, .subfield_line, .input_marceditor");
+                var txt = limparTexto($linha.find(".subfieldcode, .subfield-code, label").first().text()).toLowerCase();
+                if (txt === codigo || txt === "$" + codigo || txt.indexOf("$" + codigo) === 0) {
+                    encontrado = $el; return false;
+                }
+            });
+            if (encontrado.length) return encontrado;
+
+            var rotulos = ROTULOS_SUBCAMPOS_PESSOA[codigo] || [];
+            for (var i = 0; i < rotulos.length; i++) {
+                encontrado = encontrarCampoPorEtiquetaRobusto(campo, rotulos[i]);
+                if (encontrado.length) return encontrado;
+            }
+            return $();
+        }
+
+        function obterSubcampoPessoa(campo, codigo) {
+            var $el = obterElementoSubcampoPessoa(campo, codigo);
+            return $el.length ? limparTexto($el.val()) : "";
+        }
+
+        function ehMarcadorPseudonimo(valor) {
+            var v = limparTexto(valor || "").toLowerCase();
+            return /^(?:pseud\.?|pseudónimo|pseudonimo|pseudonym)(?:\s|$)/i.test(v);
+        }
+
+        /** Reconstrói a forma de apresentação: $b + $a + $c, omitindo $c quando é apenas "pseud.". */
+        function construirFormaNaturalPessoa(a, b, c) {
+            a = limparTexto(a || ""); b = limparTexto(b || ""); c = limparTexto(c || "");
+            var partes = [];
+            if (b) partes.push(b);
+            if (a) partes.push(a);
+            if (c && !ehMarcadorPseudonimo(c)) partes.push(c);
+            return limparTexto(partes.join(" "));
+        }
+
+        /** Lê todas as ocorrências 400; $c=pseud. marca a variante para P742. */
+        function obterVariantes400Atuais() {
+            var out = [], vistos = {};
+            encontrarCampos400ParaAplicacao().forEach(function (campo) {
+                var a = campo.campoA.length ? limparTexto(campo.campoA.val()) : "";
+                var b = campo.campoB && campo.campoB.length ? limparTexto(campo.campoB.val()) : "";
+                var c = campo.campoC && campo.campoC.length ? limparTexto(campo.campoC.val()) : "";
+                if (!a && !b && !c) return;
+                var forma = construirFormaNaturalPessoa(a, b, c);
+                if (!forma) return;
+                var chave = normalizarFormaComparacao(forma) + "|" + (ehMarcadorPseudonimo(c) ? "p" : "v");
+                if (vistos[chave]) return;
+                vistos[chave] = true;
+                out.push({ a: a, b: b, c: c, forma: forma, pseudonimo: ehMarcadorPseudonimo(c) });
+            });
+            return out;
+        }
 
         function obterCampo200Autoridade() {
             var campo = $();
@@ -2859,14 +2948,21 @@ body.authsearch-resizing #authsearch-tab {
            CRIAÇÃO ASSISTIDA NO WIKIDATA
            ====================================================== */
 
+        /**
+         * Prepara um novo item Wikidata apenas com dados explicitamente presentes
+         * no registo local. Nada é inferido a partir de notas ou texto externo.
+         */
         function renderAjudaCriacaoWikidata(expandida) {
             var $area = $("#authsearch-create-area");
             if (!$area.length) return;
 
             atualizarAuthorityState();
             var a = STATE.authority || {};
-            var nome = normalizarTermoPesquisa($("#authsearch-term").val() || a.nome || "");
+            var nome = limparTexto(a.nome || "");
             var viaf = a.viaf && a.viaf.length ? limparTexto(a.viaf[0].valor || "") : "";
+            var datas = interpretarDatas200f(a.datas || "");
+            var variantes = (a.variantes400 || []).map(function (v) { return v.forma; }).filter(Boolean);
+            var pseudonimos = (a.variantes400 || []).filter(function (v) { return v.pseudonimo; }).map(function (v) { return v.forma; }).filter(Boolean);
 
             if (!expandida) {
                 $area.html('<div class="authsearch-create-trigger"><button type="button" class="authsearch-btn" id="authsearch-prepare-wikidata">Não encontrou? Preparar novo item no Wikidata</button></div>');
@@ -2874,37 +2970,89 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             var newItemUrl = "https://www.wikidata.org/wiki/Special:NewItem?label=" + encodeURIComponent(nome);
-            var qs = construirQuickStatementsNovoItem(nome, viaf);
+            var qs = construirQuickStatementsNovoItem({
+                nome: nome,
+                nascimento: datas.nascimento,
+                morte: datas.morte,
+                variantes: variantes,
+                pseudonimos: pseudonimos,
+                viaf: viaf
+            });
             var qsUrl = "https://quickstatements.toolforge.org/#/v1=" + encodeURIComponent(qs.replace(/\n/g, "||"));
 
             var html = '' +
                 '<div class="authsearch-box authsearch-box-spaced">' +
                     '<div class="authsearch-box-head"><strong>Preparar novo item Wikidata</strong><span class="authsearch-chip">assistido</span></div>' +
                     '<div class="authsearch-box-body">' +
-                        '<div class="authsearch-desc">Use apenas depois de confirmar que a pessoa não existe no Wikidata. O AuthSearch prepara os dados; a criação continua a exigir validação no Wikidata.</div>' +
+                        '<div class="authsearch-desc">Dados preparados exclusivamente a partir desta autoridade UNIMARC. Reveja-os antes de executar o QuickStatements.</div>' +
                         (nome ? meta("Nome", nome) : '') +
                         '<div class="authsearch-meta"><strong>Tipo:</strong> ser humano (P31 = Q5)</div>' +
-                        (viaf ? meta("VIAF a transportar", viaf) : '<div class="authsearch-meta"><strong>VIAF:</strong> ainda não registado no 017. Pode aplicar primeiro um resultado VIAF e voltar a preparar o item.</div>') +
+                        (datas.nascimento ? meta("Nascimento", datas.nascimento) : '') +
+                        (datas.morte ? meta("Morte", datas.morte) : '') +
+                        (variantes.length ? meta("Variantes", variantes.join(" · ")) : '') +
+                        (pseudonimos.length ? meta("Pseudónimos", pseudonimos.join(" · ")) : '') +
+                        (viaf ? meta("VIAF", viaf) : '<div class="authsearch-meta"><strong>VIAF:</strong> não existe no 017; não será acrescentado.</div>') +
+                        (a.datas && !datas.interpretada ? '<div class="authsearch-meta"><strong>Datas não transportadas:</strong> ' + escaparHTML(a.datas) + ' (formato ambíguo)</div>' : '') +
                         '<div class="authsearch-actions">' +
                             '<a class="authsearch-link authsearch-primary" href="' + escaparAttr(newItemUrl) + '" target="_blank" rel="noopener noreferrer">Criar manualmente no Wikidata</a>' +
                             '<a class="authsearch-link" href="' + escaparAttr(qsUrl) + '" target="_blank" rel="noopener noreferrer">Abrir QuickStatements preparado</a>' +
                             '<button type="button" class="authsearch-btn" id="authsearch-copy-qs" data-qs="' + escaparAttr(qs) + '">Copiar comandos</button>' +
                         '</div>' +
-                        '<div class="authsearch-desc authsearch-desc-spaced">Depois de criar o item, volte ao AuthSearch e pesquise novamente o nome. O novo QID poderá então ser aplicado ao 017.</div>' +
+                        '<div class="authsearch-desc authsearch-desc-spaced">Depois de criar o item, volte ao AuthSearch e pesquise novamente o nome para aplicar o novo QID ao 017.</div>' +
                     '</div>' +
                 '</div>';
 
             $area.html(html);
         }
 
-        function construirQuickStatementsNovoItem(nome, viaf) {
-            nome = limparTexto(nome || "");
-            viaf = limparTexto(viaf || "");
+        function construirQuickStatementsNovoItem(dados) {
+            dados = dados || {};
+            var nome = limparTexto(dados.nome || "");
+            var viaf = limparTexto(dados.viaf || "");
+            var variantes = removerDuplicados((dados.variantes || []).map(limparTexto).filter(Boolean));
+            var pseudonimos = removerDuplicados((dados.pseudonimos || []).map(limparTexto).filter(Boolean));
             var linhas = ["CREATE"];
+
             if (nome) linhas.push('LAST|Lpt|"' + escaparQuickStatements(nome) + '"');
             linhas.push("LAST|P31|Q5");
+
+            if (dados.nascimento) linhas.push("LAST|P569|" + dataAnoQuickStatements(dados.nascimento));
+            if (dados.morte) linhas.push("LAST|P570|" + dataAnoQuickStatements(dados.morte));
+
+            variantes.forEach(function (forma) {
+                if (!forma || normalizarFormaComparacao(forma) === normalizarFormaComparacao(nome)) return;
+                linhas.push('LAST|Apt|"' + escaparQuickStatements(forma) + '"');
+            });
+
+            pseudonimos.forEach(function (forma) {
+                if (!forma) return;
+                linhas.push('LAST|P742|"' + escaparQuickStatements(forma) + '"');
+            });
+
             if (/^\d+$/.test(viaf)) linhas.push('LAST|P214|"' + viaf + '"');
-            return linhas.join("\n");
+            return removerDuplicados(linhas).join("\n");
+        }
+
+        /** Aceita apenas datas anuais inequívocas de 200$f: AAAA-AAAA, AAAA- ou -AAAA. */
+        function interpretarDatas200f(valor) {
+            var original = limparTexto(valor || "");
+            var v = original.replace(/[–—−]/g, "-").replace(/\s+/g, "");
+            var m;
+            if ((m = v.match(/^(\d{4})-(\d{4})$/))) return { nascimento: m[1], morte: m[2], interpretada: true };
+            if ((m = v.match(/^(\d{4})-$/))) return { nascimento: m[1], morte: "", interpretada: true };
+            if ((m = v.match(/^-(\d{4})$/))) return { nascimento: "", morte: m[1], interpretada: true };
+            return { nascimento: "", morte: "", interpretada: !original };
+        }
+
+        function dataAnoQuickStatements(ano) {
+            ano = String(ano || "");
+            return /^\d{4}$/.test(ano) ? "+" + ano + "-00-00T00:00:00Z/9" : "";
+        }
+
+        function normalizarFormaComparacao(valor) {
+            var v = limparTexto(valor || "").toLowerCase();
+            if (typeof v.normalize === "function") v = v.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return v;
         }
 
         function escaparQuickStatements(valor) {
