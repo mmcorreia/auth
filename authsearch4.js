@@ -2,14 +2,14 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Isolado a partir do K●RE Identidade v6.0
    Objetivo: Wikidata + VIAF + UNIMARC 017 + ficha de entidade
-   v1.2 | 2026-08-11
+   v1.3 | 2026-08-11
    ========================================================== */
 
 (function () {
     "use strict";
 
-    if (window.AUTHSEARCH_V12_ATIVO) return;
-    window.AUTHSEARCH_V12_ATIVO = true;
+    if (window.AUTHSEARCH_V13_ATIVO) return;
+    window.AUTHSEARCH_V13_ATIVO = true;
 
     if (!window.jQuery) {
         console.warn("AuthSearch: jQuery não está disponível.");
@@ -27,8 +27,10 @@
             maxResultadosVIAF: 8,
             timeout: 10000,
             larguraPainel: "42vw",
-            larguraMinima: 420,
-            larguraMaxima: 760,
+            larguraMinima: 340,
+            larguraMaxima: 980,
+            larguraMaximaViewport: 0.72,
+            storageKeyLargura: "authsearch-panel-width",
             idiomaPrincipal: "pt",
             idiomasFallback: ["pt", "en"],
             wikidataHumanQid: "Q5"
@@ -44,7 +46,9 @@
             qidAtual: "",
             cacheEntidades: {},
             cacheLabels: {},
-            ultimaPesquisaAutomatica: ""
+            ultimaPesquisaAutomatica: "",
+            larguraPainelPx: 0,
+            redimensionando: false
         };
 
         instalarInterface();
@@ -144,7 +148,7 @@
 
         function instalarInterface() {
             $("#authsearch-root, #authsearch-tab, #authsearch-style").remove();
-            $("body").removeClass("authsearch-docked");
+            $("body").removeClass("authsearch-docked authsearch-resizing");
             document.documentElement.style.removeProperty("--authsearch-dock-width");
 
             var css = '' +
@@ -152,10 +156,17 @@
                 ':root{--authsearch-accent:#007fae;--authsearch-border:#d0d7de;--authsearch-bg:#fff;--authsearch-muted:#667085;}' +
                 '#authsearch-tab{position:fixed;left:0;top:34%;z-index:10050;transition:left .18s ease;border:1px solid #98a2b3;border-left:0;background:#fff;color:#1f2937;padding:12px 7px;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer;border-radius:0 6px 6px 0;box-shadow:0 3px 12px rgba(15,23,42,.12);}' +
                 '#authsearch-tab:hover{background:#f8fafc;color:#007fae;}' +
-                '#authsearch-root{position:fixed;left:0;top:0;bottom:0;width:min(' + CONFIG.larguraPainel + ',' + CONFIG.larguraMaxima + 'px);min-width:' + CONFIG.larguraMinima + 'px;max-width:calc(100vw - 70px);z-index:10040;background:var(--authsearch-bg);border-right:1px solid #98a2b3;box-shadow:8px 0 24px rgba(15,23,42,.16);transform:translateX(-102%);transition:transform .18s ease;display:flex;flex-direction:column;color:#111827;}' +
+                '#authsearch-root{position:fixed;left:0;top:0;bottom:0;width:var(--authsearch-dock-width,min(' + CONFIG.larguraPainel + ',' + CONFIG.larguraMaxima + 'px));min-width:' + CONFIG.larguraMinima + 'px;max-width:72vw;z-index:10040;background:var(--authsearch-bg);border-right:1px solid #98a2b3;box-shadow:8px 0 24px rgba(15,23,42,.16);transform:translateX(-102%);transition:transform .18s ease;display:flex;flex-direction:column;color:#111827;}' +
                 '#authsearch-root.authsearch-open{transform:translateX(0);}' +
+                '#authsearch-resizer{position:absolute;top:0;right:-5px;width:10px;height:100%;z-index:3;cursor:col-resize;background:transparent;touch-action:none;}' +
+                '#authsearch-resizer:after{content:"";position:absolute;top:0;bottom:0;left:4px;width:2px;background:transparent;transition:background .12s ease;}' +
+                '#authsearch-resizer:hover:after,body.authsearch-resizing #authsearch-resizer:after{background:#007fae;}' +
+                'body.authsearch-resizing{cursor:col-resize!important;user-select:none!important;}' +
+                'body.authsearch-resizing *{cursor:col-resize!important;}' +
                 'body.authsearch-docked{box-sizing:border-box!important;width:100%!important;padding-left:var(--authsearch-dock-width)!important;transition:padding-left .18s ease!important;overflow-x:hidden!important;}' +
+                'body.authsearch-resizing.authsearch-docked{transition:none!important;}' +
                 'body.authsearch-docked #authsearch-tab{left:var(--authsearch-dock-width);}' +
+                'body.authsearch-resizing #authsearch-tab{transition:none!important;}' +
                 '#authsearch-root *{box-sizing:border-box;}' +
                 '.authsearch-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 13px;border-bottom:1px solid #e5e7eb;background:#fff;flex:0 0 auto;}' +
                 '.authsearch-brand{display:flex;align-items:center;gap:8px;min-width:0;}' +
@@ -217,9 +228,12 @@
                         '<button type="button" class="authsearch-close" id="authsearch-close" aria-label="Fechar">×</button>' +
                     '</div>' +
                     '<div class="authsearch-body" id="authsearch-body"></div>' +
+                    '<div id="authsearch-resizer" role="separator" aria-orientation="vertical" aria-label="Redimensionar painel Identificadores" tabindex="0"></div>' +
                 '</aside>';
 
             $("body").append(html);
+            STATE.larguraPainelPx = obterLarguraInicialPainel();
+            definirLarguraPainel(STATE.larguraPainelPx, false);
         }
 
         function abrirPainel() {
@@ -256,22 +270,118 @@
             removerDockLayout();
         }
 
+        function obterLimitesLarguraPainel() {
+            var vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+            var min = Math.min(CONFIG.larguraMinima, Math.max(260, vw - 120));
+            var max = Math.min(CONFIG.larguraMaxima, Math.floor(vw * CONFIG.larguraMaximaViewport));
+            if (max < min) max = min;
+            return { min: min, max: max };
+        }
+
+        function obterLarguraInicialPainel() {
+            var limites = obterLimitesLarguraPainel();
+            var guardada = 0;
+            try {
+                guardada = parseInt(window.localStorage.getItem(CONFIG.storageKeyLargura) || "0", 10) || 0;
+            } catch (e) {}
+
+            if (guardada) return Math.max(limites.min, Math.min(limites.max, guardada));
+
+            var root = document.getElementById("authsearch-root");
+            var medida = root ? Math.round(root.getBoundingClientRect().width || 0) : 0;
+            if (!medida) medida = Math.round((window.innerWidth || 1200) * 0.42);
+            return Math.max(limites.min, Math.min(limites.max, medida));
+        }
+
+        function definirLarguraPainel(px, persistir) {
+            var limites = obterLimitesLarguraPainel();
+            px = Math.round(Math.max(limites.min, Math.min(limites.max, Number(px) || limites.min)));
+
+            STATE.larguraPainelPx = px;
+            document.documentElement.style.setProperty("--authsearch-dock-width", px + "px");
+
+            if (persistir) {
+                try { window.localStorage.setItem(CONFIG.storageKeyLargura, String(px)); } catch (e) {}
+            }
+
+            if (STATE.aberto && !window.matchMedia("(max-width: 800px)").matches) {
+                $("body").addClass("authsearch-docked");
+            }
+        }
+
         function aplicarDockLayout() {
             if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
-                removerDockLayout();
+                removerDockLayout(false);
                 return;
             }
-            var largura = Math.round($("#authsearch-root").outerWidth() || 0);
-            if (!largura) return;
-            document.documentElement.style.setProperty("--authsearch-dock-width", largura + "px");
+
+            if (!STATE.larguraPainelPx) STATE.larguraPainelPx = obterLarguraInicialPainel();
+            definirLarguraPainel(STATE.larguraPainelPx, false);
             $("body").addClass("authsearch-docked");
+
             try { window.dispatchEvent(new Event("resize")); } catch (e) {}
         }
 
-        function removerDockLayout() {
-            $("body").removeClass("authsearch-docked");
-            document.documentElement.style.removeProperty("--authsearch-dock-width");
+        function removerDockLayout(limparLargura) {
+            $("body").removeClass("authsearch-docked authsearch-resizing");
+            if (limparLargura === true) {
+                document.documentElement.style.removeProperty("--authsearch-dock-width");
+            }
+            STATE.redimensionando = false;
             try { window.dispatchEvent(new Event("resize")); } catch (e) {}
+        }
+
+        function iniciarRedimensionamento(e) {
+            if (!STATE.aberto) return;
+            if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) return;
+
+            e.preventDefault();
+            STATE.redimensionando = true;
+            $("body").addClass("authsearch-resizing");
+
+            var pointerId = e.pointerId;
+            var handle = e.currentTarget;
+            try {
+                if (handle.setPointerCapture && pointerId !== undefined) handle.setPointerCapture(pointerId);
+            } catch (_e) {}
+        }
+
+        function moverRedimensionamento(e) {
+            if (!STATE.redimensionando) return;
+            e.preventDefault();
+
+            // O painel está ancorado à esquerda: clientX é diretamente a nova largura.
+            definirLarguraPainel(e.clientX, false);
+
+            // Alguns componentes do Koha recalculam dimensões ao receber resize.
+            try { window.dispatchEvent(new Event("resize")); } catch (_e) {}
+        }
+
+        function terminarRedimensionamento(e) {
+            if (!STATE.redimensionando) return;
+            STATE.redimensionando = false;
+            $("body").removeClass("authsearch-resizing");
+            definirLarguraPainel(STATE.larguraPainelPx, true);
+
+            try {
+                var handle = document.getElementById("authsearch-resizer");
+                if (handle && handle.releasePointerCapture && e && e.pointerId !== undefined) {
+                    handle.releasePointerCapture(e.pointerId);
+                }
+            } catch (_e) {}
+
+            try { window.dispatchEvent(new Event("resize")); } catch (_e) {}
+        }
+
+        function redimensionarPorTeclado(e) {
+            if (!STATE.aberto) return;
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            var passo = e.shiftKey ? 50 : 20;
+            var largura = STATE.larguraPainelPx || obterLarguraInicialPainel();
+            largura += e.key === "ArrowRight" ? passo : -passo;
+            definirLarguraPainel(largura, true);
+            try { window.dispatchEvent(new Event("resize")); } catch (_e) {}
         }
 
         function atualizarResumoLateral() {
@@ -415,16 +525,20 @@
 
         function bindEventos() {
             $(document)
-                .off(".authsearchv1")
-                .on("click.authsearchv1", "#authsearch-tab", function () {
+                .off(".authsearchv13")
+                .on("click.authsearchv13", "#authsearch-tab", function () {
                     if (STATE.aberto) fecharPainel(); else abrirPainel();
                 })
-                .on("click.authsearchv1", "#authsearch-close", fecharPainel)
-                .on("click.authsearchv1", "#authsearch-switch-search", function () {
+                .on("click.authsearchv13", "#authsearch-close", fecharPainel)
+                .on("pointerdown.authsearchv13", "#authsearch-resizer", iniciarRedimensionamento)
+                .on("pointermove.authsearchv13", moverRedimensionamento)
+                .on("pointerup.authsearchv1 pointercancel.authsearchv13", terminarRedimensionamento)
+                .on("keydown.authsearchv13", "#authsearch-resizer", redimensionarPorTeclado)
+                .on("click.authsearchv13", "#authsearch-switch-search", function () {
                     atualizarAuthorityState();
                     renderModoPesquisa();
                 })
-                .on("click.authsearchv1", "#authsearch-back-card", function () {
+                .on("click.authsearchv13", "#authsearch-back-card", function () {
                     atualizarAuthorityState();
                     var qid = primeiroQidValido(STATE.authority.wikidata || []);
                     if (!qid) return renderModoPesquisa();
@@ -435,28 +549,43 @@
                         renderFichaAutoridade(entidade, qid);
                     });
                 })
-                .on("keydown.authsearchv1", "#authsearch-term", function (e) {
+                .on("keydown.authsearchv13", "#authsearch-term", function (e) {
                     if (e.key === "Enter") {
                         e.preventDefault();
                         $("#authsearch-search").trigger("click");
                     }
                 })
-                .on("click.authsearchv1", "#authsearch-search", executarPesquisa)
-                .on("click.authsearchv1", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
-                .on("click.authsearchv1", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv1", ".authsearch-apply", function () {
+                .on("click.authsearchv13", "#authsearch-search", executarPesquisa)
+                .on("click.authsearchv13", "#authsearch-retry-viaf", function () {
+                    var termo = limparTexto($("#authsearch-term").val()) || limparTexto((STATE.authority && STATE.authority.nome) || "");
+                    if (!termo) return;
+                    STATE.tokenPesquisa++;
+                    pesquisarVIAF(termo, STATE.tokenPesquisa);
+                })
+                .on("click.authsearchv13", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
+                .on("click.authsearchv13", "#authsearch-copy-qs", copiarQuickStatements)
+                .on("click.authsearchv13", ".authsearch-apply", function () {
                     var valor = String($(this).data("valor") || "");
                     var fonte = String($(this).data("fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
-                .on("input.authsearchv1 change.authsearchv1", "input[type='text'], textarea, select", debounce(function () {
+                .on("input.authsearchv1 change.authsearchv13", "input[type='text'], textarea, select", debounce(function () {
                     if ($(this).closest("#authsearch-root").length) return;
                     atualizarAuthorityState();
                     atualizarResumoLateral();
                 }, 180))
-                .on("keydown.authsearchv1", function (e) {
+                .on("keydown.authsearchv13", function (e) {
                     if (e.key === "Escape" && STATE.aberto) fecharPainel();
-                });
+                })
+                .on("resize.authsearchv13", debounce(function () {
+                    if (!STATE.aberto) return;
+                    if (window.matchMedia && window.matchMedia("(max-width: 800px)").matches) {
+                        $("body").removeClass("authsearch-docked authsearch-resizing");
+                        return;
+                    }
+                    if (!STATE.larguraPainelPx) STATE.larguraPainelPx = obterLarguraInicialPainel();
+                    definirLarguraPainel(STATE.larguraPainelPx, false);
+                }, 80));
         }
 
         function executarPesquisa() {
@@ -738,8 +867,7 @@
                 $("#authsearch-viaf").html(html || '<div class="authsearch-empty">Sem resultados.</div>');
             }).fail(function (_xhr, status) {
                 if (status === "abort" || token !== STATE.tokenPesquisa) return;
-                var link = "https://viaf.org/viaf/search?query=local.names+all+%22" + encodeURIComponent(termo) + "%22&sortKeys=holdingscount&recordSchema=BriefVIAF";
-                $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível obter resultados VIAF dentro do painel. Pode tentar novamente ou abrir a pesquisa externa.</div><div class="authsearch-actions"><a class="authsearch-link" href="' + escaparAttr(link) + '" target="_blank" rel="noopener">Pesquisar diretamente no VIAF</a></div>');
+                $("#authsearch-viaf").html('<div class="authsearch-error">Não foi possível obter resultados VIAF dentro do painel.</div><div class="authsearch-actions"><button type="button" class="authsearch-btn" id="authsearch-retry-viaf">Tentar novamente</button></div>');
             });
 
             registarPedido(req);
