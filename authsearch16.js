@@ -1,3 +1,6 @@
+
+
+
 /* ==========================================================
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017
@@ -1410,9 +1413,12 @@ body.authsearch-docked #authsearch-tab {
                 })
                 .on("click.authsearchv2", "#authsearch-prepare-wikidata", function () { renderAjudaCriacaoWikidata(true); })
                 .on("click.authsearchv2", "#authsearch-copy-qs", copiarQuickStatements)
-                .on("click.authsearchv2", ".authsearch-apply", function () {
-                    var valor = String($(this).data("valor") || "");
-                    var fonte = String($(this).data("fonte") || "");
+                .on("click.authsearchv2", ".authsearch-apply", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Ler os atributos diretamente evita problemas de cache do jQuery em resultados restaurados no DOM.
+                    var valor = String($(this).attr("data-valor") || "");
+                    var fonte = String($(this).attr("data-fonte") || "");
                     aplicarNoCampo017(valor, fonte);
                 })
                 .on("input.authsearchv2 change.authsearchv2", "input[type='text'], textarea, select", debounce(function () {
@@ -1927,6 +1933,89 @@ body.authsearch-docked #authsearch-tab {
             return "outro";
         }
 
+        /** Devolve a primeira ocorrência 017 totalmente vazia. */
+        function encontrar017Livre() {
+            var livre = null;
+            encontrarCampos017ParaAplicacao().some(function (campo) {
+                var valorA = campo.campoA.length ? limparTexto(campo.campoA.val()) : "";
+                var valor2 = campo.campo2.length ? limparTexto(campo.campo2.val()) : "";
+                if (!valorA && !valor2) {
+                    livre = campo;
+                    return true;
+                }
+                return false;
+            });
+            return livre;
+        }
+
+        /**
+         * Tenta criar uma nova ocorrência repetível de 017 usando o controlo nativo do Koha.
+         * Não clona manualmente HTML: isso poderia quebrar IDs/names internos do editor MARC.
+         */
+        function tentarCriarNovo017(callback) {
+            callback = typeof callback === "function" ? callback : function () {};
+            var antes = encontrarCampos017ParaAplicacao().length;
+            var $gatilho = $();
+
+            encontrarCampos017ParaAplicacao().some(function (campo) {
+                var $zona = campo.bloco.closest("li");
+                if (!$zona.length) $zona = campo.bloco;
+
+                var $candidatos = $zona.find("button, input[type='button'], a").filter(function () {
+                    var $el = $(this);
+                    var onclick = String($el.attr("onclick") || "");
+                    var texto = limparTexto([$el.text(), $el.attr("title"), $el.attr("aria-label"), $el.val()].filter(Boolean).join(" ")).toLowerCase();
+
+                    // O editor MARC do Koha historicamente usa CloneField para repetir campos.
+                    if (/CloneField\s*\(/i.test(onclick)) return true;
+                    if (/repetir campo|duplicar campo|adicionar campo|novo campo|repeat field|clone field/i.test(texto)) return true;
+                    return false;
+                }).first();
+
+                if ($candidatos.length) {
+                    $gatilho = $candidatos;
+                    return true;
+                }
+                return false;
+            });
+
+            if (!$gatilho.length) {
+                callback(null);
+                return;
+            }
+
+            try {
+                $gatilho.trigger("click");
+            } catch (e) {
+                console.warn("AuthSearch: não foi possível acionar a repetição do campo 017", e);
+                callback(null);
+                return;
+            }
+
+            // O Koha cria a nova ocorrência de forma síncrona na maioria das versões,
+            // mas damos uma pequena margem para handlers internos do editor.
+            window.setTimeout(function () {
+                var camposDepois = encontrarCampos017ParaAplicacao();
+                var livre = encontrar017Livre();
+                if (camposDepois.length > antes && livre) callback(livre);
+                else callback(livre || null);
+            }, 120);
+        }
+
+        /** Escreve e confirma os valores numa ocorrência 017 já localizada. */
+        function escrever017(campo, valor, fonte) {
+            if (!campo || !campo.campoA || !campo.campoA.length || !campo.campo2 || !campo.campo2.length) return false;
+
+            if (campo.indicador1 && campo.indicador1.length) {
+                campo.indicador1.val("7").trigger("input").trigger("change");
+            }
+            campo.campoA.val(valor).trigger("input").trigger("change");
+            campo.campo2.val(fonte).trigger("input").trigger("change");
+
+            return limparTexto(campo.campoA.val()).toUpperCase() === limparTexto(valor).toUpperCase() &&
+                   limparTexto(campo.campo2.val()).toLowerCase() === limparTexto(fonte).toLowerCase();
+        }
+
         function capturarEstadoResultadosPesquisa() {
             return {
                 termo: limparTexto($("#authsearch-term").val() || ""),
@@ -1952,7 +2041,42 @@ body.authsearch-docked #authsearch-tab {
             STATE.pesquisaPersistente = capturarEstadoResultadosPesquisa();
         }
 
-        /** Preenche apenas um 017 completamente vazio; nunca substitui dados existentes. */
+
+        /**
+         * Garante o controlo do grafo sem reconstruir a pesquisa.
+         * É usado após aplicar um QID para manter Wikidata e VIAF visíveis no mesmo DOM.
+         */
+        function garantirControloGrafo(qid) {
+            qid = String(qid || "").toUpperCase();
+            if (!/^Q\d+$/.test(qid)) return;
+
+            STATE.qidAtual = qid;
+
+            var $toggle = $("#authsearch-toggle-graph");
+            if ($toggle.length) {
+                $toggle.attr("data-qid", qid).data("qid", qid);
+                return;
+            }
+
+            var html = '<div class="authsearch-graph-toggle">' +
+                '<div class="authsearch-graph-toggle-copy">' +
+                    '<span class="authsearch-graph-toggle-title">Grafo de identidade</span>' +
+                    '<span class="authsearch-graph-toggle-sub">Informação enriquecida de projetos Wikimedia</span>' +
+                '</div>' +
+                '<button type="button" class="authsearch-btn authsearch-primary" id="authsearch-toggle-graph" data-qid="' + escaparAttr(qid) + '">Ver</button>' +
+            '</div><div id="authsearch-graph-area" class="authsearch-graph-slot"></div>';
+
+            $("#authsearch-body").prepend(html);
+
+            carregarEntidadeWikidata(qid, function (entidade) {
+                if (entidade) STATE.entidadeAtual = entidade;
+            });
+        }
+
+        /**
+         * Aplica Wikidata/VIAF ao 017 sem substituir dados existentes.
+         * Se não existir um 017 livre, tenta criar uma nova ocorrência pelo mecanismo nativo do Koha.
+         */
         function aplicarNoCampo017(valor, fonte) {
             valor = limparTexto(valor);
             fonte = limparTexto(fonte).toLowerCase();
@@ -1969,66 +2093,77 @@ body.authsearch-docked #authsearch-tab {
                 return;
             }
 
-            var resultadosAntesDeAplicar = capturarEstadoResultadosPesquisa();
-
             atualizarAuthorityState();
             var jaExiste = (STATE.authority.ids017 || []).some(function (id) {
-                return limparTexto(id.valor).toUpperCase() === valor.toUpperCase() && limparTexto(id.fonte).toLowerCase() === fonte;
+                return limparTexto(id.valor).toUpperCase() === valor.toUpperCase() &&
+                       limparTexto(id.fonte).toLowerCase() === fonte;
             });
 
             if (jaExiste) {
                 setEstado("O identificador " + valor + " já existe no campo 017.");
-                if (fonte === "wikidata") mostrarFichaDepoisDeAplicar(valor, resultadosAntesDeAplicar);
+                if (fonte === "wikidata") garantirControloGrafo(valor);
+                memorizarEstadoPesquisa();
                 return;
             }
 
-            var campos = encontrarCampos017ParaAplicacao();
-            var escolhido = null;
-
-            campos.some(function (campo) {
-                var valorA = campo.campoA.length ? limparTexto(campo.campoA.val()) : "";
-                var valor2 = campo.campo2.length ? limparTexto(campo.campo2.val()) : "";
-                if (!valorA && !valor2) {
-                    escolhido = campo;
-                    return true;
+            function concluirAplicacao(campo) {
+                if (!campo) {
+                    setEstado("Não foi possível criar/localizar uma ocorrência 017 livre para aplicar " + fonte.toUpperCase() + ".", true);
+                    return;
                 }
-                return false;
-            });
 
-            if (!escolhido) {
-                setEstado("Não existe campo 017 livre. Adicione um novo campo 017 vazio e volte a aplicar.", true);
-                return;
-            }
+                try {
+                    if (!escrever017(campo, valor, fonte)) {
+                        setEstado("O botão respondeu, mas o Koha não confirmou a escrita de " + fonte.toUpperCase() + " no campo 017.", true);
+                        return;
+                    }
 
-            try {
-                if (escolhido.indicador1.length) escolhido.indicador1.val("7").trigger("input").trigger("change");
-                escolhido.campoA.val(valor).trigger("input").trigger("change");
-                escolhido.campo2.val(fonte).trigger("input").trigger("change");
-
-                atualizarAuthorityState();
-                atualizarResumoLateral();
-                setEstado("Aplicado no 017: " + valor + " · " + fonte + ".");
-
-                if (fonte === "wikidata") {
                     atualizarAuthorityState();
-                    renderModoPesquisa();
-                    restaurarEstadoResultadosPesquisa(resultadosAntesDeAplicar);
-                    setEstado("Wikidata aplicado no 017. Pode agora aplicar o VIAF a partir dos resultados já apresentados.");
+                    atualizarResumoLateral();
+
+                    // Verificação final a partir do próprio formulário Koha.
+                    var confirmado = (STATE.authority.ids017 || []).some(function (id) {
+                        return limparTexto(id.valor).toUpperCase() === valor.toUpperCase() &&
+                               limparTexto(id.fonte).toLowerCase() === fonte;
+                    });
+
+                    if (!confirmado) {
+                        setEstado("O valor foi escrito, mas o AuthSearch não conseguiu confirmar o novo 017. Verifique o campo antes de gravar.", true);
+                        return;
+                    }
+
+                    if (fonte === "wikidata") {
+                        garantirControloGrafo(valor);
+                        setEstado("Wikidata aplicado no 017. Pode agora aplicar o VIAF a partir dos resultados já apresentados.");
+                    } else {
+                        setEstado("VIAF aplicado no 017: " + valor + ".");
+                    }
+
+                    // Não reconstruir a pesquisa: os resultados permanecem no DOM.
                     memorizarEstadoPesquisa();
-                } else if (fonte === "viaf" && STATE.entidadeAtual && STATE.qidAtual && $("#authsearch-graph-area").children().length) {
-                    renderFichaAutoridade(STATE.entidadeAtual, STATE.qidAtual);
+                } catch (e) {
+                    console.error("AuthSearch: erro ao aplicar 017", e);
+                    setEstado("Não foi possível aplicar o identificador no campo 017.", true);
                 }
-            } catch (e) {
-                console.error("AuthSearch: erro ao aplicar 017", e);
-                setEstado("Não foi possível aplicar o identificador no campo 017.", true);
             }
+
+            var livre = encontrar017Livre();
+            if (livre) {
+                concluirAplicacao(livre);
+                return;
+            }
+
+            // Depois de aplicar o primeiro identificador pode não existir uma segunda ocorrência 017.
+            // Tentamos criá-la pelo botão nativo de repetição do Koha e só depois escrevemos.
+            setEstado("A preparar uma nova ocorrência 017 para " + fonte.toUpperCase() + "…");
+            tentarCriarNovo017(function (novoCampo) {
+                concluirAplicacao(novoCampo);
+            });
         }
 
-        function mostrarFichaDepoisDeAplicar(qid, snapshot) {
+        function mostrarFichaDepoisDeAplicar(qid) {
             atualizarAuthorityState();
-            STATE.qidAtual = qid;
-            renderModoPesquisa();
-            restaurarEstadoResultadosPesquisa(snapshot);
+            garantirControloGrafo(qid);
             memorizarEstadoPesquisa();
         }
 
