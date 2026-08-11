@@ -769,9 +769,9 @@ body.authsearch-resizing #authsearch-tab {
 .authsearch-variants-list{display:flex;flex-direction:column;gap:5px;margin-top:8px}
 .authsearch-variant-row{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid #eef1f5}
 .authsearch-variant-name{font-size:12px;line-height:1.35;min-width:0;flex:1 1 auto}
-.authsearch-inline-action{flex:0 0 auto;margin-left:14px;border:1px solid #c8d4de;border-radius:4px;background:#f8fafb;padding:3px 7px;color:#295f86;font-size:10.5px;font-weight:650;cursor:pointer;text-decoration:none;white-space:nowrap}
-.authsearch-inline-action:hover{background:#eef4f7;border-color:#9fb4c3;text-decoration:none}
-.authsearch-result-variants{margin-top:9px;padding-top:7px;border-top:1px solid #eef1f5}
+.authsearch-result-main-actions{margin-top:9px;margin-bottom:12px}
+.authsearch-add-400{flex:0 0 auto;margin-left:14px!important;padding:4px 7px!important;font-size:11px!important;white-space:nowrap}
+.authsearch-result-variants{margin-top:10px;padding-top:9px;border-top:1px solid #eef1f5}
 .authsearch-result-variants-title{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#7a8494;margin-bottom:4px;font-weight:700}
 
 /* ============================================================
@@ -1549,33 +1549,104 @@ body.authsearch-resizing #authsearch-tab {
             return limitarTexto(limparTexto($clone.text()), 900);
         }
 
+        /** Normaliza um rótulo da ficha staff para permitir comparação entre templates/idiomas PT. */
+        function normalizarRotuloFicha(texto) {
+            return limparTexto(texto || '')
+                .replace(/[:：]\s*$/, '')
+                .replace(/\s+/g, ' ')
+                .toLowerCase();
+        }
+
         /**
-         * Extrai do detalhe bibliográfico staff apenas os elementos úteis para esta lista.
-         * Usamos várias classes/seletores para tolerar pequenas diferenças entre templates Koha.
+         * Lê pares rótulo/valor diretamente da ficha bibliográfica do Koha.
+         * Suporta dt/dd, th/td e o padrão visual "rótulo à esquerda / valor à direita"
+         * usado no template staff da instalação atual.
          */
+        function extrairMapaRotulosFicha($doc) {
+            var mapa = {};
+
+            function guardar(rotulo, valor) {
+                rotulo = normalizarRotuloFicha(rotulo);
+                valor = limitarTexto(limparTexto(valor || ''), 1200);
+                if (!rotulo || !valor || rotulo === valor.toLowerCase()) return;
+                if (!mapa[rotulo]) mapa[rotulo] = [];
+                if (mapa[rotulo].indexOf(valor) === -1) mapa[rotulo].push(valor);
+            }
+
+            // Estruturas semânticas clássicas.
+            $doc.find('dt').each(function () {
+                var $r = $(this), $v = $r.next('dd');
+                if ($v.length) guardar($r.text(), $v.text());
+            });
+            $doc.find('tr').each(function () {
+                var $c = $(this).children('th,td');
+                if ($c.length >= 2) guardar($c.eq(0).text(), $c.slice(1).text());
+            });
+
+            // Koha staff: linhas onde o primeiro elemento contém apenas o rótulo
+            // e o elemento seguinte contém o respetivo valor/links.
+            $doc.find('div,li,p').each(function () {
+                var $linha = $(this);
+                var $filhos = $linha.children(':visible, span, div, strong, b, label, a');
+                if ($filhos.length < 2 || $filhos.length > 8) return;
+
+                var $r = $filhos.eq(0);
+                var rotulo = normalizarRotuloFicha($r.text());
+                if (!/^(autor(?:es)?|responsabilidade|isbn|editor|publica(?:ção|cao)|cole(?:ção|cao)|série|serie|volume|assunto(?:s)?(?:\s*-.*)?)$/.test(rotulo)) return;
+
+                var valor = limparTexto($filhos.slice(1).text());
+                if (valor) guardar(rotulo, valor);
+            });
+
+            // Último fallback: elementos curtos cujo texto é exatamente um rótulo conhecido.
+            var reRotulo = /^(autor(?:es)?|responsabilidade|isbn|editor|publica(?:ção|cao)|cole(?:ção|cao)|série|serie|volume|assunto(?:s)?(?:\s*-.*)?)$/;
+            $doc.find('strong,b,label,span,div').each(function () {
+                var $r = $(this), rotulo = normalizarRotuloFicha($r.text());
+                if (!reRotulo.test(rotulo)) return;
+                if ($r.children().length && limparTexto($r.children().text()) !== limparTexto($r.text())) return;
+
+                var $v = $r.next();
+                if (!$v.length) {
+                    var $pai = $r.parent();
+                    $v = $pai.children().eq($r.index() + 1);
+                }
+                if ($v && $v.length) guardar(rotulo, $v.text());
+            });
+
+            return mapa;
+        }
+
+        function valoresMapaPorRotulos(mapa, testes) {
+            var vals = [];
+            Object.keys(mapa || {}).forEach(function (rotulo) {
+                if (!testes.some(function (re) { return re.test(rotulo); })) return;
+                (mapa[rotulo] || []).forEach(function (v) {
+                    if (vals.indexOf(v) === -1) vals.push(v);
+                });
+            });
+            return limitarTexto(vals.join(' ; '), 1200);
+        }
+
+        /** Extrai apenas os elementos bibliográficos necessários à lista de obras. */
         function extrairMetadadosObra(html, obra) {
             var doc = $.parseHTML(html, document, true), $doc = $(doc);
             var titulo = tituloSemResponsabilidade(obra.titulo || '');
             var tituloPagina = limparTexto($doc.find('h1').first().text());
             if (tituloPagina) titulo = tituloSemResponsabilidade(tituloPagina.replace(/^Detalhes\s+de\s+/i, '')) || titulo;
 
+            // Primeiro tenta seletores conhecidos; depois lê os pares rótulo/valor efetivos do template.
             var autores = textoResumo($doc, '.results_summary.author, .results_summary.author_statement, .author');
             var isbn = textoResumo($doc, '.results_summary.isbn, .isbn');
             var editor = textoResumo($doc, '.results_summary.publisher, .publisher');
             var colecao = textoResumo($doc, '.results_summary.series, .results_summary.collection, .series');
             var assunto = textoResumo($doc, '.results_summary.subjects, .results_summary.subject, .subjects');
 
-            // Fallbacks simples sobre o texto visível quando o template não expõe classes específicas.
-            var textoPagina = limparTexto($doc.find('#catalogue_detail_biblio, #catalogue_detail, main').first().text());
-            function fallback(rotuloRegex) {
-                var m = textoPagina.match(rotuloRegex);
-                return m ? limitarTexto(limparTexto(m[1]), 700) : '';
-            }
-            if (!autores) autores = fallback(/(?:Autor(?:es)?|Responsabilidade)\s*:\s*(.*?)(?=\s{2,}|ISBN\s*:|Editor\s*:|Publica(?:ção|cao)\s*:|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
-            if (!isbn) isbn = fallback(/ISBN\s*:\s*(.*?)(?=\s{2,}|Editor\s*:|Publica(?:ção|cao)\s*:|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
-            if (!editor) editor = fallback(/(?:Editor|Publica(?:ção|cao))\s*:\s*(.*?)(?=\s{2,}|Cole(?:ção|cao)\s*:|Assunto(?:s)?\s*:|$)/i);
-            if (!colecao) colecao = fallback(/(?:Cole(?:ção|cao)|Série|Serie)\s*:\s*(.*?)(?=\s{2,}|Assunto(?:s)?\s*:|$)/i);
-            if (!assunto) assunto = fallback(/Assunto(?:s)?\s*:\s*(.*)$/i);
+            var mapa = extrairMapaRotulosFicha($doc);
+            if (!autores) autores = valoresMapaPorRotulos(mapa, [/^autor(?:es)?$/, /^responsabilidade$/]);
+            if (!isbn) isbn = valoresMapaPorRotulos(mapa, [/^isbn$/]);
+            if (!editor) editor = valoresMapaPorRotulos(mapa, [/^editor$/, /^publica(?:ção|cao)$/]);
+            if (!colecao) colecao = valoresMapaPorRotulos(mapa, [/^cole(?:ção|cao)$/, /^série$/, /^serie$/, /^volume$/]);
+            if (!assunto) assunto = valoresMapaPorRotulos(mapa, [/^assunto(?:s)?(?:\s*-.*)?$/]);
 
             return { titulo: titulo, autores: autores, isbn: isbn, editor: editor, colecao: colecao, assunto: assunto };
         }
@@ -1918,6 +1989,12 @@ body.authsearch-resizing #authsearch-tab {
                 if (aliases.length) html += meta("Outros nomes", aliases.join(", "));
                 if (viaf) html += meta("VIAF", viaf);
 
+                // Ações principais ficam antes das propostas de variantes, para manter a hierarquia do resultado clara.
+                html += '<div class="authsearch-actions authsearch-result-main-actions">' +
+                    '<a class="authsearch-link" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
+                    '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(qid) + '" data-fonte="wikidata">Aplicar Wikidata</button>' +
+                    '</div>';
+
                 var variantes400 = removerDuplicados(aliases.concat(obterValoresTextoClaims(entidade, "P742"))).filter(function (nomeVariante) {
                     return limparTexto(nomeVariante).toLowerCase() !== limparTexto(label).toLowerCase();
                 }).slice(0, 8);
@@ -1926,16 +2003,13 @@ body.authsearch-resizing #authsearch-tab {
                     variantes400.forEach(function (nomeVariante) {
                         var comp400 = decomporVariantePara400(nomeVariante);
                         html += '<div class="authsearch-variant-row"><span class="authsearch-variant-name">' + escaparHTML(nomeVariante) + '</span>' +
-                            (comp400 ? '<button type="button" class="authsearch-inline-action authsearch-add-400" data-forma="' + escaparAttr(nomeVariante) + '">Adicionar ao 400</button>' : '<span class="authsearch-muted" title="Forma não decomponível com segurança">Rever</span>') +
+                            (comp400 ? '<button type="button" class="authsearch-btn authsearch-add-400" data-forma="' + escaparAttr(nomeVariante) + '">Adicionar ao 400</button>' : '<span class="authsearch-muted" title="Forma não decomponível com segurança">Rever</span>') +
                             '</div>';
                     });
                     html += '</div></div>';
                 }
 
-                html += '<div class="authsearch-actions">' +
-                    '<a class="authsearch-link" href="https://www.wikidata.org/wiki/' + encodeURIComponent(qid) + '" target="_blank" rel="noopener noreferrer">Abrir</a>' +
-                    '<button type="button" class="authsearch-btn authsearch-primary authsearch-apply" data-valor="' + escaparAttr(qid) + '" data-fonte="wikidata">Aplicar Wikidata</button>' +
-                    '</div></div></div></div>';
+                html += '</div></div></div>';
             });
 
             $("#authsearch-wikidata").html(html || '<div class="authsearch-empty">Sem resultados.</div>');
