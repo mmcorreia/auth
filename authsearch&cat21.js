@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.0 · AuthSearch&Cat + K●RE simplificado em Obras · 2026-08-17
+   Versão 4.1 · AuthSearch&Cat + motor K●RE real simplificado · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -2243,64 +2243,297 @@ body.authsearch-resizing #authsearch-tab {
 
 
         /* ======================================================
-           K●RE LITE · MOTOR DE DIAGNÓSTICO
+           K●RE LITE · MOTOR REAL SIMPLIFICADO
+           Usa a mesma estratégia do K●RE:
+           pesquisa de candidatos -> MARCdetail.pl -> análise sequencial.
            ====================================================== */
 
-        function koreLiteMarcXmlUrl(biblionumber) {
-            return '/cgi-bin/koha/catalogue/export.pl?op=export&format=marcxml&bib=' + encodeURIComponent(biblionumber);
+        function koreLiteNormalizar(texto) {
+            return normalizarNomeParaComparacao(limparTexto(texto || ""));
         }
 
-        function koreLiteParseXml(txt) {
-            try {
-                var xml = new DOMParser().parseFromString(String(txt || ""), "application/xml");
-                return xml.getElementsByTagName("parsererror").length ? null : xml;
-            } catch (_e) {
-                return null;
-            }
+        function koreLiteFundirCandidatos(respostas) {
+            var vistos = {};
+            var candidatos = [];
+
+            $.each(respostas || [], function (_i, resposta) {
+                if (!resposta || resposta.erro) return;
+
+                var obras = extrairObrasPagina(resposta.html || "");
+                $.each(obras, function (_j, obra) {
+                    if (!obra || !obra.biblionumber) return;
+
+                    var bib = String(obra.biblionumber);
+                    if (!vistos[bib]) {
+                        vistos[bib] = $.extend({}, obra, {
+                            origens: [],
+                            tiposOrigem: []
+                        });
+                        candidatos.push(vistos[bib]);
+                    }
+
+                    if (resposta.origem && vistos[bib].origens.indexOf(resposta.origem) === -1) {
+                        vistos[bib].origens.push(resposta.origem);
+                    }
+                    if (resposta.tipo && vistos[bib].tiposOrigem.indexOf(resposta.tipo) === -1) {
+                        vistos[bib].tiposOrigem.push(resposta.tipo);
+                    }
+                });
+            });
+
+            return candidatos.slice(0, 180);
         }
 
-        function koreLiteSubcampos(field) {
-            var out = {};
-            var nodes = field.getElementsByTagName("subfield");
-            for (var i = 0; i < nodes.length; i++) {
-                var code = String(nodes[i].getAttribute("code") || "").toLowerCase();
-                var value = limparTexto(nodes[i].textContent || "");
-                if (!out[code]) out[code] = [];
-                if (value) out[code].push(value);
+        function koreLitePesquisarCandidatos(authid, callback) {
+            var a = STATE.authority || {};
+            var nome = limparTexto(a.nome || "");
+            var pesquisas = [];
+
+            pesquisas.push({
+                origem: "Pesquisa an",
+                tipo: "authid",
+                url: "/cgi-bin/koha/catalogue/search.pl?idx=an&q=" + encodeURIComponent(authid)
+            });
+
+            if (nome) {
+                pesquisas.push({
+                    origem: "Pesquisa autor",
+                    tipo: "nome_autor",
+                    url: "/cgi-bin/koha/catalogue/search.pl?idx=au&q=" + encodeURIComponent(nome)
+                });
+                pesquisas.push({
+                    origem: "Pesquisa livre",
+                    tipo: "nome_livre",
+                    url: "/cgi-bin/koha/catalogue/search.pl?q=" + encodeURIComponent(nome)
+                });
             }
+
+            /*
+             * As variantes 400 são acrescentadas como candidatos de autor,
+             * mas sem substituir o mesmo trio de pesquisas usado pelo K●RE.
+             */
+            (a.variantes400 || []).slice(0, 4).forEach(function (v) {
+                var forma = limparTexto(v && v.forma ? v.forma : "");
+                if (!forma || koreLiteNormalizar(forma) === koreLiteNormalizar(nome)) return;
+                pesquisas.push({
+                    origem: "Pesquisa variante 400",
+                    tipo: "variante",
+                    url: "/cgi-bin/koha/catalogue/search.pl?idx=au&q=" + encodeURIComponent(forma)
+                });
+            });
+
+            var pedidos = $.map(pesquisas, function (pesquisa) {
+                var xhr = $.ajax({
+                    url: pesquisa.url,
+                    method: "GET",
+                    dataType: "html"
+                }).then(function (html) {
+                    return {
+                        origem: pesquisa.origem,
+                        tipo: pesquisa.tipo,
+                        html: html,
+                        erro: false
+                    };
+                }, function () {
+                    return {
+                        origem: pesquisa.origem,
+                        tipo: pesquisa.tipo,
+                        html: "",
+                        erro: true
+                    };
+                });
+
+                registarPedido(xhr);
+                return xhr;
+            });
+
+            $.when.apply($, pedidos).done(function () {
+                var respostas = Array.prototype.slice.call(arguments);
+                if (pedidos.length === 1) respostas = [arguments[0]];
+
+                callback(koreLiteFundirCandidatos(respostas));
+            });
+        }
+
+        function koreLiteExtrairSubcamposTexto(texto) {
+            var subcampos = {};
+            var t = " " + String(texto || "")
+                .replace(/\u00a0/g, " ")
+                .replace(/‡/g, "$")
+                .replace(/ǂ/g, "$")
+                .replace(/\s+/g, " ") + " ";
+
+            var re = /(?:^|\s|\$)([0-9a-z])\s+(.+?)(?=\s(?:[0-9a-z]|\$[0-9a-z])\s+|$)/gi;
+            var match;
+
+            while ((match = re.exec(t)) !== null) {
+                var codigo = String(match[1]).toLowerCase();
+                var valor = limparTexto(match[2]);
+
+                if (!subcampos[codigo]) subcampos[codigo] = [];
+                if (valor) subcampos[codigo].push(valor);
+            }
+
+            return subcampos;
+        }
+
+        function koreLiteCompactarBlocos(blocos) {
+            var out = [];
+            var vistos = {};
+
+            (blocos || []).forEach(function (b) {
+                if (!b || !b.campo || !b.texto) return;
+
+                var chave = b.campo + "|" + koreLiteNormalizar(b.texto);
+                if (vistos[chave]) return;
+                vistos[chave] = true;
+                out.push(b);
+            });
+
             return out;
         }
 
-        function koreLiteValor(sf, code) {
-            return limparTexto((sf[code] || []).join(" "));
-        }
+        function koreLiteExtrairBlocosTabela($doc) {
+            var blocos = [];
 
-        function koreLiteAuthids(sf) {
-            var out = [];
-            (sf["9"] || []).forEach(function (v) {
-                var m = String(v || "").match(/\d+/g);
-                if (m) out = out.concat(m);
+            $doc.find("tr").each(function () {
+                var texto = limparTexto($(this).text());
+                var match = texto.match(/\b(\d{3})\b/);
+
+                if (!match) return;
+                var campo = match[1];
+                if (!/^\d{3}$/.test(campo) || texto.length < 4) return;
+
+                blocos.push({
+                    campo: campo,
+                    texto: texto,
+                    subcampos: koreLiteExtrairSubcamposTexto(texto)
+                });
             });
-            return out.filter(function (v, i, a) { return a.indexOf(v) === i; });
+
+            return koreLiteCompactarBlocos(blocos);
         }
 
-        function koreLiteTem4(sf) {
-            return (sf["4"] || []).some(function (v) {
-                return !!limparTexto(v || "");
+        function koreLiteExtrairBlocosTexto($doc) {
+            var texto = String($doc.text() || "")
+                .replace(/\r/g, "\n")
+                .replace(/\u00a0/g, " ");
+
+            var linhas = texto
+                .split(/\n+/)
+                .map(function (l) { return limparTexto(l); })
+                .filter(Boolean);
+
+            var blocos = [];
+            var atual = null;
+
+            $.each(linhas, function (_i, linha) {
+                var m = linha.match(/^(\d{3})(\s|#|$)/);
+
+                if (m) {
+                    if (atual) {
+                        atual.subcampos = koreLiteExtrairSubcamposTexto(atual.texto);
+                        blocos.push(atual);
+                    }
+
+                    atual = {
+                        campo: m[1],
+                        texto: linha,
+                        subcampos: {}
+                    };
+                } else if (atual) {
+                    atual.texto += " " + linha;
+                }
             });
+
+            if (atual) {
+                atual.subcampos = koreLiteExtrairSubcamposTexto(atual.texto);
+                blocos.push(atual);
+            }
+
+            return koreLiteCompactarBlocos(blocos);
         }
 
-        function koreLiteForma7xx(sf) {
-            return limparTexto([
-                koreLiteValor(sf, "a"),
-                koreLiteValor(sf, "b"),
-                koreLiteValor(sf, "c")
-            ].filter(Boolean).join(" "));
+        function koreLiteExtrairBlocosMARC(html) {
+            var $doc = $("<div>").append($.parseHTML(html, document, true));
+            $doc.find("script,style").remove();
+
+            var blocos = koreLiteExtrairBlocosTabela($doc);
+            if (blocos.length) return blocos;
+
+            return koreLiteExtrairBlocosTexto($doc);
+        }
+
+        function koreLiteObterSubcampo(bloco, codigo) {
+            codigo = String(codigo || "").toLowerCase();
+
+            if (bloco.subcampos && bloco.subcampos[codigo] && bloco.subcampos[codigo].length) {
+                return limparTexto(bloco.subcampos[codigo].join(" "));
+            }
+
+            var re = new RegExp("(^|\\s|\\$)" + escaparRegex(codigo) + "\\s+(.+?)(?=\\s(?:[a-z0-9]|\\$[a-z0-9])\\s+|$)", "i");
+            var m = String(bloco.texto || "").match(re);
+            return m ? limparTexto(m[2]) : "";
+        }
+
+        function koreLiteExtrairAuthids(bloco) {
+            var authids = [];
+
+            if (bloco.subcampos && bloco.subcampos["9"]) {
+                bloco.subcampos["9"].forEach(function (v) {
+                    var nums = String(v || "").match(/\b\d{1,12}\b/g);
+                    if (nums) authids = authids.concat(nums);
+                });
+            }
+
+            if (!authids.length) {
+                var re = /(?:^|\s|\$)9\s*([0-9]{1,12})(?=\s|$)/g;
+                var m;
+                while ((m = re.exec(String(bloco.texto || ""))) !== null) {
+                    authids.push(m[1]);
+                }
+            }
+
+            return authids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+        }
+
+        function koreLiteTem4(bloco) {
+            /*
+             * Para o AuthSearch simplificado interessa a presença efetiva do
+             * subcampo, não a validação da lista CODIGOFUNC.
+             * Assim "070", "Co-autor", "Ilustrador", etc. contam como preenchido.
+             */
+            if (bloco.subcampos && bloco.subcampos["4"]) {
+                return bloco.subcampos["4"].some(function (v) {
+                    return !!limparTexto(v || "");
+                });
+            }
+
+            return /(?:\$4|\s4\s+)\s*\S+/i.test(String(bloco.texto || ""));
+        }
+
+        function koreLiteValorAutoria(bloco) {
+            var partes = [];
+
+            ["a","b","f","g"].forEach(function (c) {
+                var v = koreLiteObterSubcampo(bloco, c);
+                if (v) partes.push(v);
+            });
+
+            if (partes.length) return limparTexto(partes.join(" "));
+
+            return limparTexto(
+                String(bloco.texto || "")
+                    .replace(/^\d{3}\s*#*\s*/g, "")
+                    .replace(/\$?9\s+\d{1,12}\b/g, "")
+            );
         }
 
         function koreLiteUniversoAutoridade() {
             var a = STATE.authority || {};
-            var formas = [a.nome || ""];
+            var formas = [];
+
+            if (a.nome) formas.push(a.nome);
 
             if (a.nomeA && a.nomeB) {
                 formas.push(a.nomeA + " " + a.nomeB);
@@ -2314,9 +2547,9 @@ body.authsearch-resizing #authsearch-tab {
             });
 
             return formas
-                .map(function (v) { return normalizarNomeParaComparacao(v || ""); })
+                .map(function (v) { return koreLiteNormalizar(v); })
                 .filter(Boolean)
-                .filter(function (v, i, arr) { return arr.indexOf(v) === i; });
+                .filter(function (v, i, a) { return a.indexOf(v) === i; });
         }
 
         function koreLitePalavraInteira(texto, palavra) {
@@ -2326,8 +2559,9 @@ body.authsearch-resizing #authsearch-tab {
         }
 
         function koreLiteTextoCompativel(valor) {
-            var t = normalizarNomeParaComparacao(valor || "");
+            var t = koreLiteNormalizar(valor);
             if (!t) return false;
+
             var universo = koreLiteUniversoAutoridade();
 
             for (var i = 0; i < universo.length; i++) {
@@ -2345,9 +2579,10 @@ body.authsearch-resizing #authsearch-tab {
                     continue;
                 }
 
-                var encontrados = partes.filter(function (p) {
-                    return koreLitePalavraInteira(t, p);
-                }).length;
+                var encontrados = 0;
+                partes.forEach(function (p) {
+                    if (koreLitePalavraInteira(t, p)) encontrados++;
+                });
 
                 if (encontrados >= Math.min(2, partes.length)) return true;
             }
@@ -2355,102 +2590,88 @@ body.authsearch-resizing #authsearch-tab {
             return false;
         }
 
-        function koreLiteResponsabilidades200(xml) {
-            var out = [];
-            var fields = xml.getElementsByTagName("datafield");
-
-            for (var i = 0; i < fields.length; i++) {
-                if (String(fields[i].getAttribute("tag") || "") !== "200") continue;
-                var sf = koreLiteSubcampos(fields[i]);
-
-                (sf["f"] || []).forEach(function (v) {
-                    v = limparTexto(v || "");
-                    if (v) out.push({subcampo:"f",valor:v});
-                });
-
-                (sf["g"] || []).forEach(function (v) {
-                    v = limparTexto(v || "");
-                    if (v) out.push({subcampo:"g",valor:v});
-                });
-            }
-
-            return out;
-        }
-
         function koreLiteAddProblema(lista, p) {
-            var k = [p.tipo, p.campo, p.detalhe].join("|");
+            var chave = [p.tipo, p.campo, p.detalhe].join("|");
+
             if (!lista.some(function (x) {
-                return [x.tipo, x.campo, x.detalhe].join("|") === k;
-            })) lista.push(p);
+                return [x.tipo, x.campo, x.detalhe].join("|") === chave;
+            })) {
+                lista.push(p);
+            }
         }
 
         function koreLiteDatasDiferem(bib, auth) {
             bib = limparTexto(bib || "");
             auth = limparTexto(auth || "");
-            if (!auth || !bib) return false;
+
+            if (!bib || !auth) return false;
 
             var a = auth.match(/\d{4}/g) || [];
             var b = bib.match(/\d{4}/g) || [];
-            if (!a.length || !b.length) return false;
 
+            if (!a.length || !b.length) return false;
             return a.join("|") !== b.join("|");
         }
 
-        function koreLiteAnalisarXml(xml, obra, authid) {
+        function koreLiteAnalisarHTML(html, obra, authid) {
+            var blocos = koreLiteExtrairBlocosMARC(html);
             var problemas = [];
             var esperado = String(authid);
-            var datafields = xml.getElementsByTagName("datafield");
-            var autoridadeEm7xx = false;
             var datasAuth = limparTexto((STATE.authority && STATE.authority.datas) || "");
+            var autoridadeEm7xx = false;
 
-            for (var i = 0; i < datafields.length; i++) {
-                var tag = String(datafields[i].getAttribute("tag") || "");
-                if (["700","701","702"].indexOf(tag) === -1) continue;
+            obra._koreLiteBlocos = blocos;
 
-                var sf = koreLiteSubcampos(datafields[i]);
-                var authids = koreLiteAuthids(sf);
+            /*
+             * 700 / 701 / 702
+             */
+            blocos.forEach(function (bloco) {
+                if (["700","701","702"].indexOf(bloco.campo) === -1) return;
+
+                var authids = koreLiteExtrairAuthids(bloco);
                 var temEsperado = authids.indexOf(esperado) !== -1;
-                var forma = koreLiteForma7xx(sf);
-                var compativel = koreLiteTextoCompativel(forma);
+                var temAlgum = authids.length > 0;
+                var forma = koreLiteValorAutoria(bloco);
+                var compativel = koreLiteTextoCompativel(forma || bloco.texto);
 
-                if (!temEsperado && !compativel) continue;
+                if (!temEsperado && !compativel) return;
+
                 autoridadeEm7xx = true;
 
-                var temAlgum9 = authids.length > 0;
-                var tem4 = tag === "700" ? true : koreLiteTem4(sf);
+                var tem4 = bloco.campo === "700" ? true : koreLiteTem4(bloco);
 
-                if (compativel && !temAlgum9 && !tem4) {
+                if (compativel && !temAlgum && !tem4) {
                     koreLiteAddProblema(problemas, {
                         tipo:"sem9e4",
-                        campo:tag,
+                        campo:bloco.campo,
                         valor:forma,
-                        detalhe:tag + " compatível com a autoridade, mas sem ligação $9 e sem função $4."
+                        detalhe:bloco.campo + " compatível com a autoridade, mas sem $9 e sem $4."
                     });
-                    continue;
+                    return;
                 }
 
-                if (compativel && !temAlgum9) {
+                if (compativel && !temAlgum) {
                     koreLiteAddProblema(problemas, {
                         tipo:"sem9",
-                        campo:tag,
+                        campo:bloco.campo,
                         valor:forma,
-                        detalhe:tag + " compatível com a autoridade, mas sem $9. Esperado authid " + esperado + "."
+                        detalhe:bloco.campo + " compatível com a autoridade, mas sem $9. Esperado authid " + esperado + "."
                     });
                 }
 
-                if (temEsperado && tag !== "700" && !tem4) {
+                if (temEsperado && bloco.campo !== "700" && !tem4) {
                     koreLiteAddProblema(problemas, {
                         tipo:"sem4",
-                        campo:tag,
+                        campo:bloco.campo,
                         valor:forma,
-                        detalhe:tag + " ligado ao authid " + esperado + ", mas com $4 vazio."
+                        detalhe:bloco.campo + " ligado ao authid " + esperado + ", mas com $4 vazio."
                     });
                 }
 
-                if (compativel && temAlgum9 && !temEsperado) {
+                if (compativel && temAlgum && !temEsperado) {
                     koreLiteAddProblema(problemas, {
                         tipo:"outroAuthid",
-                        campo:tag + "$9",
+                        campo:bloco.campo + "$9",
                         valor:forma,
                         detalhe:"Forma compatível, mas ligada ao authid " + authids.join(", ") + "; esperado " + esperado + "."
                     });
@@ -2459,41 +2680,54 @@ body.authsearch-resizing #authsearch-tab {
                 if (temEsperado && forma && !compativel) {
                     koreLiteAddProblema(problemas, {
                         tipo:"nomeDivergente",
-                        campo:tag,
+                        campo:bloco.campo,
                         valor:forma,
-                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual não coincide com a forma autorizada 200 nem com variantes 400."
+                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual não coincide com o 200 autorizado nem com variantes 400."
                     });
                 }
 
-                var datasBib = koreLiteValor(sf, "f");
+                var datasBib = koreLiteObterSubcampo(bloco, "f");
                 if (temEsperado && koreLiteDatasDiferem(datasBib, datasAuth)) {
                     koreLiteAddProblema(problemas, {
                         tipo:"datas",
-                        campo:tag + "$f",
+                        campo:bloco.campo + "$f",
                         valor:datasBib,
                         detalhe:"Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
                     });
                 }
-            }
+            });
 
             /*
-             * 200$f / 200$g: só entra em revisão se esta autoridade estiver
-             * efetivamente presente em 7xx e nenhuma menção de responsabilidade
-             * corresponder ao universo 200/400 da autoridade.
+             * 200$f / 200$g
+             * Só se avalia para uma obra em que esta autoridade foi efetivamente
+             * identificada em 700/701/702.
              */
             if (autoridadeEm7xx) {
-                var resp = koreLiteResponsabilidades200(xml);
-                if (resp.length) {
-                    var temCorrespondencia = resp.some(function (r) {
+                var responsabilidades = [];
+
+                blocos.forEach(function (bloco) {
+                    if (bloco.campo !== "200") return;
+
+                    var f = koreLiteObterSubcampo(bloco, "f");
+                    var g = koreLiteObterSubcampo(bloco, "g");
+
+                    if (f) responsabilidades.push({campo:"200$f",valor:f});
+                    if (g) responsabilidades.push({campo:"200$g",valor:g});
+                });
+
+                if (responsabilidades.length) {
+                    var prevista = responsabilidades.some(function (r) {
                         return koreLiteTextoCompativel(r.valor);
                     });
 
-                    if (!temCorrespondencia) {
+                    if (!prevista) {
                         koreLiteAddProblema(problemas, {
                             tipo:"responsabilidade",
                             campo:"200$f",
-                            valor:resp.map(function (r) { return "200$" + r.subcampo + " " + r.valor; }).join(" | "),
-                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a nenhuma variante 400 desta autoridade."
+                            valor:responsabilidades.map(function (r) {
+                                return r.campo + " " + r.valor;
+                            }).join(" | "),
+                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a qualquer variante 400 desta autoridade."
                         });
                     }
                 }
@@ -2508,149 +2742,66 @@ body.authsearch-resizing #authsearch-tab {
             callback = typeof callback === "function" ? callback : function () {};
             onProgress = typeof onProgress === "function" ? onProgress : function () {};
 
-            if (!obras.length) {
-                callback([]);
-                return;
-            }
-
             var resultado = [];
             var indice = 0;
-            var ativos = 0;
-            var concluidos = 0;
-            var limite = 3;
-            var finalizado = false;
-            var timeoutInatividade = null;
-            var TIMEOUT_INATIVIDADE = 8000;
 
-            function finalizar() {
-                if (finalizado) return;
-                finalizado = true;
-                if (timeoutInatividade) window.clearTimeout(timeoutInatividade);
+            /*
+             * Tal como o K●RE: análise SEQUENCIAL.
+             * Evita dezenas/centenas de pedidos MARC em paralelo e deixa de
+             * depender de MARCXML/export.pl.
+             */
+            function seguinte() {
+                if (indice >= obras.length) {
+                    resultado.sort(function (a, b) {
+                        function peso(o) {
+                            var ps = o.koreLiteProblemas || [];
+                            if (ps.some(function (p) {
+                                return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid";
+                            })) return 0;
+                            if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
+                            if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
+                            return 3;
+                        }
 
-                resultado.sort(function (a, b) {
-                    function peso(o) {
-                        var ps = o.koreLiteProblemas || [];
-                        if (ps.some(function (p) { return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid"; })) return 0;
-                        if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
-                        if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
-                        return 3;
-                    }
+                        var pa = peso(a), pb = peso(b);
+                        if (pa !== pb) return pa - pb;
 
-                    var pa = peso(a), pb = peso(b);
-                    if (pa !== pb) return pa - pb;
-                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(
-                        tituloSemResponsabilidade(b.titulo || ""),
-                        "pt"
-                    );
-                });
+                        return tituloSemResponsabilidade(a.titulo || "").localeCompare(
+                            tituloSemResponsabilidade(b.titulo || ""),
+                            "pt"
+                        );
+                    });
 
-                callback(resultado);
-            }
-
-            function rearmarInatividade() {
-                if (timeoutInatividade) window.clearTimeout(timeoutInatividade);
-                timeoutInatividade = window.setTimeout(finalizar, TIMEOUT_INATIVIDADE);
-            }
-
-            function tentarFechar() {
-                if (concluidos >= obras.length && ativos === 0) {
-                    finalizar();
-                    return true;
+                    callback(resultado);
+                    return;
                 }
-                return false;
-            }
 
-            function proximo() {
-                if (finalizado || tentarFechar()) return;
+                var obra = obras[indice];
+                indice++;
 
-                while (!finalizado && ativos < limite && indice < obras.length) {
-                    (function (obra) {
-                        ativos++;
+                onProgress(indice - 1, obras.length, resultado.length, obra);
 
-                        var req = $.ajax({
-                            url:koreLiteMarcXmlUrl(obra.biblionumber),
-                            dataType:"text",
-                            cache:false,
-                            timeout:CONFIG.timeout
-                        })
-                        .done(function (txt) {
-                            var xml = koreLiteParseXml(txt);
-                            if (!xml) return;
-                            var analisada = koreLiteAnalisarXml(xml, obra, authid);
-                            if (analisada) resultado.push(analisada);
-                        })
-                        .always(function () {
-                            ativos = Math.max(0, ativos - 1);
-                            concluidos++;
-                            onProgress(concluidos, obras.length, resultado.length);
-                            rearmarInatividade();
-                            window.setTimeout(proximo, 0);
-                        });
+                var url = "/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=" +
+                    encodeURIComponent(obra.biblionumber);
 
-                        registarPedido(req);
-                    })(obras[indice++]);
-                }
-            }
-
-            rearmarInatividade();
-            proximo();
-        }
-
-        function koreLitePesquisarCandidatos(authid, callback) {
-            var mapa = {};
-            var pendentes = 0;
-            var terminado = false;
-            var a = STATE.authority || {};
-            var nome = limparTexto(a.nome || "");
-            var variantes = (a.variantes400 || [])
-                .map(function (v) { return limparTexto(v && v.forma ? v.forma : ""); })
-                .filter(Boolean)
-                .slice(0, 4);
-
-            function fundir(obras) {
-                (Array.isArray(obras) ? obras : []).forEach(function (o) {
-                    var bib = String(o.biblionumber || "");
-                    if (!/^\d+$/.test(bib)) return;
-                    if (!mapa[bib]) mapa[bib] = o;
+                var xhr = $.ajax({
+                    url: url,
+                    method: "GET",
+                    dataType: "html"
+                })
+                .done(function (html) {
+                    var analisada = koreLiteAnalisarHTML(html, obra, authid);
+                    if (analisada) resultado.push(analisada);
+                })
+                .always(function () {
+                    onProgress(indice, obras.length, resultado.length, obra);
+                    seguinte();
                 });
+
+                registarPedido(xhr);
             }
 
-            function terminouUm() {
-                pendentes--;
-                if (pendentes > 0 || terminado) return;
-                terminado = true;
-                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
-            }
-
-            function pesquisar(url) {
-                pendentes++;
-                carregarTodasObrasCatalogo(url, function (_erro, obras) {
-                    fundir(obras);
-                    terminouUm();
-                });
-            }
-
-            // Ligados estruturalmente
-            if (STATE.obrasPrecarregadasAuthid === String(authid) && Array.isArray(STATE.obrasLigadasPreload)) {
-                fundir(STATE.obrasLigadasPreload);
-            } else {
-                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=an&q=' + encodeURIComponent(authid) + '&count=50');
-            }
-
-            // Candidatos a $9 em falta
-            if (nome) {
-                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(nome) + '&count=50');
-            }
-
-            variantes.forEach(function (forma) {
-                if (normalizarNomeParaComparacao(forma) === normalizarNomeParaComparacao(nome)) return;
-                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(forma) + '&count=50');
-            });
-
-            if (!pendentes) {
-                terminado = true;
-                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
-            }
+            seguinte();
         }
 
         /**
@@ -2745,7 +2896,7 @@ body.authsearch-resizing #authsearch-tab {
                     return;
                 }
 
-                $alvo.html('<div class="authsearch-loading">K●RE simplificado · a analisar ' + candidatos.length + ' registos candidatos…</div>');
+                $alvo.html('<div class="authsearch-loading">K●RE simplificado · a analisar MARC de ' + candidatos.length + ' registos candidatos…</div>');
 
                 koreLiteAnalisarObras(candidatos, authid, function (problemas) {
                     STATE.obrasCarregadas = true;
@@ -2758,8 +2909,11 @@ body.authsearch-resizing #authsearch-tab {
                     atualizarTituloObras(problemas.length, estado);
                     renderObrasCatalogo(problemas, STATE.obrasPesquisaUrl || "");
 
-                }, function (feito, total, encontrados) {
-                    $alvo.html('<div class="authsearch-loading">K●RE simplificado · ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema</div>');
+                }, function (feito, total, encontrados, obraAtual) {
+                    var detalhe = obraAtual && obraAtual.biblionumber
+                        ? ' · registo ' + escaparHTML(String(obraAtual.biblionumber))
+                        : '';
+                    $alvo.html('<div class="authsearch-loading">K●RE simplificado · ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema' + detalhe + '</div>');
                 });
             });
         }
