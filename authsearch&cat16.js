@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.7 · AuthSearch&Cat + triagem K●RE em Obras · 2026-08-17
+   Versão 3.8 · AuthSearch&Cat + triagem MARCXML robusta · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -801,199 +801,57 @@ body.authsearch-resizing #authsearch-tab {
 
 
 /* ============================================================
-   OBRAS NO CATÁLOGO · TRIAGEM OPERACIONAL K●RE
-   Mantém o layout original e acrescenta apenas diagnóstico/ações.
+   OBRAS NO CATÁLOGO · TRIAGEM OPERACIONAL MARCXML
    ============================================================ */
-.authsearch-works-problem-summary{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px;
-    margin:0 0 8px;
-}
+.authsearch-works-problem-summary{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
 .authsearch-works-problem-filter{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    border:1px solid #d5dde5;
-    background:#fff;
-    color:#344054;
-    border-radius:5px;
-    padding:5px 8px;
-    font-size:10.5px;
-    font-weight:700;
-    cursor:pointer;
+    display:inline-flex;align-items:center;gap:5px;border:1px solid #d5dde5;background:#fff;color:#344054;
+    border-radius:5px;padding:5px 8px;font-size:10.5px;font-weight:700;cursor:pointer
 }
-.authsearch-works-problem-filter:hover{
-    background:#f8fafc;
-    border-color:#aebdca;
-}
-.authsearch-works-problem-filter.is-active{
-    border-color:#336d96;
-    background:#edf3f7;
-    color:#214f70;
-}
+.authsearch-works-problem-filter:hover{background:#f8fafc;border-color:#aebdca}
+.authsearch-works-problem-filter.is-active{border-color:#336d96;background:#edf3f7;color:#214f70}
 .authsearch-works-problem-count{
-    display:inline-flex;
-    min-width:18px;
-    height:18px;
-    padding:0 5px;
-    align-items:center;
-    justify-content:center;
-    border-radius:999px;
-    background:#eef2f6;
-    color:#344054;
-    font-size:10px;
+    display:inline-flex;min-width:18px;height:18px;padding:0 5px;align-items:center;justify-content:center;
+    border-radius:999px;background:#eef2f6;color:#344054;font-size:10px
 }
-.authsearch-works-problem-filter.is-active .authsearch-works-problem-count{
-    background:#d6e6f0;
-    color:#174b75;
-}
-.authsearch-works-note{
-    font-size:10.5px;
-    line-height:1.4;
-    color:#667085;
-    margin:0 0 8px;
-}
-.authsearch-work-problems{
-    display:flex;
-    flex-wrap:wrap;
-    gap:5px;
-    margin-top:8px;
-}
+.authsearch-works-problem-filter.is-active .authsearch-works-problem-count{background:#d6e6f0;color:#174b75}
+.authsearch-works-note{font-size:10.5px;line-height:1.4;color:#667085;margin:0 0 8px}
+.authsearch-work-problems{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .authsearch-work-problem{
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-    border:1px solid #dce3e9;
-    border-radius:999px;
-    padding:4px 7px;
-    background:#f8fafc;
-    color:#475467;
-    font-size:10.5px;
-    font-weight:700;
-    line-height:1.1;
+    display:inline-flex;align-items:center;gap:4px;border:1px solid #dce3e9;border-radius:999px;padding:4px 7px;
+    background:#f8fafc;color:#475467;font-size:10.5px;font-weight:700;line-height:1.1
 }
-.authsearch-work-problem.is-critical{
-    border-color:#fecdca;
-    background:#fff5f5;
-    color:#b42318;
+.authsearch-work-problem.is-critical{border-color:#fecdca;background:#fff5f5;color:#b42318}
+.authsearch-work-problem.is-review{border-color:#fedf89;background:#fffaeb;color:#b54708}
+.authsearch-work-problem.is-info{border-color:#b2ddff;background:#eff8ff;color:#175cd3}
+.authsearch-work-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.authsearch-work-resolve,.authsearch-work-secondary{
+    display:inline-flex!important;align-items:center;justify-content:center;gap:5px;min-height:28px;border-radius:4px!important;
+    padding:5px 8px!important;font-size:10.5px!important;font-weight:750!important;text-decoration:none!important
 }
-.authsearch-work-problem.is-review{
-    border-color:#fedf89;
-    background:#fffaeb;
-    color:#b54708;
-}
-.authsearch-work-problem.is-info{
-    border-color:#b2ddff;
-    background:#eff8ff;
-    color:#175cd3;
-}
-.authsearch-work-actions{
-    display:flex;
-    gap:6px;
-    flex-wrap:wrap;
-    margin-top:9px;
-}
-.authsearch-work-resolve,
-.authsearch-work-secondary{
-    display:inline-flex!important;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    min-height:28px;
-    border-radius:4px!important;
-    padding:5px 8px!important;
-    font-size:10.5px!important;
-    font-weight:750!important;
-    text-decoration:none!important;
-}
-.authsearch-work-resolve{
-    border:1px solid #5f8eae!important;
-    background:#f3f8fb!important;
-    color:#245a7d!important;
-}
-.authsearch-work-resolve:hover{
-    background:#eaf3f8!important;
-    text-decoration:none!important;
-}
-.authsearch-work-secondary{
-    border:1px solid #d5dde5!important;
-    background:#fff!important;
-    color:#475467!important;
-}
-.authsearch-work-secondary:hover{
-    background:#f8fafc!important;
-    text-decoration:none!important;
-}
-.authsearch-work-resolution{
-    margin-top:9px;
-    padding:8px 9px;
-    border:1px solid #dce5ec;
-    border-radius:5px;
-    background:#fbfdff;
-}
-.authsearch-work-resolution-title{
-    font-size:10.5px;
-    font-weight:800;
-    color:#344054;
-    margin-bottom:4px;
-}
+.authsearch-work-resolve{border:1px solid #5f8eae!important;background:#f3f8fb!important;color:#245a7d!important}
+.authsearch-work-resolve:hover{background:#eaf3f8!important;text-decoration:none!important}
+.authsearch-work-secondary{border:1px solid #d5dde5!important;background:#fff!important;color:#475467!important}
+.authsearch-work-secondary:hover{background:#f8fafc!important;text-decoration:none!important}
+.authsearch-work-resolution{margin-top:9px;padding:8px 9px;border:1px solid #dce5ec;border-radius:5px;background:#fbfdff}
+.authsearch-work-resolution-title{font-size:10.5px;font-weight:800;color:#344054;margin-bottom:4px}
 .authsearch-work-resolution-row{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:8px;
-    align-items:start;
-    padding:7px 0;
-    border-top:1px solid #edf1f5;
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;padding:7px 0;border-top:1px solid #edf1f5
 }
-.authsearch-work-resolution-row:first-child{
-    border-top:0;
-    padding-top:0;
-}
-.authsearch-work-resolution-copy strong{
-    display:block;
-    font-size:10.5px;
-    color:#111827;
-}
-.authsearch-work-resolution-copy span{
-    display:block;
-    margin-top:2px;
-    font-size:10.5px;
-    line-height:1.4;
-    color:#667085;
-}
+.authsearch-work-resolution-row:first-child{border-top:0;padding-top:0}
+.authsearch-work-resolution-copy strong{display:block;font-size:10.5px;color:#111827}
+.authsearch-work-resolution-copy span{display:block;margin-top:2px;font-size:10.5px;line-height:1.4;color:#667085}
 .authsearch-work-resolution-link{
-    border:1px solid #cfd8e3!important;
-    background:#fff!important;
-    color:#245a7d!important;
-    border-radius:4px!important;
-    padding:4px 6px!important;
-    font-size:10px!important;
-    font-weight:700!important;
-    text-decoration:none!important;
+    border:1px solid #cfd8e3!important;background:#fff!important;color:#245a7d!important;border-radius:4px!important;
+    padding:4px 6px!important;font-size:10px!important;font-weight:700!important;text-decoration:none!important
 }
-.authsearch-work-resolution-link:hover{
-    background:#f3f8fb!important;
-    text-decoration:none!important;
-}
+.authsearch-work-resolution-link:hover{background:#f3f8fb!important;text-decoration:none!important}
 .authsearch-works-ok{
-    padding:11px;
-    border:1px solid #ccebd9;
-    border-radius:5px;
-    background:#f6fef9;
-    color:#067647;
-    font-size:11.5px;
-    line-height:1.45;
+    padding:11px;border:1px solid #ccebd9;border-radius:5px;background:#f6fef9;color:#067647;font-size:11.5px;line-height:1.45
 }
 .authsearch-works-analysis-warning{
-    margin-top:8px;
-    color:#854a0e;
-    background:#fffaeb;
-    border:1px solid #fedf89;
-    border-radius:4px;
-    padding:7px 8px;
-    font-size:10.5px;
-    line-height:1.35;
+    margin-top:8px;color:#854a0e;background:#fffaeb;border:1px solid #fedf89;border-radius:4px;padding:7px 8px;
+    font-size:10.5px;line-height:1.35
 }
 
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
@@ -1973,13 +1831,13 @@ body.authsearch-resizing #authsearch-tab {
             return '<div class="authsearch-work-line"><span class="authsearch-work-label">' + escaparHTML(rotulo) + '</span><span class="authsearch-work-value">' + escaparHTML(valor) + '</span></div>';
         }
 
-        function authsearchV37ClasseProblema(tipo) {
+        function authsearchV38ClasseProblema(tipo) {
             if (tipo === "sem9" || tipo === "sem9e4" || tipo === "outroAuthid") return "is-critical";
             if (tipo === "sem4" || tipo === "nomeDivergente" || tipo === "datas") return "is-review";
             return "is-info";
         }
 
-        function authsearchV37RotuloProblema(tipo) {
+        function authsearchV38RotuloProblema(tipo) {
             var mapa = {
                 sem9: "Falta $9",
                 sem4: "Falta $4",
@@ -1991,7 +1849,7 @@ body.authsearch-resizing #authsearch-tab {
             return mapa[tipo] || tipo;
         }
 
-        function authsearchV37ContarObras(obras, tipo) {
+        function authsearchV38Contar(obras, tipo) {
             return (obras || []).filter(function (o) {
                 if (tipo === "todos") return true;
                 return (o.authsearchProblemas || []).some(function (p) {
@@ -2002,19 +1860,19 @@ body.authsearch-resizing #authsearch-tab {
             }).length;
         }
 
-        function authsearchV37ResumoFiltros(obras) {
+        function authsearchV38Resumo(obras) {
             var tipos = [
-                { key: "todos", label: "Todos" },
-                { key: "sem9", label: "Sem $9" },
-                { key: "sem4", label: "Sem $4" },
-                { key: "outroAuthid", label: "Outro authid" },
-                { key: "nomeDivergente", label: "Nome divergente" },
-                { key: "datas", label: "Datas" }
+                {key:"todos",label:"Todos"},
+                {key:"sem9",label:"Sem $9"},
+                {key:"sem4",label:"Sem $4"},
+                {key:"outroAuthid",label:"Outro authid"},
+                {key:"nomeDivergente",label:"Nome divergente"},
+                {key:"datas",label:"Datas"}
             ];
 
             return '<div class="authsearch-works-problem-summary">' +
                 tipos.map(function (t) {
-                    var n = authsearchV37ContarObras(obras, t.key);
+                    var n = authsearchV38Contar(obras, t.key);
                     if (t.key !== "todos" && !n) return "";
                     return '<button type="button" class="authsearch-works-problem-filter' +
                         (STATE.obrasFiltroProblema === t.key ? ' is-active' : '') +
@@ -2025,7 +1883,7 @@ body.authsearch-resizing #authsearch-tab {
             '</div>';
         }
 
-        function authsearchV37ObraPassaFiltro(o) {
+        function authsearchV38PassaFiltro(o) {
             var tipo = STATE.obrasFiltroProblema || "todos";
             var termo = limparTexto(STATE.obrasFiltroTexto || "").toLowerCase();
             var problemas = o.authsearchProblemas || [];
@@ -2040,21 +1898,18 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             if (!termo) return true;
-
             var texto = limparTexto(
-                (o.titulo || "") + " " +
-                (o.fallback || "") + " " +
+                (o.titulo || "") + " " + (o.fallback || "") + " " +
                 problemas.map(function (p) {
-                    return authsearchV37RotuloProblema(p.tipo) + " " + (p.campo || "") + " " + (p.valor || "");
+                    return authsearchV38RotuloProblema(p.tipo) + " " + (p.campo || "") + " " + (p.valor || "");
                 }).join(" ")
             ).toLowerCase();
 
             return texto.indexOf(termo) !== -1;
         }
 
-        function authsearchV37PainelResolucao(o) {
+        function authsearchV38Painel(o) {
             if (!STATE.obrasResolucaoAberta[String(o.biblionumber)]) return "";
-
             var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
             var problemas = o.authsearchProblemas || [];
 
@@ -2063,7 +1918,7 @@ body.authsearch-resizing #authsearch-tab {
                 problemas.map(function (p) {
                     return '<div class="authsearch-work-resolution-row">' +
                         '<div class="authsearch-work-resolution-copy">' +
-                            '<strong>' + escaparHTML((p.campo || "7xx") + ' · ' + authsearchV37RotuloProblema(p.tipo)) + '</strong>' +
+                            '<strong>' + escaparHTML((p.campo || "7xx") + ' · ' + authsearchV38RotuloProblema(p.tipo)) + '</strong>' +
                             '<span>' + escaparHTML(p.detalhe || p.valor || "") + '</span>' +
                         '</div>' +
                         '<a class="authsearch-work-resolution-link" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Resolver</a>' +
@@ -2080,21 +1935,21 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasProblemas = obras.slice();
 
             if (!obras.length) {
-                var msg = '<div class="authsearch-works-ok">Não foram encontrados problemas de autoria nas obras associadas a esta autoridade.</div>';
+                var htmlOk = '<div class="authsearch-works-ok">Não foram encontrados problemas de autoria nas obras associadas a esta autoridade.</div>';
                 if (STATE.obrasNaoAnalisadas) {
-                    msg += '<div class="authsearch-works-analysis-warning">' +
+                    htmlOk += '<div class="authsearch-works-analysis-warning">' +
                         STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
-                        ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') + ' ser analisado' +
-                        (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' automaticamente.</div>';
+                        ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
+                        ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML.</div>';
                 }
-                $alvo.html(msg);
+                $alvo.html(htmlOk);
                 return;
             }
 
-            var visiveis = obras.filter(authsearchV37ObraPassaFiltro);
+            var visiveis = obras.filter(authsearchV38PassaFiltro);
             var out =
-                authsearchV37ResumoFiltros(obras) +
-                '<div class="authsearch-works-note">Só são apresentadas obras em que o MARC confirma uma ocorrência relevante em 700, 701 ou 702 e foi detetado um problema. Registos onde a autoridade surge apenas como assunto ou contexto são excluídos.</div>' +
+                authsearchV38Resumo(obras) +
+                '<div class="authsearch-works-note">Só entram obras em que o MARCXML confirma a ocorrência da autoridade em 700, 701 ou 702 e existe uma anomalia concreta. O campo 700 não é marcado por ausência de $4.</div>' +
                 '<div class="authsearch-works-toolbar">' +
                     '<div class="authsearch-works-meta">' + obras.length + ' obra' + (obras.length === 1 ? '' : 's') + ' com problema' + (obras.length === 1 ? '' : 's') + '</div>' +
                     '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar obras…" value="' + escaparAttr(STATE.obrasFiltroTexto || '') + '">' +
@@ -2106,17 +1961,16 @@ body.authsearch-resizing #authsearch-tab {
                 var problemas = o.authsearchProblemas || [];
                 var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
                 var marc = '/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
-                var textoFiltro = limparTexto((titulo || '') + ' ' + (o.fallback || '')).toLowerCase();
 
-                out += '<article class="authsearch-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '" data-filter="' + escaparAttr(textoFiltro) + '">' +
+                out += '<article class="authsearch-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
                     (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
                     '<div class="authsearch-work-body">' +
                         '<div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(titulo) + '</a></div>' +
                         '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div>' +
                         '<div class="authsearch-work-problems">' +
                             problemas.map(function (p) {
-                                return '<span class="authsearch-work-problem ' + authsearchV37ClasseProblema(p.tipo) + '">' +
-                                    escaparHTML(authsearchV37RotuloProblema(p.tipo)) +
+                                return '<span class="authsearch-work-problem ' + authsearchV38ClasseProblema(p.tipo) + '">' +
+                                    escaparHTML(authsearchV38RotuloProblema(p.tipo)) +
                                 '</span>';
                             }).join("") +
                         '</div>' +
@@ -2125,22 +1979,19 @@ body.authsearch-resizing #authsearch-tab {
                             '<a class="authsearch-work-secondary" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
                             '<a class="authsearch-work-secondary" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
                         '</div>' +
-                        authsearchV37PainelResolucao(o) +
+                        authsearchV38Painel(o) +
                     '</div>' +
                 '</article>';
             });
 
-            if (!visiveis.length) {
-                out += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
-            }
-
+            if (!visiveis.length) out += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
             out += '</div>';
 
             if (STATE.obrasNaoAnalisadas) {
                 out += '<div class="authsearch-works-analysis-warning">' +
                     STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
                     ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
-                    ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' automaticamente.</div>';
+                    ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML.</div>';
             }
 
             $alvo.html(out);
@@ -2323,364 +2174,253 @@ body.authsearch-resizing #authsearch-tab {
 
 
         /* ======================================================
-           MOTOR DE TRIAGEM DE OBRAS
-           Baseado na lógica operacional do K●RE:
-           1) candidatos por authid + índice de autor;
-           2) validação no MARC;
-           3) só 700/701/702;
-           4) só entram obras com problema real.
+           MOTOR MARCXML ROBUSTO
            ====================================================== */
 
-        function authsearchV37FundirObras(destino, obras, origem) {
-            obras = Array.isArray(obras) ? obras : [];
-            obras.forEach(function (o) {
+        function authsearchV38FundirObras(mapa, obras, origem) {
+            (Array.isArray(obras) ? obras : []).forEach(function (o) {
                 var bib = String(o.biblionumber || "");
                 if (!/^\d+$/.test(bib)) return;
-
-                if (!destino[bib]) {
-                    destino[bib] = $.extend({}, o, { authsearchOrigens: [] });
-                } else {
-                    if (!destino[bib].img && o.img) destino[bib].img = o.img;
-                    if (!destino[bib].titulo && o.titulo) destino[bib].titulo = o.titulo;
-                    if (!destino[bib].fallback && o.fallback) destino[bib].fallback = o.fallback;
-                    if (!destino[bib].href && o.href) destino[bib].href = o.href;
-                }
-
-                if (origem && destino[bib].authsearchOrigens.indexOf(origem) === -1) {
-                    destino[bib].authsearchOrigens.push(origem);
-                }
+                if (!mapa[bib]) mapa[bib] = $.extend({}, o, { authsearchOrigens: [] });
+                if (origem && mapa[bib].authsearchOrigens.indexOf(origem) === -1) mapa[bib].authsearchOrigens.push(origem);
             });
         }
 
-        function authsearchV37PesquisarCandidatos(authid, callback) {
+        function authsearchV38PesquisarCandidatos(authid, callback) {
             var mapa = {};
             var pendentes = 0;
-            var terminou = false;
-            var nome = limparTexto((STATE.authority && STATE.authority.nome) || "");
-            var variantes = ((STATE.authority && STATE.authority.variantes400) || [])
-                .map(function (v) { return limparTexto(v && v.forma ? v.forma : ""); })
-                .filter(Boolean)
-                .slice(0, 4);
+            var concluido = false;
+            var a = STATE.authority || {};
+            var nome = limparTexto(a.nome || "");
+            var variantes = (a.variantes400 || []).map(function (v) {
+                return limparTexto(v && v.forma ? v.forma : "");
+            }).filter(Boolean).slice(0, 4);
 
-            function concluirUm() {
+            function terminarUm() {
                 pendentes--;
-                if (pendentes > 0 || terminou) return;
-                terminou = true;
-                callback(Object.keys(mapa).map(function (bib) { return mapa[bib]; }));
+                if (pendentes > 0 || concluido) return;
+                concluido = true;
+                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
             }
 
-            function carregarPesquisa(url, origem) {
+            function pesquisar(url, origem) {
                 pendentes++;
                 carregarTodasObrasCatalogo(url, function (_erro, obras) {
-                    authsearchV37FundirObras(mapa, obras, origem);
-                    concluirUm();
+                    authsearchV38FundirObras(mapa, obras, origem);
+                    terminarUm();
                 });
             }
 
-            // 1. Pesquisa estrutural pela autoridade: mantém a lógica original.
             if (STATE.obrasPrecarregadasAuthid === String(authid) && Array.isArray(STATE.obrasLigadasPreload)) {
-                authsearchV37FundirObras(mapa, STATE.obrasLigadasPreload, "Pesquisa an");
+                authsearchV38FundirObras(mapa, STATE.obrasLigadasPreload, "an");
             } else {
-                carregarPesquisa(
-                    '/cgi-bin/koha/catalogue/search.pl?idx=an&q=' + encodeURIComponent(authid) + '&count=50',
-                    'Pesquisa an'
-                );
+                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=an&q=' + encodeURIComponent(authid) + '&count=50', "an");
             }
 
-            // 2. Pesquisa no índice de autor: indispensável para encontrar 7xx sem $9.
-            if (nome) {
-                carregarPesquisa(
-                    '/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(nome) + '&count=50',
-                    'Pesquisa autor'
-                );
-            }
+            if (nome) pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(nome) + '&count=50', "au");
 
-            // 3. Formas variantes 400, limitadas para não multiplicar pedidos.
             variantes.forEach(function (forma) {
                 if (normalizarNomeParaComparacao(forma) === normalizarNomeParaComparacao(nome)) return;
-                carregarPesquisa(
-                    '/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(forma) + '&count=50',
-                    'Pesquisa variante'
-                );
+                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(forma) + '&count=50', "variante");
             });
 
             if (!pendentes) {
-                terminou = true;
-                callback(Object.keys(mapa).map(function (bib) { return mapa[bib]; }));
+                concluido = true;
+                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
             }
         }
 
-        function authsearchV37ExtrairSubcampos(texto) {
-            var subcampos = {};
-            var t = " " + String(texto || "")
-                .replace(/\u00a0/g, " ")
-                .replace(/‡/g, "$")
-                .replace(/ǂ/g, "$")
-                .replace(/\s+/g, " ") + " ";
-            var re = /(?:^|\s|\$)([0-9a-z])\s+(.+?)(?=\s(?:[0-9a-z]|\$[0-9a-z])\s+|$)/gi;
-            var m;
-
-            while ((m = re.exec(t)) !== null) {
-                var codigo = String(m[1]).toLowerCase();
-                var valor = limparTexto(m[2]);
-                if (!subcampos[codigo]) subcampos[codigo] = [];
-                if (valor) subcampos[codigo].push(valor);
-            }
-            return subcampos;
+        function authsearchV38MarcXmlUrl(biblionumber) {
+            return '/cgi-bin/koha/catalogue/export.pl?op=export&format=marcxml&bib=' + encodeURIComponent(biblionumber);
         }
 
-        function authsearchV37ExtrairBlocosMARC(html) {
-            var $doc = $("<div>").append($.parseHTML(html, document, true));
-            $doc.find("script,style").remove();
-            var blocos = [];
-
-            $doc.find("tr").each(function () {
-                var texto = limparTexto($(this).text());
-                var m = texto.match(/\b(\d{3})\b/);
-                if (!m || !/^\d{3}$/.test(m[1])) return;
-                blocos.push({
-                    campo: m[1],
-                    texto: texto,
-                    subcampos: authsearchV37ExtrairSubcampos(texto)
-                });
-            });
-
-            if (!blocos.length) {
-                var linhas = String($doc.text() || "")
-                    .replace(/\r/g, "\n")
-                    .replace(/\u00a0/g, " ")
-                    .split(/\n+/)
-                    .map(function (l) { return limparTexto(l); })
-                    .filter(Boolean);
-
-                var atual = null;
-                linhas.forEach(function (linha) {
-                    var m = linha.match(/^(\d{3})(\s|#|$)/);
-                    if (m) {
-                        if (atual) {
-                            atual.subcampos = authsearchV37ExtrairSubcampos(atual.texto);
-                            blocos.push(atual);
-                        }
-                        atual = { campo: m[1], texto: linha, subcampos: {} };
-                    } else if (atual) {
-                        atual.texto += " " + linha;
-                    }
-                });
-
-                if (atual) {
-                    atual.subcampos = authsearchV37ExtrairSubcampos(atual.texto);
-                    blocos.push(atual);
-                }
+        function authsearchV38ParseXML(txt) {
+            try {
+                var parser = new DOMParser();
+                var xml = parser.parseFromString(String(txt || ""), "application/xml");
+                if (xml.getElementsByTagName("parsererror").length) return null;
+                return xml;
+            } catch (_e) {
+                return null;
             }
-
-            var vistos = {};
-            return blocos.filter(function (b) {
-                var k = b.campo + "|" + normalizarNomeParaComparacao(b.texto);
-                if (vistos[k]) return false;
-                vistos[k] = true;
-                return true;
-            });
         }
 
-        function authsearchV37ObterSubcampo(bloco, codigo) {
-            codigo = String(codigo || "").toLowerCase();
-            if (bloco.subcampos && bloco.subcampos[codigo] && bloco.subcampos[codigo].length) {
-                return limparTexto(bloco.subcampos[codigo].join(" "));
+        function authsearchV38Subcampos(field) {
+            var out = {};
+            var nodes = field.getElementsByTagName("subfield");
+            for (var i = 0; i < nodes.length; i++) {
+                var code = String(nodes[i].getAttribute("code") || "").toLowerCase();
+                var value = limparTexto(nodes[i].textContent || "");
+                if (!out[code]) out[code] = [];
+                if (value) out[code].push(value);
             }
-            return "";
+            return out;
         }
 
-        function authsearchV37Authids(bloco) {
+        function authsearchV38Valor(sf, code) {
+            var vals = sf[code] || [];
+            return limparTexto(vals.join(" "));
+        }
+
+        function authsearchV38Authids(sf) {
             var out = [];
-            var valores = (bloco.subcampos && bloco.subcampos["9"]) ? bloco.subcampos["9"] : [];
-            valores.forEach(function (v) {
-                var nums = String(v || "").match(/\b\d{1,12}\b/g);
-                if (nums) out = out.concat(nums);
+            (sf["9"] || []).forEach(function (v) {
+                var m = String(v || "").match(/\d+/g);
+                if (m) out = out.concat(m);
             });
-
-            if (!out.length) {
-                var re = /(?:^|\s|\$)9\s*([0-9]{1,12})(?=\s|$)/g;
-                var m;
-                while ((m = re.exec(String(bloco.texto || ""))) !== null) out.push(m[1]);
-            }
-
             return out.filter(function (v, i, a) { return a.indexOf(v) === i; });
         }
 
-        function authsearchV37Codigos4(bloco) {
+        function authsearchV38Codigos4(sf) {
             var out = [];
-            var valores = (bloco.subcampos && bloco.subcampos["4"]) ? bloco.subcampos["4"] : [];
-            valores.forEach(function (v) {
-                var vals = String(v || "").match(/\b(?:\d{3}|[a-z]{3})\b/gi);
-                if (vals) out = out.concat(vals);
+            (sf["4"] || []).forEach(function (v) {
+                var m = String(v || "").match(/\b(?:\d{3}|[a-z]{3})\b/gi);
+                if (m) out = out.concat(m);
             });
-
-            if (!out.length) {
-                var re = /(?:\$4|\s4\s+)\s*([0-9]{3}|[a-z]{3})\b/gi;
-                var m;
-                while ((m = re.exec(String(bloco.texto || ""))) !== null) out.push(m[1]);
-            }
-
             return out.filter(function (v, i, a) { return a.indexOf(v) === i; });
         }
 
-        function authsearchV37ValorAutoria(bloco) {
-            var partes = [];
-            ["a","b","f","g"].forEach(function (c) {
-                var v = authsearchV37ObterSubcampo(bloco, c);
-                if (v) partes.push(v);
-            });
-            if (partes.length) return limparTexto(partes.join(" "));
-            return limparTexto(
-                String(bloco.texto || "")
-                    .replace(/^\d{3}\s*#*\s*/g, "")
-                    .replace(/\$?9\s+\d{1,12}\b/g, "")
-            );
+        function authsearchV38Forma7xx(sf) {
+            return limparTexto([
+                authsearchV38Valor(sf, "a"),
+                authsearchV38Valor(sf, "b"),
+                authsearchV38Valor(sf, "c")
+            ].filter(Boolean).join(" "));
         }
 
-        function authsearchV37UniversoIdentitario() {
+        function authsearchV38Universo() {
             var a = STATE.authority || {};
-            var formas = [a.nome || "", (a.nomeA || "") + " " + (a.nomeB || "")];
-
-            (a.variantes400 || []).forEach(function (v) {
-                if (v && v.forma) formas.push(v.forma);
-            });
-
+            var formas = [a.nome || "", (a.nomeA || "") + " " + (a.nomeB || "") + " " + (a.nomeC || "")];
+            (a.variantes400 || []).forEach(function (v) { if (v && v.forma) formas.push(v.forma); });
             return formas.map(normalizarNomeParaComparacao).filter(Boolean);
         }
 
-        function authsearchV37TextoCompativel(texto) {
-            var t = normalizarNomeParaComparacao(texto || "");
-            if (!t) return false;
+        function authsearchV38Compativel(valor) {
+            var n = normalizarNomeParaComparacao(valor || "");
+            if (!n) return false;
+            var universo = authsearchV38Universo();
 
-            var universo = authsearchV37UniversoIdentitario();
             if (universo.some(function (u) {
-                return u === t || t.indexOf(u) !== -1 || u.indexOf(t) !== -1;
+                return u === n || n.indexOf(u) !== -1 || u.indexOf(n) !== -1;
             })) return true;
 
             var a = STATE.authority || {};
             var apelido = normalizarNomeParaComparacao(a.nomeA || "");
             var restantes = normalizarNomeParaComparacao(a.nomeB || "");
-            if (!apelido || t.indexOf(apelido) === -1) return false;
+            if (!apelido || n.indexOf(apelido) === -1) return false;
 
-            var tokens = restantes.split(/\s+/).filter(function (x) { return x.length > 2; });
-            var encontrados = tokens.filter(function (x) { return t.indexOf(x) !== -1; }).length;
-            return !tokens.length || encontrados >= Math.min(1, tokens.length);
+            var tokens = restantes.split(/\s+/).filter(function (t) { return t.length > 2; });
+            return !tokens.length || tokens.some(function (t) { return n.indexOf(t) !== -1; });
         }
 
-        function authsearchV37AdicionarProblema(lista, p) {
+        function authsearchV38DatasDiferentes(bib, auth) {
+            bib = limparTexto(bib || "");
+            auth = limparTexto(auth || "");
+            if (!auth) return false;
+            if (!bib) return true;
+
+            var a = auth.match(/\d{4}/g) || [];
+            var b = bib.match(/\d{4}/g) || [];
+            if (!a.length || !b.length) return false;
+            return a.join("|") !== b.join("|");
+        }
+
+        function authsearchV38AddProblema(lista, p) {
             var k = [p.tipo, p.campo, p.detalhe].join("|");
-            if (!lista.some(function (x) { return [x.tipo, x.campo, x.detalhe].join("|") === k; })) {
-                lista.push(p);
-            }
+            if (!lista.some(function (x) { return [x.tipo, x.campo, x.detalhe].join("|") === k; })) lista.push(p);
         }
 
-        function authsearchV37DatasDivergem(datasBib, datasAuth) {
-            var b = limparTexto(datasBib || "");
-            var a = limparTexto(datasAuth || "");
-            if (!a) return false;
-            if (!b) return true;
-
-            var numsA = a.match(/\d{4}/g) || [];
-            var numsB = b.match(/\d{4}/g) || [];
-            if (!numsA.length || !numsB.length) return false;
-            return numsA.join("|") !== numsB.join("|");
-        }
-
-        function authsearchV37AnalisarObraMARC(html, obra, authid) {
+        function authsearchV38AnalisarXML(xml, obra, authid) {
             var problemas = [];
-            var blocos = authsearchV37ExtrairBlocosMARC(html);
-            var autoria = blocos.filter(function (b) {
-                return ["700","701","702"].indexOf(b.campo) !== -1;
-            });
+            var datafields = xml.getElementsByTagName("datafield");
             var datasAuth = limparTexto((STATE.authority && STATE.authority.datas) || "");
-            var authidStr = String(authid);
+            var esperado = String(authid);
 
-            autoria.forEach(function (bloco) {
-                var authids = authsearchV37Authids(bloco);
-                var temEsperado = authids.indexOf(authidStr) !== -1;
+            for (var i = 0; i < datafields.length; i++) {
+                var tag = String(datafields[i].getAttribute("tag") || "");
+                if (["700","701","702"].indexOf(tag) === -1) continue;
+
+                var sf = authsearchV38Subcampos(datafields[i]);
+                var authids = authsearchV38Authids(sf);
+                var temEsperado = authids.indexOf(esperado) !== -1;
                 var temAlgum = authids.length > 0;
-                var valor = authsearchV37ValorAutoria(bloco);
-                var compativel = authsearchV37TextoCompativel(valor || bloco.texto);
+                var forma = authsearchV38Forma7xx(sf);
+                var compativel = authsearchV38Compativel(forma);
 
-                // Se não é esta autoridade por $9 nem por forma textual, não interessa.
-                if (!temEsperado && !compativel) return;
+                // Só esta autoridade: pelo $9 esperado ou por forma textual compatível.
+                if (!temEsperado && !compativel) continue;
 
-                var codigos4 = authsearchV37Codigos4(bloco);
-                var exige4 = bloco.campo !== "700"; // regra K●RE
+                var codigos4 = authsearchV38Codigos4(sf);
+                var exige4 = tag !== "700"; // regra K●RE: 700 principal não exige $4
                 var tem4 = !exige4 || codigos4.length > 0;
 
                 if (compativel && !temAlgum && !tem4) {
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "sem9e4",
-                        campo: bloco.campo,
-                        valor: valor,
-                        detalhe: bloco.campo + " compatível com a autoridade, mas sem ligação $9 e sem função $4."
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"sem9e4",
+                        campo:tag,
+                        valor:forma,
+                        detalhe:tag + " compatível com a autoridade, mas sem $9 e sem $4."
                     });
-                    return;
+                    continue;
                 }
 
                 if (compativel && !temAlgum) {
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "sem9",
-                        campo: bloco.campo,
-                        valor: valor,
-                        detalhe: bloco.campo + " compatível com a autoridade, mas sem ligação estrutural $9 ao authid " + authidStr + "."
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"sem9",
+                        campo:tag,
+                        valor:forma,
+                        detalhe:tag + " compatível com a autoridade, mas sem $9. Esperado authid " + esperado + "."
                     });
                 }
 
                 if (temEsperado && !tem4) {
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "sem4",
-                        campo: bloco.campo,
-                        valor: valor,
-                        detalhe: bloco.campo + " está ligado ao authid " + authidStr + ", mas não tem código de função $4."
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"sem4",
+                        campo:tag,
+                        valor:forma,
+                        detalhe:tag + " ligado ao authid " + esperado + ", mas sem código de função $4."
                     });
                 }
 
                 if (compativel && temAlgum && !temEsperado) {
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "outroAuthid",
-                        campo: bloco.campo + "$9",
-                        valor: valor,
-                        detalhe: "A forma é compatível com esta autoridade, mas o ponto de acesso está ligado ao authid " + authids.join(", ") + "; esperado " + authidStr + "."
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"outroAuthid",
+                        campo:tag + "$9",
+                        valor:forma,
+                        detalhe:"Forma compatível, mas ligada ao authid " + authids.join(", ") + "; esperado " + esperado + "."
                     });
                 }
 
-                // Só é "nome divergente" se o $9 confirma esta autoridade.
-                if (temEsperado && valor && !compativel) {
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "nomeDivergente",
-                        campo: bloco.campo,
-                        valor: valor,
-                        detalhe: "O $9 aponta para esta autoridade, mas a forma textual do ponto de acesso difere da forma autorizada e das variantes 400."
+                if (temEsperado && forma && !compativel) {
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"nomeDivergente",
+                        campo:tag,
+                        valor:forma,
+                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual difere da forma autorizada e das variantes 400."
                     });
                 }
 
-                if (temEsperado && authsearchV37DatasDivergem(authsearchV37ObterSubcampo(bloco, "f"), datasAuth)) {
-                    var datasBib = authsearchV37ObterSubcampo(bloco, "f");
-                    authsearchV37AdicionarProblema(problemas, {
-                        tipo: "datas",
-                        campo: bloco.campo + "$f",
-                        valor: datasBib,
-                        detalhe: datasBib
-                            ? "Datas do ponto de acesso: " + datasBib + " · autoridade: " + datasAuth + "."
-                            : "A autoridade apresenta datas (" + datasAuth + "), mas o ponto de acesso ligado não tem $f."
+                var datasBib = authsearchV38Valor(sf, "f");
+                if (temEsperado && authsearchV38DatasDiferentes(datasBib, datasAuth)) {
+                    authsearchV38AddProblema(problemas, {
+                        tipo:"datas",
+                        campo:tag + "$f",
+                        valor:datasBib,
+                        detalhe:datasBib
+                            ? "Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
+                            : "A autoridade tem datas (" + datasAuth + "), mas o ponto de acesso ligado não tem $f."
                     });
                 }
-            });
+            }
 
             obra.authsearchProblemas = problemas;
-            return problemas.length > 0 ? obra : null;
+            return problemas.length ? obra : null;
         }
 
-        function authsearchV37AnalisarCandidatos(obras, authid, callback, onProgress) {
+        function authsearchV38AnalisarObras(obras, authid, callback, onProgress) {
             obras = Array.isArray(obras) ? obras : [];
             callback = typeof callback === "function" ? callback : function () {};
             onProgress = typeof onProgress === "function" ? onProgress : function () {};
-
-            var resultado = [];
-            var indice = 0, ativos = 0, concluidos = 0, limite = 6, falhas = 0;
 
             if (!obras.length) {
                 STATE.obrasNaoAnalisadas = 0;
@@ -2688,10 +2428,13 @@ body.authsearch-resizing #authsearch-tab {
                 return;
             }
 
-            function terminar() {
-                if (concluidos < obras.length || ativos > 0) return false;
+            var resultado = [];
+            var indice = 0, ativos = 0, concluidos = 0, limite = 6, falhas = 0;
 
+            function finalizar() {
+                if (concluidos < obras.length || ativos > 0) return false;
                 STATE.obrasNaoAnalisadas = falhas;
+
                 resultado.sort(function (a, b) {
                     function peso(o) {
                         var ps = o.authsearchProblemas || [];
@@ -2701,9 +2444,7 @@ body.authsearch-resizing #authsearch-tab {
                     }
                     var pa = peso(a), pb = peso(b);
                     if (pa !== pb) return pa - pb;
-                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(
-                        tituloSemResponsabilidade(b.titulo || ""), "pt"
-                    );
+                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(tituloSemResponsabilidade(b.titulo || ""), "pt");
                 });
 
                 callback(resultado);
@@ -2711,19 +2452,23 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             function proximo() {
-                if (terminar()) return;
+                if (finalizar()) return;
 
                 while (ativos < limite && indice < obras.length) {
                     (function (obra) {
                         ativos++;
-                        var url = '/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=' + encodeURIComponent(obra.biblionumber);
                         var req = $.ajax({
-                            url: url,
-                            dataType: 'html',
+                            url: authsearchV38MarcXmlUrl(obra.biblionumber),
+                            dataType: "text",
                             timeout: CONFIG.timeout
                         })
-                        .done(function (html) {
-                            var analisada = authsearchV37AnalisarObraMARC(html, obra, authid);
+                        .done(function (txt) {
+                            var xml = authsearchV38ParseXML(txt);
+                            if (!xml) {
+                                falhas++;
+                                return;
+                            }
+                            var analisada = authsearchV38AnalisarXML(xml, obra, authid);
                             if (analisada) resultado.push(analisada);
                         })
                         .fail(function () {
@@ -2812,8 +2557,8 @@ body.authsearch-resizing #authsearch-tab {
             if (!$alvo.length || STATE.obrasCarregadas) return;
 
             atualizarAuthorityState();
-
             var authid = String((STATE.authority && STATE.authority.authid) || "");
+
             if (!/^\d+$/.test(authid)) {
                 $alvo.html('<div class="authsearch-empty">A autoridade ainda não tem AuthID persistido.</div>');
                 return;
@@ -2826,7 +2571,7 @@ body.authsearch-resizing #authsearch-tab {
 
             $alvo.html('<div class="authsearch-loading">A procurar obras candidatas pela autoridade e pelo índice de autor…</div>');
 
-            authsearchV37PesquisarCandidatos(authid, function (candidatos) {
+            authsearchV38PesquisarCandidatos(authid, function (candidatos) {
                 candidatos = Array.isArray(candidatos) ? candidatos : [];
 
                 if (!candidatos.length) {
@@ -2836,9 +2581,9 @@ body.authsearch-resizing #authsearch-tab {
                     return;
                 }
 
-                $alvo.html('<div class="authsearch-loading">A validar o MARC de ' + candidatos.length + ' registos candidatos…</div>');
+                $alvo.html('<div class="authsearch-loading">A analisar MARCXML de ' + candidatos.length + ' registos candidatos…</div>');
 
-                authsearchV37AnalisarCandidatos(candidatos, authid, function (problemas) {
+                authsearchV38AnalisarObras(candidatos, authid, function (problemas) {
                     STATE.obrasCarregadas = true;
                     STATE.obrasProblemas = problemas.slice();
 
@@ -2850,7 +2595,7 @@ body.authsearch-resizing #authsearch-tab {
                     renderObrasCatalogo(problemas, STATE.obrasPesquisaUrl || "");
 
                 }, function (feito, total, encontrados) {
-                    $alvo.html('<div class="authsearch-loading">A analisar MARC… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema</div>');
+                    $alvo.html('<div class="authsearch-loading">A analisar MARCXML… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema</div>');
                 });
             });
         }
