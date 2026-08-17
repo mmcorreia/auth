@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.3 · AuthSearch&Cat + núcleo K●RE validado · 2026-08-17
+   Versão 4.4 · AuthSearch&Cat + correção escaparRegex · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -2290,6 +2290,10 @@ body.authsearch-resizing #authsearch-tab {
             return normalizarNomeParaComparacao(limparTexto(texto || ""));
         }
 
+        function koreLiteEscaparRegex(texto) {
+            return String(texto || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        }
+
         function koreLiteFundirCandidatos(respostas) {
             var vistos = {};
             var candidatos = [];
@@ -2517,7 +2521,7 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             var re = new RegExp(
-                "(^|\\s|\\$)" + escaparRegex(codigo) +
+                "(^|\\s|\\$)" + koreLiteEscaparRegex(codigo) +
                 "\\s+(.+?)(?=\\s(?:[a-z0-9]|\\$[a-z0-9])\\s+|$)",
                 "i"
             );
@@ -2628,7 +2632,7 @@ body.authsearch-resizing #authsearch-tab {
         function koreLitePalavraInteira(texto, palavra) {
             if (!texto || !palavra) return false;
             var re = new RegExp(
-                "(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])",
+                "(^|[^a-z0-9])" + koreLiteEscaparRegex(palavra) + "($|[^a-z0-9])",
                 "i"
             );
             return re.test(" " + texto + " ");
