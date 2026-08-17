@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.9 · AuthSearch&Cat + triagem MARCXML + 200$f · 2026-08-17
+   Versão 3.10 · AuthSearch&Cat + watchdog MARCXML · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -2651,57 +2651,128 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             var resultado = [];
-            var indice = 0, ativos = 0, concluidos = 0, limite = 6, falhas = 0;
+            var indice = 0;
+            var ativos = 0;
+            var concluidos = 0;
+            var limite = 6;
+            var falhas = 0;
+            var finalizado = false;
 
-            function finalizar() {
-                if (concluidos < obras.length || ativos > 0) return false;
-                STATE.obrasNaoAnalisadas = falhas;
+            /*
+             * Alguns pedidos MARCXML podem ficar presos no browser/servidor sem
+             * disparar corretamente o timeout do jQuery. Cada pedido recebe por
+             * isso um watchdog próprio e a análise inteira recebe um watchdog
+             * global. Nenhum registo pode bloquear o fim da secção.
+             */
+            var TIMEOUT_PEDIDO = Math.max(12000, (CONFIG.timeout || 10000) + 3000);
+            var TIMEOUT_GLOBAL = Math.max(90000, obras.length * 1500);
 
+            var watchdogGlobal = window.setTimeout(function () {
+                if (finalizado) return;
+
+                // O que ainda estiver ativo passa a "não analisado".
+                falhas += Math.max(0, obras.length - concluidos);
+                concluidos = obras.length;
+                ativos = 0;
+                finalizarForcado();
+            }, TIMEOUT_GLOBAL);
+
+            function ordenarResultado() {
                 resultado.sort(function (a, b) {
                     function peso(o) {
                         var ps = o.authsearchProblemas || [];
-                        if (ps.some(function (p) { return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid"; })) return 0;
+                        if (ps.some(function (p) {
+                            return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid";
+                        })) return 0;
                         if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
-                        return 2;
+                        if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
+                        return 3;
                     }
+
                     var pa = peso(a), pb = peso(b);
                     if (pa !== pb) return pa - pb;
-                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(tituloSemResponsabilidade(b.titulo || ""), "pt");
-                });
 
+                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(
+                        tituloSemResponsabilidade(b.titulo || ""),
+                        "pt"
+                    );
+                });
+            }
+
+            function finalizarForcado() {
+                if (finalizado) return;
+                finalizado = true;
+                window.clearTimeout(watchdogGlobal);
+
+                STATE.obrasNaoAnalisadas = falhas;
+                ordenarResultado();
                 callback(resultado);
+            }
+
+            function tentarFinalizar() {
+                if (finalizado) return true;
+                if (concluidos < obras.length || ativos > 0) return false;
+                finalizarForcado();
                 return true;
             }
 
             function proximo() {
-                if (finalizar()) return;
+                if (finalizado || tentarFinalizar()) return;
 
-                while (ativos < limite && indice < obras.length) {
+                while (!finalizado && ativos < limite && indice < obras.length) {
                     (function (obra) {
                         ativos++;
-                        var req = $.ajax({
+
+                        var resolvido = false;
+                        var req = null;
+
+                        function concluirPedido(ok, xmlText) {
+                            if (resolvido || finalizado) return;
+                            resolvido = true;
+
+                            window.clearTimeout(watchdogPedido);
+
+                            if (ok) {
+                                var xml = authsearchV38ParseXML(xmlText);
+                                if (!xml) {
+                                    falhas++;
+                                } else {
+                                    var analisada = authsearchV38AnalisarXML(xml, obra, authid);
+                                    if (analisada) resultado.push(analisada);
+                                }
+                            } else {
+                                falhas++;
+                            }
+
+                            ativos = Math.max(0, ativos - 1);
+                            concluidos++;
+
+                            onProgress(concluidos, obras.length, resultado.length);
+
+                            if (!tentarFinalizar()) proximo();
+                        }
+
+                        var watchdogPedido = window.setTimeout(function () {
+                            if (resolvido || finalizado) return;
+                            try {
+                                if (req && req.readyState !== 4) req.abort();
+                            } catch (_e) {}
+                            concluirPedido(false, "");
+                        }, TIMEOUT_PEDIDO);
+
+                        req = $.ajax({
                             url: authsearchV38MarcXmlUrl(obra.biblionumber),
                             dataType: "text",
-                            timeout: CONFIG.timeout
+                            cache: false,
+                            timeout: TIMEOUT_PEDIDO - 1000
                         })
                         .done(function (txt) {
-                            var xml = authsearchV38ParseXML(txt);
-                            if (!xml) {
-                                falhas++;
-                                return;
-                            }
-                            var analisada = authsearchV38AnalisarXML(xml, obra, authid);
-                            if (analisada) resultado.push(analisada);
+                            concluirPedido(true, txt);
                         })
                         .fail(function () {
-                            falhas++;
-                        })
-                        .always(function () {
-                            ativos--;
-                            concluidos++;
-                            onProgress(concluidos, obras.length, resultado.length);
-                            proximo();
+                            concluirPedido(false, "");
                         });
+
                         registarPedido(req);
                     })(obras[indice++]);
                 }
