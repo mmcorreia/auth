@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.5 · AuthSearch&Cat + UX Obras refinado · 2026-08-17
+   Versão 4.6 · AuthSearch&Cat + UX Obras simplificado · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -810,26 +810,27 @@ body.authsearch-resizing #authsearch-tab {
     margin:0 0 11px;
 }
 .authsearch-kore-kpi{
-    border:1px solid #d8e1e8;
-    background:#fff;
-    border-radius:7px;
-    padding:9px 10px;
+    border:1px solid #d7dfe6;
+    background:#fff!important;
+    border-radius:6px;
+    padding:8px 9px;
     display:flex;
     align-items:center;
-    gap:9px;
+    gap:8px;
     min-width:0;
     text-align:left;
     cursor:pointer;
-    box-shadow:0 1px 1px rgba(16,24,40,.02);
+    box-shadow:none;
+    color:#344054!important;
 }
 .authsearch-kore-kpi:hover{
-    background:#fbfdfe;
-    border-color:#b8c8d4;
+    background:#f8fafc!important;
+    border-color:#b9c5cf;
 }
 .authsearch-kore-kpi.is-active{
-    border-color:#79a8c7;
-    background:#f7fbfd;
-    box-shadow:0 0 0 2px rgba(66,133,180,.08);
+    border-color:#8aa8bd;
+    background:#f7fafc!important;
+    box-shadow:0 0 0 1px rgba(82,103,122,.08);
 }
 .authsearch-kore-kpi-icon{
     width:30px;
@@ -843,17 +844,11 @@ body.authsearch-resizing #authsearch-tab {
     color:#667085;
     font-size:13px;
 }
-.authsearch-kore-kpi.is-critical .authsearch-kore-kpi-icon{
-    background:#fff1f0;
-    color:#d92d20;
-}
-.authsearch-kore-kpi.is-review .authsearch-kore-kpi-icon{
-    background:#fff7e6;
-    color:#d97706;
-}
+.authsearch-kore-kpi.is-critical .authsearch-kore-kpi-icon,
+.authsearch-kore-kpi.is-review .authsearch-kore-kpi-icon,
 .authsearch-kore-kpi.is-info .authsearch-kore-kpi-icon{
-    background:#eff8ff;
-    color:#175cd3;
+    background:#f2f4f7;
+    color:#667085;
 }
 .authsearch-kore-kpi-copy{
     display:flex;
@@ -885,7 +880,7 @@ body.authsearch-resizing #authsearch-tab {
 }
 .authsearch-kore-work{
     display:grid;
-    grid-template-columns:68px minmax(0,1fr) 116px;
+    grid-template-columns:68px minmax(0,1fr) 112px;
     gap:12px;
     align-items:start;
     padding:13px 2px;
@@ -898,53 +893,33 @@ body.authsearch-resizing #authsearch-tab {
     display:flex;
     flex-direction:column;
     align-items:stretch;
-    gap:7px;
-    padding-top:1px;
+    gap:6px;
+    padding-top:2px;
 }
-.authsearch-kore-primary-action{
+.authsearch-kore-action{
     display:inline-flex!important;
     align-items:center;
     justify-content:center;
     gap:5px;
     width:100%;
-    min-height:31px;
-    padding:6px 9px!important;
-    border:1px solid #78a8c9!important;
-    border-radius:6px!important;
-    background:#f7fbfd!important;
-    color:#185b88!important;
+    min-height:29px;
+    padding:5px 8px!important;
+    border:1px solid #b9c5cf!important;
+    border-radius:5px!important;
+    background:#fff!important;
+    color:#344054!important;
     font-size:10.5px!important;
-    font-weight:800!important;
+    font-weight:700!important;
     line-height:1.2;
     text-decoration:none!important;
+    box-shadow:none!important;
+    cursor:pointer;
 }
-.authsearch-kore-primary-action:hover{
-    background:#eef6fa!important;
-    border-color:#5c93b8!important;
+.authsearch-kore-action:hover{
+    background:#f8fafc!important;
+    border-color:#8fa0ad!important;
+    color:#1f4e6d!important;
     text-decoration:none!important;
-}
-.authsearch-kore-secondary-actions{
-    display:flex;
-    flex-direction:column;
-    gap:3px;
-    align-items:center;
-}
-.authsearch-kore-text-link{
-    display:inline-flex!important;
-    align-items:center;
-    gap:4px;
-    padding:2px 4px!important;
-    border:0!important;
-    background:transparent!important;
-    color:#47677f!important;
-    font-size:10.5px!important;
-    font-weight:650!important;
-    text-decoration:none!important;
-    white-space:nowrap;
-}
-.authsearch-kore-text-link:hover{
-    color:#174f77!important;
-    text-decoration:underline!important;
 }
 
 .authsearch-kore-problems{
@@ -1050,6 +1025,64 @@ body.authsearch-resizing #authsearch-tab {
     padding:7px 8px;
     font-size:10.5px;
     line-height:1.35;
+}
+
+
+.authsearch-marc-modal{
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:22px;
+    background:rgba(15,23,42,.42);
+}
+.authsearch-marc-dialog{
+    width:min(900px,94vw);
+    height:min(720px,88vh);
+    background:#fff;
+    border:1px solid #cfd8df;
+    border-radius:7px;
+    box-shadow:0 18px 50px rgba(15,23,42,.22);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+}
+.authsearch-marc-head{
+    min-height:46px;
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid #dfe6eb;
+    background:#f7fafc;
+}
+.authsearch-marc-title{
+    font-size:14px;
+    font-weight:800;
+    color:#344054;
+}
+.authsearch-marc-close{
+    border:1px solid #c7d0d8;
+    background:#fff;
+    border-radius:4px;
+    width:28px;
+    height:28px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    color:#667085;
+}
+.authsearch-marc-close:hover{background:#f2f4f7;color:#344054}
+.authsearch-marc-frame{
+    width:100%;
+    height:100%;
+    flex:1 1 auto;
+    border:0;
+    background:#fff;
 }
 
 @media(max-width:700px){
@@ -2136,11 +2169,6 @@ body.authsearch-resizing #authsearch-tab {
             '</div>';
         }
 
-        function koreLiteTextoAcao(obra) {
-            var n = (obra.koreLiteProblemas || []).length;
-            if (n <= 1) return "Corrigir registo";
-            return "Corrigir " + n + " problemas";
-        }
 
         function renderObrasCatalogo(obras, urlPesquisa) {
             var $alvo = $('#authsearch-works');
@@ -2205,36 +2233,21 @@ body.authsearch-resizing #authsearch-tab {
 
                         '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div>' +
 
-                        '<div class="authsearch-kore-problems">' +
-                            (o.koreLiteProblemas || []).map(function (p) {
-                                return '<span class="authsearch-kore-badge ' + koreLiteClasse(p.tipo) + '">' +
-                                    escaparHTML(koreLiteRotulo(p.tipo)) +
-                                '</span>';
-                            }).join("") +
-                        '</div>' +
-
                         koreLiteRenderDiagnosticos(o) +
 
                     '</div>' +
 
                     '<div class="authsearch-kore-actions">' +
 
-                        '<a class="authsearch-kore-primary-action" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">' +
-                            '<i class="fa fa-pencil" aria-hidden="true"></i>' +
-                            escaparHTML(koreLiteTextoAcao(o)) +
+                        '<a class="authsearch-kore-action" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">' +
+                            '<i class="fa fa-pencil" aria-hidden="true"></i> Editar registo' +
                         '</a>' +
 
-                        '<div class="authsearch-kore-secondary-actions">' +
-
-                            '<a class="authsearch-kore-text-link" href="' + escaparAttr(detalhe) + '" target="_blank" rel="noopener noreferrer">' +
-                                '<i class="fa fa-external-link" aria-hidden="true"></i> Registo' +
-                            '</a>' +
-
-                            '<a class="authsearch-kore-text-link" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">' +
-                                '<i class="fa fa-list-alt" aria-hidden="true"></i> MARC' +
-                            '</a>' +
-
-                        '</div>' +
+                        '<button type="button" class="authsearch-kore-action authsearch-open-marc" ' +
+                            'data-marc-url="' + escaparAttr(marc) + '" ' +
+                            'data-marc-title="' + escaparAttr(titulo) + '">' +
+                            '<i class="fa fa-list-alt" aria-hidden="true"></i> MARC' +
+                        '</button>' +
 
                     '</div>' +
 
@@ -3260,6 +3273,30 @@ body.authsearch-resizing #authsearch-tab {
             });
         }
 
+
+        function abrirMarcSobrePagina(url, titulo) {
+            fecharMarcSobrePagina();
+
+            var html =
+                '<div class="authsearch-marc-modal" id="authsearch-marc-modal" role="dialog" aria-modal="true">' +
+                    '<div class="authsearch-marc-dialog">' +
+                        '<div class="authsearch-marc-head">' +
+                            '<div class="authsearch-marc-title">MARC · ' + escaparHTML(titulo || "Registo bibliográfico") + '</div>' +
+                            '<button type="button" class="authsearch-marc-close" aria-label="Fechar"><i class="fa fa-times" aria-hidden="true"></i></button>' +
+                        '</div>' +
+                        '<iframe class="authsearch-marc-frame" src="' + escaparAttr(url) + '" title="MARC"></iframe>' +
+                    '</div>' +
+                '</div>';
+
+            $("body").append(html);
+            $("body").addClass("authsearch-modal-open");
+        }
+
+        function fecharMarcSobrePagina() {
+            $("#authsearch-marc-modal").remove();
+            $("body").removeClass("authsearch-modal-open");
+        }
+
         /* ======================================================
            EVENTOS
            ====================================================== */
@@ -3300,6 +3337,26 @@ body.authsearch-resizing #authsearch-tab {
                 .on("input.authsearchv3", "#authsearch-works-filter", function () {
                     STATE.obrasFiltroTexto = $(this).val() || "";
                     renderObrasCatalogo(STATE.obrasProblemas || [], STATE.obrasPesquisaUrl || "");
+                })
+                .on("click.authsearchv3", ".authsearch-open-marc", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    abrirMarcSobrePagina(
+                        String($(this).attr("data-marc-url") || ""),
+                        String($(this).attr("data-marc-title") || "")
+                    );
+                })
+                .on("click.authsearchv3", ".authsearch-marc-close", function (e) {
+                    e.preventDefault();
+                    fecharMarcSobrePagina();
+                })
+                .on("click.authsearchv3", "#authsearch-marc-modal", function (e) {
+                    if (e.target === this) fecharMarcSobrePagina();
+                })
+                .on("keydown.authsearchv3", function (e) {
+                    if (e.key === "Escape" && $("#authsearch-marc-modal").length) {
+                        fecharMarcSobrePagina();
+                    }
                 })
                 .on("click.authsearchv3", "[data-kore-filter]", function (e) {
                     e.preventDefault();
