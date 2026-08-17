@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.2 · AuthSearch&Cat + K●RE Lite resiliente · 2026-08-17
+   Versão 4.3 · AuthSearch&Cat + núcleo K●RE validado · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -2030,7 +2030,17 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasProblemas = obras.slice();
 
             if (!obras.length) {
-                $alvo.html('<div class="authsearch-kore-empty">Não foram encontrados problemas nas obras associadas a esta autoridade.</div>');
+                if (STATE.obrasNaoAnalisadas) {
+                    $alvo.html(
+                        '<div class="authsearch-works-analysis-warning">' +
+                        'Não foi possível concluir a análise de ' + STATE.obrasNaoAnalisadas +
+                        ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
+                        '. Não é possível afirmar que não existem problemas.' +
+                        '</div>'
+                    );
+                } else {
+                    $alvo.html('<div class="authsearch-kore-empty">Não foram encontrados problemas nas obras associadas a esta autoridade.</div>');
+                }
                 return;
             }
 
@@ -2405,32 +2415,19 @@ body.authsearch-resizing #authsearch-tab {
             return subcampos;
         }
 
-        function koreLiteCompactarBlocos(blocos) {
-            var out = [];
-            var vistos = {};
-
-            (blocos || []).forEach(function (b) {
-                if (!b || !b.campo || !b.texto) return;
-
-                var chave = b.campo + "|" + koreLiteNormalizar(b.texto);
-                if (vistos[chave]) return;
-                vistos[chave] = true;
-                out.push(b);
-            });
-
-            return out;
-        }
-
         function koreLiteExtrairBlocosTabela($doc) {
             var blocos = [];
 
             $doc.find("tr").each(function () {
-                var texto = limparTexto($(this).text());
+                var $tr = $(this);
+                var texto = limparTexto($tr.text());
                 var match = texto.match(/\b(\d{3})\b/);
 
                 if (!match) return;
+
                 var campo = match[1];
-                if (!/^\d{3}$/.test(campo) || texto.length < 4) return;
+                if (!/^\d{3}$/.test(campo)) return;
+                if (texto.length < 4) return;
 
                 blocos.push({
                     campo: campo,
@@ -2449,45 +2446,63 @@ body.authsearch-resizing #authsearch-tab {
 
             var linhas = texto
                 .split(/\n+/)
-                .map(function (l) { return limparTexto(l); })
+                .map(function (linha) { return limparTexto(linha); })
                 .filter(Boolean);
 
             var blocos = [];
-            var atual = null;
+            var blocoAtual = null;
 
             $.each(linhas, function (_i, linha) {
-                var m = linha.match(/^(\d{3})(\s|#|$)/);
+                var matchCampo = linha.match(/^(\d{3})(\s|#|$)/);
 
-                if (m) {
-                    if (atual) {
-                        atual.subcampos = koreLiteExtrairSubcamposTexto(atual.texto);
-                        blocos.push(atual);
+                if (matchCampo) {
+                    if (blocoAtual) {
+                        blocoAtual.subcampos = koreLiteExtrairSubcamposTexto(blocoAtual.texto);
+                        blocos.push(blocoAtual);
                     }
 
-                    atual = {
-                        campo: m[1],
+                    blocoAtual = {
+                        campo: matchCampo[1],
                         texto: linha,
                         subcampos: {}
                     };
-                } else if (atual) {
-                    atual.texto += " " + linha;
+                } else if (blocoAtual) {
+                    blocoAtual.texto += " " + linha;
                 }
             });
 
-            if (atual) {
-                atual.subcampos = koreLiteExtrairSubcamposTexto(atual.texto);
-                blocos.push(atual);
+            if (blocoAtual) {
+                blocoAtual.subcampos = koreLiteExtrairSubcamposTexto(blocoAtual.texto);
+                blocos.push(blocoAtual);
             }
 
             return koreLiteCompactarBlocos(blocos);
+        }
+
+        function koreLiteCompactarBlocos(blocos) {
+            var resultado = [];
+
+            (blocos || []).forEach(function (bloco) {
+                if (!bloco.campo || !bloco.texto) return;
+
+                var textoNorm = koreLiteNormalizar(bloco.texto);
+                var duplicado = resultado.some(function (existente) {
+                    return existente.campo === bloco.campo &&
+                           koreLiteNormalizar(existente.texto) === textoNorm;
+                });
+
+                if (!duplicado) resultado.push(bloco);
+            });
+
+            return resultado;
         }
 
         function koreLiteExtrairBlocosMARC(html) {
             var $doc = $("<div>").append($.parseHTML(html, document, true));
             $doc.find("script,style").remove();
 
-            var blocos = koreLiteExtrairBlocosTabela($doc);
-            if (blocos.length) return blocos;
+            var estruturais = koreLiteExtrairBlocosTabela($doc);
+            if (estruturais.length) return estruturais;
 
             return koreLiteExtrairBlocosTexto($doc);
         }
@@ -2495,19 +2510,28 @@ body.authsearch-resizing #authsearch-tab {
         function koreLiteObterSubcampo(bloco, codigo) {
             codigo = String(codigo || "").toLowerCase();
 
-            if (bloco.subcampos && bloco.subcampos[codigo] && bloco.subcampos[codigo].length) {
+            if (bloco.subcampos &&
+                bloco.subcampos[codigo] &&
+                bloco.subcampos[codigo].length) {
                 return limparTexto(bloco.subcampos[codigo].join(" "));
             }
 
-            var re = new RegExp("(^|\\s|\\$)" + escaparRegex(codigo) + "\\s+(.+?)(?=\\s(?:[a-z0-9]|\\$[a-z0-9])\\s+|$)", "i");
-            var m = String(bloco.texto || "").match(re);
-            return m ? limparTexto(m[2]) : "";
+            var re = new RegExp(
+                "(^|\\s|\\$)" + escaparRegex(codigo) +
+                "\\s+(.+?)(?=\\s(?:[a-z0-9]|\\$[a-z0-9])\\s+|$)",
+                "i"
+            );
+
+            var match = String(bloco.texto || "").match(re);
+            return match ? limparTexto(match[2]) : "";
         }
 
         function koreLiteExtrairAuthids(bloco) {
             var authids = [];
 
-            if (bloco.subcampos && bloco.subcampos["9"]) {
+            if (bloco.subcampos &&
+                bloco.subcampos["9"] &&
+                bloco.subcampos["9"].length) {
                 bloco.subcampos["9"].forEach(function (v) {
                     var nums = String(v || "").match(/\b\d{1,12}\b/g);
                     if (nums) authids = authids.concat(nums);
@@ -2515,23 +2539,29 @@ body.authsearch-resizing #authsearch-tab {
             }
 
             if (!authids.length) {
-                var re = /(?:^|\s|\$)9\s*([0-9]{1,12})(?=\s|$)/g;
-                var m;
-                while ((m = re.exec(String(bloco.texto || ""))) !== null) {
-                    authids.push(m[1]);
+                var texto = String(bloco.texto || "");
+                var re = /(?:^|\s|\$)(?:9)\s*([0-9]{1,12})(?=\s|$)/g;
+                var match;
+
+                while ((match = re.exec(texto)) !== null) {
+                    authids.push(match[1]);
                 }
             }
 
-            return authids.filter(function (v, i, a) { return a.indexOf(v) === i; });
+            return authids.filter(function (v, i, a) {
+                return a.indexOf(v) === i;
+            });
         }
 
         function koreLiteTem4(bloco) {
             /*
-             * Para o AuthSearch simplificado interessa a presença efetiva do
-             * subcampo, não a validação da lista CODIGOFUNC.
-             * Assim "070", "Co-autor", "Ilustrador", etc. contam como preenchido.
+             * No K●RE, a decisão estrutural incide na existência do $4.
+             * Aqui aceitamos qualquer conteúdo não vazio, incluindo o valor
+             * textual que a framework do Koha pode apresentar no MARCdetail.
              */
-            if (bloco.subcampos && bloco.subcampos["4"]) {
+            if (bloco.subcampos &&
+                bloco.subcampos["4"] &&
+                bloco.subcampos["4"].length) {
                 return bloco.subcampos["4"].some(function (v) {
                     return !!limparTexto(v || "");
                 });
@@ -2543,9 +2573,9 @@ body.authsearch-resizing #authsearch-tab {
         function koreLiteValorAutoria(bloco) {
             var partes = [];
 
-            ["a","b","f","g"].forEach(function (c) {
-                var v = koreLiteObterSubcampo(bloco, c);
-                if (v) partes.push(v);
+            ["a", "b", "f", "g"].forEach(function (codigo) {
+                var valor = koreLiteObterSubcampo(bloco, codigo);
+                if (valor) partes.push(valor);
             });
 
             if (partes.length) return limparTexto(partes.join(" "));
@@ -2564,30 +2594,48 @@ body.authsearch-resizing #authsearch-tab {
             if (a.nome) formas.push(a.nome);
 
             if (a.nomeA && a.nomeB) {
-                formas.push(a.nomeA + " " + a.nomeB);
-                formas.push(a.nomeB + " " + a.nomeA);
-                formas.push(a.nomeA + ", " + a.nomeB);
-                formas.push(a.nomeB + ", " + a.nomeA);
+                formas.push(limparTexto(a.nomeA + " " + a.nomeB));
+                formas.push(limparTexto(a.nomeB + " " + a.nomeA));
+                formas.push(limparTexto(a.nomeA + ", " + a.nomeB));
+                formas.push(limparTexto(a.nomeB + ", " + a.nomeA));
             }
 
             (a.variantes400 || []).forEach(function (v) {
                 if (v && v.forma) formas.push(v.forma);
             });
 
-            return formas
-                .map(function (v) { return koreLiteNormalizar(v); })
-                .filter(Boolean)
-                .filter(function (v, i, a) { return a.indexOf(v) === i; });
+            var limpos = [];
+
+            formas.forEach(function (forma) {
+                forma = limparTexto(forma || "");
+                if (!forma) return;
+
+                var n = koreLiteNormalizar(forma);
+                if (n) limpos.push(n);
+
+                var m = forma.match(/^([^,]+),\s*(.+)$/);
+                if (m) {
+                    limpos.push(koreLiteNormalizar(m[1] + " " + m[2]));
+                    limpos.push(koreLiteNormalizar(m[2] + " " + m[1]));
+                }
+            });
+
+            return limpos.filter(Boolean).filter(function (v, i, a2) {
+                return a2.indexOf(v) === i;
+            });
         }
 
         function koreLitePalavraInteira(texto, palavra) {
             if (!texto || !palavra) return false;
-            var re = new RegExp("(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])", "i");
+            var re = new RegExp(
+                "(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])",
+                "i"
+            );
             return re.test(" " + texto + " ");
         }
 
         function koreLiteTextoCompativel(valor) {
-            var t = koreLiteNormalizar(valor);
+            var t = koreLiteNormalizar(valor || "");
             if (!t) return false;
 
             var universo = koreLiteUniversoAutoridade();
@@ -2598,21 +2646,24 @@ body.authsearch-resizing #authsearch-tab {
 
                 if (t === u || koreLitePalavraInteira(t, u)) return true;
 
-                var partes = u.split(/\s+/).filter(function (p) {
+                var partesU = u.split(" ").filter(function (p) {
                     return p.length > 2 && !/^\d{4}$/.test(p);
                 });
 
-                if (partes.length === 1) {
-                    if (koreLitePalavraInteira(t, partes[0])) return true;
+                if (partesU.length <= 1) {
+                    if (partesU.length === 1 &&
+                        koreLitePalavraInteira(t, partesU[0])) {
+                        return true;
+                    }
                     continue;
                 }
 
                 var encontrados = 0;
-                partes.forEach(function (p) {
-                    if (koreLitePalavraInteira(t, p)) encontrados++;
-                });
+                for (var j = 0; j < partesU.length; j++) {
+                    if (koreLitePalavraInteira(t, partesU[j])) encontrados++;
+                }
 
-                if (encontrados >= Math.min(2, partes.length)) return true;
+                if (encontrados >= Math.min(2, partesU.length)) return true;
             }
 
             return false;
@@ -2638,6 +2689,7 @@ body.authsearch-resizing #authsearch-tab {
             var b = bib.match(/\d{4}/g) || [];
 
             if (!a.length || !b.length) return false;
+
             return a.join("|") !== b.join("|");
         }
 
@@ -2650,85 +2702,102 @@ body.authsearch-resizing #authsearch-tab {
 
             obra._koreLiteBlocos = blocos;
 
-            /*
-             * 700 / 701 / 702
-             */
             blocos.forEach(function (bloco) {
-                if (["700","701","702"].indexOf(bloco.campo) === -1) return;
+                if (["700", "701", "702"].indexOf(bloco.campo) === -1) return;
 
                 var authids = koreLiteExtrairAuthids(bloco);
-                var temEsperado = authids.indexOf(esperado) !== -1;
-                var temAlgum = authids.length > 0;
                 var forma = koreLiteValorAutoria(bloco);
                 var compativel = koreLiteTextoCompativel(forma || bloco.texto);
+                var temAuthidEsperado = authids.indexOf(esperado) !== -1;
+                var temAuthid = authids.length > 0;
+                var exige4 = bloco.campo !== "700";
+                var tem4 = exige4 ? koreLiteTem4(bloco) : true;
 
-                if (!temEsperado && !compativel) return;
+                /*
+                 * Exatamente a mesma fronteira operacional do K●RE:
+                 * só interessa um 7xx que seja a autoridade atual por $9
+                 * ou por compatibilidade do nome.
+                 */
+                if (!temAuthidEsperado && !compativel) return;
 
                 autoridadeEm7xx = true;
 
-                var tem4 = bloco.campo === "700" ? true : koreLiteTem4(bloco);
-
-                if (compativel && !temAlgum && !tem4) {
+                if (compativel && !temAuthid && !tem4) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"sem9e4",
-                        campo:bloco.campo,
-                        valor:forma,
-                        detalhe:bloco.campo + " compatível com a autoridade, mas sem $9 e sem $4."
+                        tipo: "sem9e4",
+                        campo: bloco.campo,
+                        valor: forma,
+                        detalhe: bloco.campo +
+                            " compatível com a autoridade, mas sem ligação estrutural ($9) nem função ($4)."
                     });
                     return;
                 }
 
-                if (compativel && !temAlgum) {
+                if (temAuthidEsperado && !tem4) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"sem9",
-                        campo:bloco.campo,
-                        valor:forma,
-                        detalhe:bloco.campo + " compatível com a autoridade, mas sem $9. Esperado authid " + esperado + "."
+                        tipo: "sem4",
+                        campo: bloco.campo,
+                        valor: forma,
+                        detalhe: bloco.campo +
+                            " ligado ao authid " + esperado +
+                            ", mas sem função/responsabilidade em $4."
                     });
+                    return;
                 }
 
-                if (temEsperado && bloco.campo !== "700" && !tem4) {
+                if (compativel && !temAuthid && tem4) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"sem4",
-                        campo:bloco.campo,
-                        valor:forma,
-                        detalhe:bloco.campo + " ligado ao authid " + esperado + ", mas com $4 vazio."
+                        tipo: "sem9",
+                        campo: bloco.campo,
+                        valor: forma,
+                        detalhe: bloco.campo +
+                            " compatível com a autoridade e com $4 preenchido, mas sem $9. Esperado authid " +
+                            esperado + "."
                     });
+                    return;
                 }
 
-                if (compativel && temAlgum && !temEsperado) {
+                if (compativel && temAuthid && !temAuthidEsperado) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"outroAuthid",
-                        campo:bloco.campo + "$9",
-                        valor:forma,
-                        detalhe:"Forma compatível, mas ligada ao authid " + authids.join(", ") + "; esperado " + esperado + "."
+                        tipo: "outroAuthid",
+                        campo: bloco.campo + "$9",
+                        valor: forma,
+                        detalhe: "A forma é compatível com esta autoridade, mas o ponto de acesso está ligado ao authid " +
+                            authids.join(", ") + "; esperado " + esperado + "."
                     });
+                    return;
                 }
 
-                if (temEsperado && forma && !compativel) {
+                /*
+                 * Ligação correta não entra na lista. Mas podemos ainda
+                 * sinalizar diferenças de forma/datas.
+                 */
+                if (temAuthidEsperado && forma && !compativel) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"nomeDivergente",
-                        campo:bloco.campo,
-                        valor:forma,
-                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual não coincide com o 200 autorizado nem com variantes 400."
+                        tipo: "nomeDivergente",
+                        campo: bloco.campo,
+                        valor: forma,
+                        detalhe: "O $9 aponta para esta autoridade, mas a forma textual do 7xx não coincide com o 200 autorizado nem com variantes 400."
                     });
                 }
 
                 var datasBib = koreLiteObterSubcampo(bloco, "f");
-                if (temEsperado && koreLiteDatasDiferem(datasBib, datasAuth)) {
+                if (temAuthidEsperado &&
+                    koreLiteDatasDiferem(datasBib, datasAuth)) {
                     koreLiteAddProblema(problemas, {
-                        tipo:"datas",
-                        campo:bloco.campo + "$f",
-                        valor:datasBib,
-                        detalhe:"Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
+                        tipo: "datas",
+                        campo: bloco.campo + "$f",
+                        valor: datasBib,
+                        detalhe: "Datas no bibliográfico: " + datasBib +
+                            " · autoridade: " + datasAuth + "."
                     });
                 }
             });
 
             /*
-             * 200$f / 200$g
-             * Só se avalia para uma obra em que esta autoridade foi efetivamente
-             * identificada em 700/701/702.
+             * 200$f / 200$g vs. 200/400 da autoridade.
+             * Só é analisado se a autoridade já foi confirmada num 7xx,
+             * evitando falsos positivos por outras responsabilidades da obra.
              */
             if (autoridadeEm7xx) {
                 var responsabilidades = [];
@@ -2739,8 +2808,15 @@ body.authsearch-resizing #authsearch-tab {
                     var f = koreLiteObterSubcampo(bloco, "f");
                     var g = koreLiteObterSubcampo(bloco, "g");
 
-                    if (f) responsabilidades.push({campo:"200$f",valor:f});
-                    if (g) responsabilidades.push({campo:"200$g",valor:g});
+                    if (f) responsabilidades.push({
+                        campo: "200$f",
+                        valor: f
+                    });
+
+                    if (g) responsabilidades.push({
+                        campo: "200$g",
+                        valor: g
+                    });
                 });
 
                 if (responsabilidades.length) {
@@ -2750,12 +2826,12 @@ body.authsearch-resizing #authsearch-tab {
 
                     if (!prevista) {
                         koreLiteAddProblema(problemas, {
-                            tipo:"responsabilidade",
-                            campo:"200$f",
-                            valor:responsabilidades.map(function (r) {
+                            tipo: "responsabilidade",
+                            campo: "200$f",
+                            valor: responsabilidades.map(function (r) {
                                 return r.campo + " " + r.valor;
                             }).join(" | "),
-                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a qualquer variante 400 desta autoridade."
+                            detalhe: "A menção de responsabilidade não corresponde à forma autorizada 200 nem a qualquer variante 400 desta autoridade."
                         });
                     }
                 }
@@ -2779,7 +2855,7 @@ body.authsearch-resizing #authsearch-tab {
              * timeout explícito. Um MARC que não responda não bloqueia
              * os restantes candidatos.
              */
-            var TIMEOUT_REGISTO = Math.max(12000, (CONFIG.timeout || 10000) + 2000);
+            var TIMEOUT_REGISTO = Math.max(9000, (CONFIG.timeout || 8000));
 
             function ordenarResultado() {
                 resultado.sort(function (a, b) {
