@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.10 · AuthSearch&Cat + watchdog MARCXML · 2026-08-17
+   Versão 3.11 · AuthSearch&Cat + watchdog de inatividade · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -2022,7 +2022,7 @@ body.authsearch-resizing #authsearch-tab {
                     htmlOk += '<div class="authsearch-works-analysis-warning">' +
                         STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
                         ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
-                        ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML.</div>';
+                        ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML e foi ignorado na deteção de problemas.</div>';
                 }
                 $alvo.html(htmlOk);
                 return;
@@ -2081,7 +2081,7 @@ body.authsearch-resizing #authsearch-tab {
                 out += '<div class="authsearch-works-analysis-warning">' +
                     STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
                     ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
-                    ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML.</div>';
+                    ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML e foi ignorado na deteção de problemas.</div>';
             }
 
             $alvo.html(out);
@@ -2657,25 +2657,23 @@ body.authsearch-resizing #authsearch-tab {
             var limite = 6;
             var falhas = 0;
             var finalizado = false;
+            var pedidosAtivos = {};
+            var sequenciaPedido = 0;
 
             /*
-             * Alguns pedidos MARCXML podem ficar presos no browser/servidor sem
-             * disparar corretamente o timeout do jQuery. Cada pedido recebe por
-             * isso um watchdog próprio e a análise inteira recebe um watchdog
-             * global. Nenhum registo pode bloquear o fim da secção.
+             * Estratégia v3.11:
+             * - cada pedido tem timeout próprio;
+             * - existe um watchdog de INATIVIDADE: se o contador não avançar
+             *   durante alguns segundos, a análise termina com os resultados
+             *   já obtidos e marca o remanescente como "não analisado";
+             * - assim, 145/146 nunca pode bloquear indefinidamente a UI.
              */
-            var TIMEOUT_PEDIDO = Math.max(12000, (CONFIG.timeout || 10000) + 3000);
-            var TIMEOUT_GLOBAL = Math.max(90000, obras.length * 1500);
+            var TIMEOUT_PEDIDO = Math.max(10000, (CONFIG.timeout || 10000) + 1500);
+            var TIMEOUT_INATIVIDADE = 9000;
+            var TIMEOUT_GLOBAL = 60000;
 
-            var watchdogGlobal = window.setTimeout(function () {
-                if (finalizado) return;
-
-                // O que ainda estiver ativo passa a "não analisado".
-                falhas += Math.max(0, obras.length - concluidos);
-                concluidos = obras.length;
-                ativos = 0;
-                finalizarForcado();
-            }, TIMEOUT_GLOBAL);
+            var watchdogInatividade = null;
+            var watchdogGlobal = null;
 
             function ordenarResultado() {
                 resultado.sort(function (a, b) {
@@ -2699,38 +2697,78 @@ body.authsearch-resizing #authsearch-tab {
                 });
             }
 
-            function finalizarForcado() {
+            function abortarPedidosPendentes() {
+                Object.keys(pedidosAtivos).forEach(function (id) {
+                    var p = pedidosAtivos[id];
+                    try {
+                        if (p && p.req && p.req.readyState !== 4) p.req.abort();
+                    } catch (_e) {}
+                    if (p && p.timer) window.clearTimeout(p.timer);
+                    delete pedidosAtivos[id];
+                });
+            }
+
+            function finalizar(parcial) {
                 if (finalizado) return;
                 finalizado = true;
-                window.clearTimeout(watchdogGlobal);
+
+                if (watchdogInatividade) window.clearTimeout(watchdogInatividade);
+                if (watchdogGlobal) window.clearTimeout(watchdogGlobal);
+
+                /*
+                 * Tudo o que ficou por concluir é apenas "não analisado".
+                 * Nunca é convertido num problema bibliográfico.
+                 */
+                var remanescente = Math.max(0, obras.length - concluidos);
+                if (parcial && remanescente) falhas += remanescente;
+
+                abortarPedidosPendentes();
 
                 STATE.obrasNaoAnalisadas = falhas;
                 ordenarResultado();
                 callback(resultado);
             }
 
-            function tentarFinalizar() {
+            function armarWatchdogInatividade() {
+                if (finalizado) return;
+                if (watchdogInatividade) window.clearTimeout(watchdogInatividade);
+
+                watchdogInatividade = window.setTimeout(function () {
+                    if (finalizado) return;
+                    finalizar(true);
+                }, TIMEOUT_INATIVIDADE);
+            }
+
+            watchdogGlobal = window.setTimeout(function () {
+                if (!finalizado) finalizar(true);
+            }, TIMEOUT_GLOBAL);
+
+            function tentarFinalizarNormalmente() {
                 if (finalizado) return true;
-                if (concluidos < obras.length || ativos > 0) return false;
-                finalizarForcado();
-                return true;
+                if (concluidos >= obras.length && ativos === 0) {
+                    finalizar(false);
+                    return true;
+                }
+                return false;
             }
 
             function proximo() {
-                if (finalizado || tentarFinalizar()) return;
+                if (finalizado || tentarFinalizarNormalmente()) return;
 
                 while (!finalizado && ativos < limite && indice < obras.length) {
                     (function (obra) {
                         ativos++;
-
+                        sequenciaPedido++;
+                        var pedidoId = "p" + sequenciaPedido;
                         var resolvido = false;
-                        var req = null;
 
                         function concluirPedido(ok, xmlText) {
                             if (resolvido || finalizado) return;
                             resolvido = true;
 
-                            window.clearTimeout(watchdogPedido);
+                            var info = pedidosAtivos[pedidoId];
+                            if (info && info.timer) window.clearTimeout(info.timer);
+                            delete pedidosAtivos[pedidoId];
 
                             if (ok) {
                                 var xml = authsearchV38ParseXML(xmlText);
@@ -2749,27 +2787,43 @@ body.authsearch-resizing #authsearch-tab {
 
                             onProgress(concluidos, obras.length, resultado.length);
 
-                            if (!tentarFinalizar()) proximo();
+                            /*
+                             * O watchdog é rearmado a CADA avanço real.
+                             * Se ficar em 145/146, ao fim de 9 s fecha a análise
+                             * e mostra os 145 resultados processados.
+                             */
+                            armarWatchdogInatividade();
+
+                            if (!tentarFinalizarNormalmente()) {
+                                window.setTimeout(proximo, 0);
+                            }
                         }
 
-                        var watchdogPedido = window.setTimeout(function () {
+                        var req = $.ajax({
+                            url: authsearchV38MarcXmlUrl(obra.biblionumber),
+                            dataType: "text",
+                            cache: false,
+                            timeout: TIMEOUT_PEDIDO
+                        });
+
+                        var timer = window.setTimeout(function () {
                             if (resolvido || finalizado) return;
                             try {
                                 if (req && req.readyState !== 4) req.abort();
                             } catch (_e) {}
                             concluirPedido(false, "");
-                        }, TIMEOUT_PEDIDO);
+                        }, TIMEOUT_PEDIDO + 500);
 
-                        req = $.ajax({
-                            url: authsearchV38MarcXmlUrl(obra.biblionumber),
-                            dataType: "text",
-                            cache: false,
-                            timeout: TIMEOUT_PEDIDO - 1000
-                        })
-                        .done(function (txt) {
+                        pedidosAtivos[pedidoId] = {
+                            req: req,
+                            timer: timer
+                        };
+
+                        req.done(function (txt) {
                             concluirPedido(true, txt);
-                        })
-                        .fail(function () {
+                        });
+
+                        req.fail(function () {
                             concluirPedido(false, "");
                         });
 
@@ -2778,6 +2832,12 @@ body.authsearch-resizing #authsearch-tab {
                 }
             }
 
+            /*
+             * Começa já com watchdog ativo. Se, por qualquer anomalia,
+             * nem o primeiro lote produzir callbacks, a interface também
+             * é libertada.
+             */
+            armarWatchdogInatividade();
             proximo();
         }
 
