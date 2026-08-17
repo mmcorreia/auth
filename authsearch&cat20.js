@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.11 · AuthSearch&Cat + watchdog de inatividade · 2026-08-17
+   Versão 4.0 · AuthSearch&Cat + K●RE simplificado em Obras · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -801,111 +801,96 @@ body.authsearch-resizing #authsearch-tab {
 
 
 /* ============================================================
-   OBRAS NO CATÁLOGO · TRIAGEM OPERACIONAL MARCXML
+   OBRAS NO CATÁLOGO · K●RE SIMPLIFICADO
    ============================================================ */
-.authsearch-works-problem-summary{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-.authsearch-works-problem-filter{
-    display:inline-flex;align-items:center;gap:5px;border:1px solid #d5dde5;background:#fff;color:#344054;
-    border-radius:5px;padding:5px 8px;font-size:10.5px;font-weight:700;cursor:pointer
-}
-.authsearch-works-problem-filter:hover{background:#f8fafc;border-color:#aebdca}
-.authsearch-works-problem-filter.is-active{border-color:#336d96;background:#edf3f7;color:#214f70}
-.authsearch-works-problem-count{
-    display:inline-flex;min-width:18px;height:18px;padding:0 5px;align-items:center;justify-content:center;
-    border-radius:999px;background:#eef2f6;color:#344054;font-size:10px
-}
-.authsearch-works-problem-filter.is-active .authsearch-works-problem-count{background:#d6e6f0;color:#174b75}
-.authsearch-works-note{font-size:10.5px;line-height:1.4;color:#667085;margin:0 0 8px}
-.authsearch-work-problems{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.authsearch-work-problem{
-    display:inline-flex;align-items:center;gap:4px;border:1px solid #dce3e9;border-radius:999px;padding:4px 7px;
-    background:#f8fafc;color:#475467;font-size:10.5px;font-weight:700;line-height:1.1
-}
-.authsearch-work-problem.is-critical{border-color:#fecdca;background:#fff5f5;color:#b42318}
-.authsearch-work-problem.is-review{border-color:#fedf89;background:#fffaeb;color:#b54708}
-.authsearch-work-problem.is-info{border-color:#b2ddff;background:#eff8ff;color:#175cd3}
-.authsearch-work-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.authsearch-work-resolve,.authsearch-work-secondary{
-    display:inline-flex!important;align-items:center;justify-content:center;gap:5px;min-height:28px;border-radius:4px!important;
-    padding:5px 8px!important;font-size:10.5px!important;font-weight:750!important;text-decoration:none!important
-}
-.authsearch-work-resolve{border:1px solid #5f8eae!important;background:#f3f8fb!important;color:#245a7d!important}
-.authsearch-work-resolve:hover{background:#eaf3f8!important;text-decoration:none!important}
-.authsearch-work-secondary{border:1px solid #d5dde5!important;background:#fff!important;color:#475467!important}
-.authsearch-work-secondary:hover{background:#f8fafc!important;text-decoration:none!important}
-.authsearch-work-resolution{margin-top:9px;padding:8px 9px;border:1px solid #dce5ec;border-radius:5px;background:#fbfdff}
-.authsearch-work-resolution-title{font-size:10.5px;font-weight:800;color:#344054;margin-bottom:4px}
-.authsearch-work-resolution-row{
-    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start;padding:7px 0;border-top:1px solid #edf1f5
-}
-.authsearch-work-resolution-row:first-child{border-top:0;padding-top:0}
-.authsearch-work-resolution-copy strong{display:block;font-size:10.5px;color:#111827}
-.authsearch-work-resolution-copy span{display:block;margin-top:2px;font-size:10.5px;line-height:1.4;color:#667085}
-.authsearch-work-resolution-link{
-    border:1px solid #cfd8e3!important;background:#fff!important;color:#245a7d!important;border-radius:4px!important;
-    padding:4px 6px!important;font-size:10px!important;font-weight:700!important;text-decoration:none!important
-}
-.authsearch-work-resolution-link:hover{background:#f3f8fb!important;text-decoration:none!important}
-.authsearch-works-ok{
-    padding:11px;border:1px solid #ccebd9;border-radius:5px;background:#f6fef9;color:#067647;font-size:11.5px;line-height:1.45
-}
-.authsearch-works-analysis-warning{
-    margin-top:8px;color:#854a0e;background:#fffaeb;border:1px solid #fedf89;border-radius:4px;padding:7px 8px;
-    font-size:10.5px;line-height:1.35
-}
-
-
-/* ============================================================
-   OBRAS · DESIGN OPERACIONAL APROXIMADO AO MOCKUP
-   ============================================================ */
-.authsearch-works-kpis{
+.authsearch-kore-kpis{
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:7px;
     margin:0 0 10px;
 }
-.authsearch-work-kpi{
-    min-width:0;
+.authsearch-kore-kpi{
     border:1px solid #d8e0e7;
     background:#fff;
     border-radius:6px;
     padding:8px 9px;
     display:flex;
-    gap:8px;
     align-items:center;
+    gap:8px;
+    min-width:0;
     text-align:left;
     cursor:pointer;
 }
-.authsearch-work-kpi:hover{background:#f8fafc;border-color:#b9c8d4}
-.authsearch-work-kpi.is-active{border-color:#5f8eae;box-shadow:0 0 0 1px rgba(51,109,150,.12);background:#f7fbfd}
-.authsearch-work-kpi-icon{
-    width:26px;height:26px;flex:0 0 26px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;background:#f2f4f7;color:#667085
+.authsearch-kore-kpi:hover{background:#f8fafc;border-color:#b8c7d3}
+.authsearch-kore-kpi.is-active{
+    border-color:#5f8eae;
+    background:#f7fbfd;
+    box-shadow:0 0 0 1px rgba(51,109,150,.12);
 }
-.authsearch-work-kpi.is-critical .authsearch-work-kpi-icon{background:#fff1f0;color:#d92d20}
-.authsearch-work-kpi.is-review .authsearch-work-kpi-icon{background:#fff7e6;color:#d97706}
-.authsearch-work-kpi.is-info .authsearch-work-kpi-icon{background:#eff8ff;color:#175cd3}
-.authsearch-work-kpi-copy{display:flex;flex-direction:column;min-width:0}
-.authsearch-work-kpi-copy strong{font-size:17px;line-height:1;color:#1d2939}
-.authsearch-work-kpi-copy span{font-size:10.5px;color:#667085;line-height:1.25;margin-top:3px}
+.authsearch-kore-kpi-icon{
+    width:28px;height:28px;flex:0 0 28px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:#f2f4f7;color:#667085;
+}
+.authsearch-kore-kpi.is-critical .authsearch-kore-kpi-icon{background:#fff1f0;color:#d92d20}
+.authsearch-kore-kpi.is-review .authsearch-kore-kpi-icon{background:#fff7e6;color:#d97706}
+.authsearch-kore-kpi.is-info .authsearch-kore-kpi-icon{background:#eff8ff;color:#175cd3}
+.authsearch-kore-kpi-copy{display:flex;flex-direction:column;min-width:0}
+.authsearch-kore-kpi-copy strong{font-size:17px;line-height:1;color:#1d2939}
+.authsearch-kore-kpi-copy span{font-size:10.5px;line-height:1.2;color:#667085;margin-top:3px}
 
-.authsearch-work.authsearch-work-operational{
+.authsearch-kore-note{
+    font-size:10.5px;
+    color:#667085;
+    line-height:1.4;
+    margin:0 0 8px;
+}
+.authsearch-kore-work{
     display:grid;
-    grid-template-columns:68px minmax(0,1fr) 124px;
+    grid-template-columns:68px minmax(0,1fr) 132px;
     gap:11px;
     align-items:start;
     padding:12px 2px;
+    border-bottom:1px solid #e5e9ed;
 }
-.authsearch-work-cover-col{min-width:0}
-.authsearch-work-main{min-width:0}
-.authsearch-work-action-col{
-    display:flex;flex-direction:column;gap:6px;align-items:stretch;padding-top:2px
+.authsearch-kore-work:last-child{border-bottom:0}
+.authsearch-kore-main{min-width:0}
+.authsearch-kore-actions{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
 }
-.authsearch-work-action-col .authsearch-work-resolve,
-.authsearch-work-action-col .authsearch-work-secondary{
-    width:100%;min-width:0;text-align:center
+.authsearch-kore-actions .authsearch-btn{
+    width:100%;
+    min-width:0;
+    font-size:10.5px;
+    padding:6px 8px;
 }
-.authsearch-work-primary-diagnostic{
+.authsearch-kore-problems{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-top:7px;
+}
+.authsearch-kore-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    padding:4px 7px;
+    border-radius:999px;
+    font-size:10.5px;
+    font-weight:700;
+    line-height:1;
+    border:1px solid #dce3e9;
+    background:#f8fafc;
+    color:#475467;
+}
+.authsearch-kore-badge.is-critical{border-color:#fecdca;background:#fff5f5;color:#b42318}
+.authsearch-kore-badge.is-review{border-color:#fedf89;background:#fffaeb;color:#b54708}
+.authsearch-kore-badge.is-info{border-color:#b2ddff;background:#eff8ff;color:#175cd3}
+
+.authsearch-kore-diagnostic{
     margin-top:8px;
     padding:7px 8px;
     border-left:3px solid #d9e3eb;
@@ -913,24 +898,44 @@ body.authsearch-resizing #authsearch-tab {
     font-size:10.5px;
     line-height:1.35;
 }
-.authsearch-work-primary-diagnostic strong{display:block;color:#344054}
-.authsearch-work-primary-diagnostic span{display:block;color:#667085;margin-top:2px}
-.authsearch-work-problems{margin-top:7px}
-.authsearch-work-opac{color:#1769aa!important}
-
+.authsearch-kore-diagnostic strong{display:block;color:#344054}
+.authsearch-kore-diagnostic span{display:block;color:#667085;margin-top:2px}
+.authsearch-kore-resolution{
+    margin-top:9px;
+    padding:8px 9px;
+    border:1px solid #dce5ec;
+    border-radius:5px;
+    background:#fbfdff;
+}
+.authsearch-kore-resolution-title{
+    font-size:10.5px;
+    font-weight:800;
+    color:#344054;
+    margin-bottom:4px;
+}
+.authsearch-kore-resolution-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:8px;
+    padding:7px 0;
+    border-top:1px solid #edf1f5;
+}
+.authsearch-kore-resolution-row:first-child{border-top:0;padding-top:0}
+.authsearch-kore-resolution-row strong{display:block;font-size:10.5px;color:#111827}
+.authsearch-kore-resolution-row span{display:block;margin-top:2px;font-size:10.5px;color:#667085;line-height:1.35}
+.authsearch-kore-empty{
+    padding:11px;
+    border:1px solid #ccebd9;
+    border-radius:5px;
+    background:#f6fef9;
+    color:#067647;
+    font-size:11.5px;
+}
 @media(max-width:620px){
-    .authsearch-works-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .authsearch-work.authsearch-work-operational{grid-template-columns:68px minmax(0,1fr)}
-    .authsearch-work-action-col{
-        grid-column:2;
-        flex-direction:row;
-        flex-wrap:wrap;
-        padding-top:0
-    }
-    .authsearch-work-action-col .authsearch-work-resolve,
-    .authsearch-work-action-col .authsearch-work-secondary{
-        width:auto
-    }
+    .authsearch-kore-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .authsearch-kore-work{grid-template-columns:68px minmax(0,1fr)}
+    .authsearch-kore-actions{grid-column:2;flex-direction:row;flex-wrap:wrap}
+    .authsearch-kore-actions .authsearch-btn{width:auto}
 }
 
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
@@ -996,8 +1001,7 @@ body.authsearch-resizing #authsearch-tab {
             obrasProblemas: [],
             obrasFiltroProblema: "todos",
             obrasFiltroTexto: "",
-            obrasResolucaoAberta: {},
-            obrasNaoAnalisadas: 0
+            obrasResolucaoAberta: {}
         };
 
         // Rótulos usados pelo parser UNIMARC. Têm de estar inicializados ANTES
@@ -1284,7 +1288,6 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasFiltroProblema = "todos";
             STATE.obrasFiltroTexto = "";
             STATE.obrasResolucaoAberta = {};
-            STATE.obrasNaoAnalisadas = 0;
             var a = STATE.authority || {};
             var qid = primeiroQidValido(a.wikidata || []);
             var pesquisa = '' +
@@ -1910,29 +1913,29 @@ body.authsearch-resizing #authsearch-tab {
             return '<div class="authsearch-work-line"><span class="authsearch-work-label">' + escaparHTML(rotulo) + '</span><span class="authsearch-work-value">' + escaparHTML(valor) + '</span></div>';
         }
 
-        function authsearchV38ClasseProblema(tipo) {
+        function koreLiteClasse(tipo) {
             if (tipo === "sem9" || tipo === "sem9e4" || tipo === "outroAuthid") return "is-critical";
-            if (tipo === "sem4" || tipo === "nomeDivergente" || tipo === "datas" || tipo === "responsabilidade") return "is-review";
+            if (tipo === "sem4" || tipo === "responsabilidade" || tipo === "nomeDivergente" || tipo === "datas") return "is-review";
             return "is-info";
         }
 
-        function authsearchV38RotuloProblema(tipo) {
+        function koreLiteRotulo(tipo) {
             var mapa = {
                 sem9: "Falta $9",
                 sem4: "Falta $4",
                 sem9e4: "Falta $9 e $4",
                 outroAuthid: "Outro authid",
+                responsabilidade: "200$f a rever",
                 nomeDivergente: "Nome divergente",
-                datas: "Verificar datas",
-                responsabilidade: "200$f a rever"
+                datas: "Verificar datas"
             };
             return mapa[tipo] || tipo;
         }
 
-        function authsearchV38Contar(obras, tipo) {
+        function koreLiteContar(obras, tipo) {
             return (obras || []).filter(function (o) {
                 if (tipo === "todos") return true;
-                return (o.authsearchProblemas || []).some(function (p) {
+                return (o.koreLiteProblemas || []).some(function (p) {
                     if (tipo === "sem9") return p.tipo === "sem9" || p.tipo === "sem9e4";
                     if (tipo === "sem4") return p.tipo === "sem4" || p.tipo === "sem9e4";
                     return p.tipo === tipo;
@@ -1940,70 +1943,66 @@ body.authsearch-resizing #authsearch-tab {
             }).length;
         }
 
-        function authsearchV38Resumo(obras) {
-            var tipos = [
-                {key:"todos",label:"Obras com problemas",icon:"fa-exclamation-triangle",cls:"is-total"},
+        function koreLiteRenderKpis(obras) {
+            var defs = [
+                {key:"todos",label:"Obras com problemas",icon:"fa-exclamation-triangle",cls:""},
                 {key:"sem9",label:"Sem $9",icon:"fa-link",cls:"is-critical"},
                 {key:"sem4",label:"Sem $4",icon:"fa-tag",cls:"is-review"},
                 {key:"outroAuthid",label:"Outro authid",icon:"fa-exchange",cls:"is-critical"},
-                {key:"nomeDivergente",label:"Nome divergente",icon:"fa-user",cls:"is-review"},
                 {key:"responsabilidade",label:"200$f a rever",icon:"fa-eye",cls:"is-review"},
                 {key:"datas",label:"Datas",icon:"fa-calendar",cls:"is-info"}
             ];
-
-            return '<div class="authsearch-works-kpis">' +
-                tipos.map(function (t) {
-                    var n = authsearchV38Contar(obras, t.key);
-                    if (t.key !== "todos" && !n) return "";
-                    return '<button type="button" class="authsearch-work-kpi ' + t.cls +
-                        (STATE.obrasFiltroProblema === t.key ? ' is-active' : '') +
-                        '" data-problem="' + escaparAttr(t.key) + '">' +
-                        '<span class="authsearch-work-kpi-icon"><i class="fa ' + escaparAttr(t.icon) + '" aria-hidden="true"></i></span>' +
-                        '<span class="authsearch-work-kpi-copy"><strong>' + n + '</strong><span>' + escaparHTML(t.label) + '</span></span>' +
+            return '<div class="authsearch-kore-kpis">' +
+                defs.map(function (d) {
+                    var n = koreLiteContar(obras, d.key);
+                    if (d.key !== "todos" && !n) return "";
+                    return '<button type="button" class="authsearch-kore-kpi ' + d.cls +
+                        (STATE.obrasFiltroProblema === d.key ? ' is-active' : '') +
+                        '" data-kore-filter="' + escaparAttr(d.key) + '">' +
+                        '<span class="authsearch-kore-kpi-icon"><i class="fa ' + escaparAttr(d.icon) + '"></i></span>' +
+                        '<span class="authsearch-kore-kpi-copy"><strong>' + n + '</strong><span>' + escaparHTML(d.label) + '</span></span>' +
                     '</button>';
                 }).join("") +
             '</div>';
         }
 
-        function authsearchV38PassaFiltro(o) {
+        function koreLitePassaFiltro(obra) {
             var tipo = STATE.obrasFiltroProblema || "todos";
             var termo = limparTexto(STATE.obrasFiltroTexto || "").toLowerCase();
-            var problemas = o.authsearchProblemas || [];
 
             if (tipo !== "todos") {
-                var tem = problemas.some(function (p) {
+                var ok = (obra.koreLiteProblemas || []).some(function (p) {
                     if (tipo === "sem9") return p.tipo === "sem9" || p.tipo === "sem9e4";
                     if (tipo === "sem4") return p.tipo === "sem4" || p.tipo === "sem9e4";
                     return p.tipo === tipo;
                 });
-                if (!tem) return false;
+                if (!ok) return false;
             }
 
             if (!termo) return true;
-            var texto = limparTexto(
-                (o.titulo || "") + " " + (o.fallback || "") + " " +
-                problemas.map(function (p) {
-                    return authsearchV38RotuloProblema(p.tipo) + " " + (p.campo || "") + " " + (p.valor || "");
+            var base = limparTexto(
+                (obra.titulo || "") + " " + (obra.fallback || "") + " " +
+                (obra.koreLiteProblemas || []).map(function (p) {
+                    return koreLiteRotulo(p.tipo) + " " + (p.campo || "") + " " + (p.valor || "");
                 }).join(" ")
             ).toLowerCase();
 
-            return texto.indexOf(termo) !== -1;
+            return base.indexOf(termo) !== -1;
         }
 
-        function authsearchV38Painel(o) {
-            if (!STATE.obrasResolucaoAberta[String(o.biblionumber)]) return "";
-            var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
-            var problemas = o.authsearchProblemas || [];
+        function koreLiteRenderResolucao(obra) {
+            if (!STATE.obrasResolucaoAberta[String(obra.biblionumber)]) return "";
+            var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(obra.biblionumber);
 
-            return '<div class="authsearch-work-resolution">' +
-                '<div class="authsearch-work-resolution-title">Centro de resolução · ' + problemas.length + ' ocorrência' + (problemas.length === 1 ? '' : 's') + '</div>' +
-                problemas.map(function (p) {
-                    return '<div class="authsearch-work-resolution-row">' +
-                        '<div class="authsearch-work-resolution-copy">' +
-                            '<strong>' + escaparHTML((p.campo || "7xx") + ' · ' + authsearchV38RotuloProblema(p.tipo)) + '</strong>' +
-                            '<span>' + escaparHTML(p.detalhe || p.valor || "") + '</span>' +
-                        '</div>' +
-                        '<a class="authsearch-work-resolution-link" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Resolver</a>' +
+            return '<div class="authsearch-kore-resolution">' +
+                '<div class="authsearch-kore-resolution-title">Centro de resolução · ' +
+                    (obra.koreLiteProblemas || []).length + ' ocorrência' +
+                    ((obra.koreLiteProblemas || []).length === 1 ? '' : 's') + '</div>' +
+                (obra.koreLiteProblemas || []).map(function (p) {
+                    return '<div class="authsearch-kore-resolution-row">' +
+                        '<div><strong>' + escaparHTML((p.campo || "7xx") + " · " + koreLiteRotulo(p.tipo)) + '</strong>' +
+                        '<span>' + escaparHTML(p.detalhe || "") + '</span></div>' +
+                        '<a class="authsearch-btn" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Resolver</a>' +
                     '</div>';
                 }).join("") +
             '</div>';
@@ -2017,74 +2016,54 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasProblemas = obras.slice();
 
             if (!obras.length) {
-                var htmlOk = '<div class="authsearch-works-ok">Não foram encontrados problemas de autoria nas obras associadas a esta autoridade.</div>';
-                if (STATE.obrasNaoAnalisadas) {
-                    htmlOk += '<div class="authsearch-works-analysis-warning">' +
-                        STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
-                        ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
-                        ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML e foi ignorado na deteção de problemas.</div>';
-                }
-                $alvo.html(htmlOk);
+                $alvo.html('<div class="authsearch-kore-empty">Não foram encontrados problemas nas obras associadas a esta autoridade.</div>');
                 return;
             }
 
-            var visiveis = obras.filter(authsearchV38PassaFiltro);
-            var out =
-                authsearchV38Resumo(obras) +
-                '<div class="authsearch-works-note">Só entram obras em que o MARCXML confirma a autoridade em 700, 701 ou 702 e existe uma anomalia concreta. Em 701/702, qualquer $4 não vazio conta como preenchido; no 700, a ausência de $4 não é problema. O 200$f/200$g é revisto contra a forma autorizada 200 e as variantes 400.</div>' +
+            var visiveis = obras.filter(koreLitePassaFiltro);
+
+            var html =
+                koreLiteRenderKpis(obras) +
+                '<div class="authsearch-kore-note">Versão simplificada do K●RE: apenas problemas de ligação e coerência de responsabilidade. Não mostra assuntos, notas, contexto ou candidatos técnicos.</div>' +
                 '<div class="authsearch-works-toolbar">' +
                     '<div class="authsearch-works-meta">' + obras.length + ' obra' + (obras.length === 1 ? '' : 's') + ' com problema' + (obras.length === 1 ? '' : 's') + '</div>' +
                     '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar obras…" value="' + escaparAttr(STATE.obrasFiltroTexto || '') + '">' +
                 '</div>' +
-                '<div class="authsearch-works-list" id="authsearch-works-list">';
+                '<div class="authsearch-works-list">';
 
             visiveis.forEach(function (o) {
                 var titulo = tituloSemResponsabilidade(o.titulo || '') || ('Registo ' + o.biblionumber);
-                var problemas = o.authsearchProblemas || [];
                 var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
                 var marc = '/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
+                var principal = (o.koreLiteProblemas || [])[0];
 
-                var principal = problemas[0] || null;
-
-                out += '<article class="authsearch-work authsearch-work-operational" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
-                    '<div class="authsearch-work-cover-col">' +
-                        (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
-                    '</div>' +
-                    '<div class="authsearch-work-main">' +
+                html += '<article class="authsearch-kore-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
+                    '<div>' + (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') + '</div>' +
+                    '<div class="authsearch-kore-main">' +
                         '<div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(titulo) + '</a></div>' +
                         '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div>' +
-                        '<div class="authsearch-work-problems">' +
-                            problemas.map(function (p) {
-                                return '<span class="authsearch-work-problem ' + authsearchV38ClasseProblema(p.tipo) + '">' +
-                                    escaparHTML(authsearchV38RotuloProblema(p.tipo)) +
-                                '</span>';
+                        '<div class="authsearch-kore-problems">' +
+                            (o.koreLiteProblemas || []).map(function (p) {
+                                return '<span class="authsearch-kore-badge ' + koreLiteClasse(p.tipo) + '">' + escaparHTML(koreLiteRotulo(p.tipo)) + '</span>';
                             }).join("") +
                         '</div>' +
-                        (principal ? '<div class="authsearch-work-primary-diagnostic"><strong>' +
-                            escaparHTML((principal.campo || "7xx") + ' · ' + authsearchV38RotuloProblema(principal.tipo)) +
+                        (principal ? '<div class="authsearch-kore-diagnostic"><strong>' +
+                            escaparHTML((principal.campo || "7xx") + " · " + koreLiteRotulo(principal.tipo)) +
                             '</strong><span>' + escaparHTML(principal.detalhe || "") + '</span></div>' : '') +
-                        authsearchV38Painel(o) +
+                        koreLiteRenderResolucao(o) +
                     '</div>' +
-                    '<div class="authsearch-work-action-col">' +
-                        '<button type="button" class="authsearch-work-resolve" data-biblionumber="' + escaparAttr(o.biblionumber) + '">Resolver problemas</button>' +
-                        '<a class="authsearch-work-secondary" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
-                        '<a class="authsearch-work-secondary authsearch-work-opac" href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">Ver registo</a>' +
-                        '<a class="authsearch-work-secondary" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
+                    '<div class="authsearch-kore-actions">' +
+                        '<button type="button" class="authsearch-btn authsearch-primary authsearch-kore-resolve" data-biblionumber="' + escaparAttr(o.biblionumber) + '">Resolver problemas</button>' +
+                        '<a class="authsearch-btn" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
+                        '<a class="authsearch-btn" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
                     '</div>' +
                 '</article>';
             });
 
-            if (!visiveis.length) out += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
-            out += '</div>';
+            if (!visiveis.length) html += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
 
-            if (STATE.obrasNaoAnalisadas) {
-                out += '<div class="authsearch-works-analysis-warning">' +
-                    STATE.obrasNaoAnalisadas + ' registo' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
-                    ' não ' + (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
-                    ' ser analisado' + (STATE.obrasNaoAnalisadas === 1 ? '' : 's') + ' por MARCXML e foi ignorado na deteção de problemas.</div>';
-            }
-
-            $alvo.html(out);
+            html += '</div>';
+            $alvo.html(html);
             observarDetalhesObrasVisiveis();
         }
 
@@ -2264,78 +2243,23 @@ body.authsearch-resizing #authsearch-tab {
 
 
         /* ======================================================
-           MOTOR MARCXML ROBUSTO
+           K●RE LITE · MOTOR DE DIAGNÓSTICO
            ====================================================== */
 
-        function authsearchV38FundirObras(mapa, obras, origem) {
-            (Array.isArray(obras) ? obras : []).forEach(function (o) {
-                var bib = String(o.biblionumber || "");
-                if (!/^\d+$/.test(bib)) return;
-                if (!mapa[bib]) mapa[bib] = $.extend({}, o, { authsearchOrigens: [] });
-                if (origem && mapa[bib].authsearchOrigens.indexOf(origem) === -1) mapa[bib].authsearchOrigens.push(origem);
-            });
-        }
-
-        function authsearchV38PesquisarCandidatos(authid, callback) {
-            var mapa = {};
-            var pendentes = 0;
-            var concluido = false;
-            var a = STATE.authority || {};
-            var nome = limparTexto(a.nome || "");
-            var variantes = (a.variantes400 || []).map(function (v) {
-                return limparTexto(v && v.forma ? v.forma : "");
-            }).filter(Boolean).slice(0, 4);
-
-            function terminarUm() {
-                pendentes--;
-                if (pendentes > 0 || concluido) return;
-                concluido = true;
-                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
-            }
-
-            function pesquisar(url, origem) {
-                pendentes++;
-                carregarTodasObrasCatalogo(url, function (_erro, obras) {
-                    authsearchV38FundirObras(mapa, obras, origem);
-                    terminarUm();
-                });
-            }
-
-            if (STATE.obrasPrecarregadasAuthid === String(authid) && Array.isArray(STATE.obrasLigadasPreload)) {
-                authsearchV38FundirObras(mapa, STATE.obrasLigadasPreload, "an");
-            } else {
-                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=an&q=' + encodeURIComponent(authid) + '&count=50', "an");
-            }
-
-            if (nome) pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(nome) + '&count=50', "au");
-
-            variantes.forEach(function (forma) {
-                if (normalizarNomeParaComparacao(forma) === normalizarNomeParaComparacao(nome)) return;
-                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(forma) + '&count=50', "variante");
-            });
-
-            if (!pendentes) {
-                concluido = true;
-                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
-            }
-        }
-
-        function authsearchV38MarcXmlUrl(biblionumber) {
+        function koreLiteMarcXmlUrl(biblionumber) {
             return '/cgi-bin/koha/catalogue/export.pl?op=export&format=marcxml&bib=' + encodeURIComponent(biblionumber);
         }
 
-        function authsearchV38ParseXML(txt) {
+        function koreLiteParseXml(txt) {
             try {
-                var parser = new DOMParser();
-                var xml = parser.parseFromString(String(txt || ""), "application/xml");
-                if (xml.getElementsByTagName("parsererror").length) return null;
-                return xml;
+                var xml = new DOMParser().parseFromString(String(txt || ""), "application/xml");
+                return xml.getElementsByTagName("parsererror").length ? null : xml;
             } catch (_e) {
                 return null;
             }
         }
 
-        function authsearchV38Subcampos(field) {
+        function koreLiteSubcampos(field) {
             var out = {};
             var nodes = field.getElementsByTagName("subfield");
             for (var i = 0; i < nodes.length; i++) {
@@ -2347,12 +2271,11 @@ body.authsearch-resizing #authsearch-tab {
             return out;
         }
 
-        function authsearchV38Valor(sf, code) {
-            var vals = sf[code] || [];
-            return limparTexto(vals.join(" "));
+        function koreLiteValor(sf, code) {
+            return limparTexto((sf[code] || []).join(" "));
         }
 
-        function authsearchV38Authids(sf) {
+        function koreLiteAuthids(sf) {
             var out = [];
             (sf["9"] || []).forEach(function (v) {
                 var m = String(v || "").match(/\d+/g);
@@ -2361,148 +2284,69 @@ body.authsearch-resizing #authsearch-tab {
             return out.filter(function (v, i, a) { return a.indexOf(v) === i; });
         }
 
-        function authsearchV38Codigos4(sf) {
-            /*
-             * O Koha pode apresentar/guardar o $4 como código ("070")
-             * ou como valor textual de uma lista autorizada ("Co-autor").
-             * Para decidir se o subcampo existe, NÃO se valida o formato:
-             * qualquer valor não vazio significa que $4 está preenchido.
-             */
-            return (sf["4"] || [])
-                .map(function (v) { return limparTexto(v || ""); })
-                .filter(Boolean)
-                .filter(function (v, i, a) { return a.indexOf(v) === i; });
+        function koreLiteTem4(sf) {
+            return (sf["4"] || []).some(function (v) {
+                return !!limparTexto(v || "");
+            });
         }
 
-        function authsearchV38Forma7xx(sf) {
+        function koreLiteForma7xx(sf) {
             return limparTexto([
-                authsearchV38Valor(sf, "a"),
-                authsearchV38Valor(sf, "b"),
-                authsearchV38Valor(sf, "c")
+                koreLiteValor(sf, "a"),
+                koreLiteValor(sf, "b"),
+                koreLiteValor(sf, "c")
             ].filter(Boolean).join(" "));
         }
 
-        function authsearchV38Universo() {
+        function koreLiteUniversoAutoridade() {
             var a = STATE.authority || {};
-            var formas = [a.nome || "", (a.nomeA || "") + " " + (a.nomeB || "") + " " + (a.nomeC || "")];
-            (a.variantes400 || []).forEach(function (v) { if (v && v.forma) formas.push(v.forma); });
-            return formas.map(normalizarNomeParaComparacao).filter(Boolean);
-        }
+            var formas = [a.nome || ""];
 
-        function authsearchV38Compativel(valor) {
-            var n = normalizarNomeParaComparacao(valor || "");
-            if (!n) return false;
-            var universo = authsearchV38Universo();
-
-            if (universo.some(function (u) {
-                return u === n || n.indexOf(u) !== -1 || u.indexOf(n) !== -1;
-            })) return true;
-
-            var a = STATE.authority || {};
-            var apelido = normalizarNomeParaComparacao(a.nomeA || "");
-            var restantes = normalizarNomeParaComparacao(a.nomeB || "");
-            if (!apelido || n.indexOf(apelido) === -1) return false;
-
-            var tokens = restantes.split(/\s+/).filter(function (t) { return t.length > 2; });
-            return !tokens.length || tokens.some(function (t) { return n.indexOf(t) !== -1; });
-        }
-
-        function authsearchV38DatasDiferentes(bib, auth) {
-            bib = limparTexto(bib || "");
-            auth = limparTexto(auth || "");
-            if (!auth) return false;
-            if (!bib) return true;
-
-            var a = auth.match(/\d{4}/g) || [];
-            var b = bib.match(/\d{4}/g) || [];
-            if (!a.length || !b.length) return false;
-            return a.join("|") !== b.join("|");
-        }
-
-        function authsearchV38AddProblema(lista, p) {
-            var k = [p.tipo, p.campo, p.detalhe].join("|");
-            if (!lista.some(function (x) { return [x.tipo, x.campo, x.detalhe].join("|") === k; })) lista.push(p);
-        }
-
-        function authsearchV38Responsabilidades200(xml) {
-            var out = [];
-            var fields = xml.getElementsByTagName("datafield");
-
-            for (var i = 0; i < fields.length; i++) {
-                if (String(fields[i].getAttribute("tag") || "") !== "200") continue;
-                var sf = authsearchV38Subcampos(fields[i]);
-
-                (sf["f"] || []).forEach(function (v) {
-                    v = limparTexto(v || "");
-                    if (v) out.push({ subcampo: "f", valor: v });
-                });
-
-                // $g = menção de responsabilidade subsequente. É lido pelo mesmo
-                // critério, embora o diagnóstico principal continue rotulado 200$f.
-                (sf["g"] || []).forEach(function (v) {
-                    v = limparTexto(v || "");
-                    if (v) out.push({ subcampo: "g", valor: v });
-                });
-            }
-
-            return out;
-        }
-
-        function authsearchV38ResponsabilidadeCompativel(valor) {
-            /*
-             * Compara a menção do bibliográfico exclusivamente com:
-             * - forma autorizada 200 da autoridade;
-             * - formas variantes 400 da autoridade.
-             *
-             * A comparação é tolerante à ordem ("Atwood, Margaret" /
-             * "Margaret Atwood"), pontuação e datas.
-             */
-            var t = normalizarNomeParaComparacao(valor || "");
-            if (!t) return false;
-
-            var a = STATE.authority || {};
-            var formas = [];
-
-            if (a.nome) formas.push(a.nome);
             if (a.nomeA && a.nomeB) {
-                formas.push(limparTexto(a.nomeA + " " + a.nomeB));
-                formas.push(limparTexto(a.nomeB + " " + a.nomeA));
-                formas.push(limparTexto(a.nomeA + ", " + a.nomeB));
-                formas.push(limparTexto(a.nomeB + ", " + a.nomeA));
+                formas.push(a.nomeA + " " + a.nomeB);
+                formas.push(a.nomeB + " " + a.nomeA);
+                formas.push(a.nomeA + ", " + a.nomeB);
+                formas.push(a.nomeB + ", " + a.nomeA);
             }
 
             (a.variantes400 || []).forEach(function (v) {
                 if (v && v.forma) formas.push(v.forma);
             });
 
-            var universo = formas
+            return formas
                 .map(function (v) { return normalizarNomeParaComparacao(v || ""); })
                 .filter(Boolean)
                 .filter(function (v, i, arr) { return arr.indexOf(v) === i; });
+        }
 
-            function palavraInteira(texto, palavra) {
-                if (!texto || !palavra) return false;
-                var re = new RegExp("(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])", "i");
-                return re.test(" " + texto + " ");
-            }
+        function koreLitePalavraInteira(texto, palavra) {
+            if (!texto || !palavra) return false;
+            var re = new RegExp("(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])", "i");
+            return re.test(" " + texto + " ");
+        }
+
+        function koreLiteTextoCompativel(valor) {
+            var t = normalizarNomeParaComparacao(valor || "");
+            if (!t) return false;
+            var universo = koreLiteUniversoAutoridade();
 
             for (var i = 0; i < universo.length; i++) {
                 var u = universo[i];
                 if (!u) continue;
 
-                if (t === u || palavraInteira(t, u)) return true;
+                if (t === u || koreLitePalavraInteira(t, u)) return true;
 
                 var partes = u.split(/\s+/).filter(function (p) {
                     return p.length > 2 && !/^\d{4}$/.test(p);
                 });
 
                 if (partes.length === 1) {
-                    if (palavraInteira(t, partes[0])) return true;
+                    if (koreLitePalavraInteira(t, partes[0])) return true;
                     continue;
                 }
 
                 var encontrados = partes.filter(function (p) {
-                    return palavraInteira(t, p);
+                    return koreLitePalavraInteira(t, p);
                 }).length;
 
                 if (encontrados >= Math.min(2, partes.length)) return true;
@@ -2511,52 +2355,82 @@ body.authsearch-resizing #authsearch-tab {
             return false;
         }
 
-        function authsearchV38AnalisarXML(xml, obra, authid) {
+        function koreLiteResponsabilidades200(xml) {
+            var out = [];
+            var fields = xml.getElementsByTagName("datafield");
+
+            for (var i = 0; i < fields.length; i++) {
+                if (String(fields[i].getAttribute("tag") || "") !== "200") continue;
+                var sf = koreLiteSubcampos(fields[i]);
+
+                (sf["f"] || []).forEach(function (v) {
+                    v = limparTexto(v || "");
+                    if (v) out.push({subcampo:"f",valor:v});
+                });
+
+                (sf["g"] || []).forEach(function (v) {
+                    v = limparTexto(v || "");
+                    if (v) out.push({subcampo:"g",valor:v});
+                });
+            }
+
+            return out;
+        }
+
+        function koreLiteAddProblema(lista, p) {
+            var k = [p.tipo, p.campo, p.detalhe].join("|");
+            if (!lista.some(function (x) {
+                return [x.tipo, x.campo, x.detalhe].join("|") === k;
+            })) lista.push(p);
+        }
+
+        function koreLiteDatasDiferem(bib, auth) {
+            bib = limparTexto(bib || "");
+            auth = limparTexto(auth || "");
+            if (!auth || !bib) return false;
+
+            var a = auth.match(/\d{4}/g) || [];
+            var b = bib.match(/\d{4}/g) || [];
+            if (!a.length || !b.length) return false;
+
+            return a.join("|") !== b.join("|");
+        }
+
+        function koreLiteAnalisarXml(xml, obra, authid) {
             var problemas = [];
-            var datafields = xml.getElementsByTagName("datafield");
-            var datasAuth = limparTexto((STATE.authority && STATE.authority.datas) || "");
             var esperado = String(authid);
-            var autoridadePresenteEm7xx = false;
+            var datafields = xml.getElementsByTagName("datafield");
+            var autoridadeEm7xx = false;
+            var datasAuth = limparTexto((STATE.authority && STATE.authority.datas) || "");
 
             for (var i = 0; i < datafields.length; i++) {
                 var tag = String(datafields[i].getAttribute("tag") || "");
                 if (["700","701","702"].indexOf(tag) === -1) continue;
 
-                var sf = authsearchV38Subcampos(datafields[i]);
-                var authids = authsearchV38Authids(sf);
+                var sf = koreLiteSubcampos(datafields[i]);
+                var authids = koreLiteAuthids(sf);
                 var temEsperado = authids.indexOf(esperado) !== -1;
-                var temAlgum = authids.length > 0;
-                var forma = authsearchV38Forma7xx(sf);
-                var compativel = authsearchV38Compativel(forma);
+                var forma = koreLiteForma7xx(sf);
+                var compativel = koreLiteTextoCompativel(forma);
 
-                // A ocorrência só pertence ao universo da autoridade atual
-                // se o $9 aponta para ela ou a forma textual é compatível.
                 if (!temEsperado && !compativel) continue;
+                autoridadeEm7xx = true;
 
-                autoridadePresenteEm7xx = true;
+                var temAlgum9 = authids.length > 0;
+                var tem4 = tag === "700" ? true : koreLiteTem4(sf);
 
-                /*
-                 * $4:
-                 * - 700 = responsabilidade principal: ausência não é problema;
-                 * - 701/702 = qualquer valor não vazio em $4 conta como preenchido,
-                 *   seja "070", "Co-autor", "Ilustrador", etc.
-                 */
-                var valores4 = authsearchV38Codigos4(sf);
-                var exige4 = tag !== "700";
-                var tem4 = !exige4 || valores4.length > 0;
-
-                if (compativel && !temAlgum && !tem4) {
-                    authsearchV38AddProblema(problemas, {
+                if (compativel && !temAlgum9 && !tem4) {
+                    koreLiteAddProblema(problemas, {
                         tipo:"sem9e4",
                         campo:tag,
                         valor:forma,
-                        detalhe:tag + " compatível com a autoridade, mas sem $9 e sem $4."
+                        detalhe:tag + " compatível com a autoridade, mas sem ligação $9 e sem função $4."
                     });
                     continue;
                 }
 
-                if (compativel && !temAlgum) {
-                    authsearchV38AddProblema(problemas, {
+                if (compativel && !temAlgum9) {
+                    koreLiteAddProblema(problemas, {
                         tipo:"sem9",
                         campo:tag,
                         valor:forma,
@@ -2564,17 +2438,17 @@ body.authsearch-resizing #authsearch-tab {
                     });
                 }
 
-                if (temEsperado && !tem4) {
-                    authsearchV38AddProblema(problemas, {
+                if (temEsperado && tag !== "700" && !tem4) {
+                    koreLiteAddProblema(problemas, {
                         tipo:"sem4",
                         campo:tag,
                         valor:forma,
-                        detalhe:tag + " ligado ao authid " + esperado + ", mas o subcampo $4 está efetivamente vazio."
+                        detalhe:tag + " ligado ao authid " + esperado + ", mas com $4 vazio."
                     });
                 }
 
-                if (compativel && temAlgum && !temEsperado) {
-                    authsearchV38AddProblema(problemas, {
+                if (compativel && temAlgum9 && !temEsperado) {
+                    koreLiteAddProblema(problemas, {
                         tipo:"outroAuthid",
                         campo:tag + "$9",
                         valor:forma,
@@ -2583,69 +2457,58 @@ body.authsearch-resizing #authsearch-tab {
                 }
 
                 if (temEsperado && forma && !compativel) {
-                    authsearchV38AddProblema(problemas, {
+                    koreLiteAddProblema(problemas, {
                         tipo:"nomeDivergente",
                         campo:tag,
                         valor:forma,
-                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual difere da forma autorizada 200 e das variantes 400."
+                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual não coincide com a forma autorizada 200 nem com variantes 400."
                     });
                 }
 
-                var datasBib = authsearchV38Valor(sf, "f");
-                if (temEsperado && authsearchV38DatasDiferentes(datasBib, datasAuth)) {
-                    authsearchV38AddProblema(problemas, {
+                var datasBib = koreLiteValor(sf, "f");
+                if (temEsperado && koreLiteDatasDiferem(datasBib, datasAuth)) {
+                    koreLiteAddProblema(problemas, {
                         tipo:"datas",
                         campo:tag + "$f",
                         valor:datasBib,
-                        detalhe:datasBib
-                            ? "Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
-                            : "A autoridade tem datas (" + datasAuth + "), mas o ponto de acesso ligado não tem $f."
+                        detalhe:"Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
                     });
                 }
             }
 
             /*
-             * 200$f / 200$g:
-             * Só avaliamos a menção de responsabilidade quando esta autoridade
-             * foi efetivamente encontrada em 700/701/702. Assim não se criam
-             * alertas por nomes de outras pessoas presentes no 200.
-             *
-             * Se existir 200$f/$g e nenhuma menção for compatível com o 200
-             * autorizado ou com um 400 desta autoridade, o caso entra em "Rever".
-             * Não é classificado como erro estrutural automático.
+             * 200$f / 200$g: só entra em revisão se esta autoridade estiver
+             * efetivamente presente em 7xx e nenhuma menção de responsabilidade
+             * corresponder ao universo 200/400 da autoridade.
              */
-            if (autoridadePresenteEm7xx) {
-                var responsabilidades = authsearchV38Responsabilidades200(xml);
-
-                if (responsabilidades.length) {
-                    var compativel200 = responsabilidades.some(function (r) {
-                        return authsearchV38ResponsabilidadeCompativel(r.valor);
+            if (autoridadeEm7xx) {
+                var resp = koreLiteResponsabilidades200(xml);
+                if (resp.length) {
+                    var temCorrespondencia = resp.some(function (r) {
+                        return koreLiteTextoCompativel(r.valor);
                     });
 
-                    if (!compativel200) {
-                        authsearchV38AddProblema(problemas, {
+                    if (!temCorrespondencia) {
+                        koreLiteAddProblema(problemas, {
                             tipo:"responsabilidade",
                             campo:"200$f",
-                            valor:responsabilidades.map(function (r) {
-                                return "200$" + r.subcampo + " " + r.valor;
-                            }).join(" | "),
-                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a nenhuma variante 400 desta autoridade. Rever a coerência entre 200$f/200$g e o ponto de acesso 7xx."
+                            valor:resp.map(function (r) { return "200$" + r.subcampo + " " + r.valor; }).join(" | "),
+                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a nenhuma variante 400 desta autoridade."
                         });
                     }
                 }
             }
 
-            obra.authsearchProblemas = problemas;
+            obra.koreLiteProblemas = problemas;
             return problemas.length ? obra : null;
         }
 
-        function authsearchV38AnalisarObras(obras, authid, callback, onProgress) {
+        function koreLiteAnalisarObras(obras, authid, callback, onProgress) {
             obras = Array.isArray(obras) ? obras : [];
             callback = typeof callback === "function" ? callback : function () {};
             onProgress = typeof onProgress === "function" ? onProgress : function () {};
 
             if (!obras.length) {
-                STATE.obrasNaoAnalisadas = 0;
                 callback([]);
                 return;
             }
@@ -2654,34 +2517,20 @@ body.authsearch-resizing #authsearch-tab {
             var indice = 0;
             var ativos = 0;
             var concluidos = 0;
-            var limite = 6;
-            var falhas = 0;
+            var limite = 3;
             var finalizado = false;
-            var pedidosAtivos = {};
-            var sequenciaPedido = 0;
+            var timeoutInatividade = null;
+            var TIMEOUT_INATIVIDADE = 8000;
 
-            /*
-             * Estratégia v3.11:
-             * - cada pedido tem timeout próprio;
-             * - existe um watchdog de INATIVIDADE: se o contador não avançar
-             *   durante alguns segundos, a análise termina com os resultados
-             *   já obtidos e marca o remanescente como "não analisado";
-             * - assim, 145/146 nunca pode bloquear indefinidamente a UI.
-             */
-            var TIMEOUT_PEDIDO = Math.max(10000, (CONFIG.timeout || 10000) + 1500);
-            var TIMEOUT_INATIVIDADE = 9000;
-            var TIMEOUT_GLOBAL = 60000;
+            function finalizar() {
+                if (finalizado) return;
+                finalizado = true;
+                if (timeoutInatividade) window.clearTimeout(timeoutInatividade);
 
-            var watchdogInatividade = null;
-            var watchdogGlobal = null;
-
-            function ordenarResultado() {
                 resultado.sort(function (a, b) {
                     function peso(o) {
-                        var ps = o.authsearchProblemas || [];
-                        if (ps.some(function (p) {
-                            return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid";
-                        })) return 0;
+                        var ps = o.koreLiteProblemas || [];
+                        if (ps.some(function (p) { return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid"; })) return 0;
                         if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
                         if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
                         return 3;
@@ -2689,142 +2538,53 @@ body.authsearch-resizing #authsearch-tab {
 
                     var pa = peso(a), pb = peso(b);
                     if (pa !== pb) return pa - pb;
-
                     return tituloSemResponsabilidade(a.titulo || "").localeCompare(
                         tituloSemResponsabilidade(b.titulo || ""),
                         "pt"
                     );
                 });
-            }
 
-            function abortarPedidosPendentes() {
-                Object.keys(pedidosAtivos).forEach(function (id) {
-                    var p = pedidosAtivos[id];
-                    try {
-                        if (p && p.req && p.req.readyState !== 4) p.req.abort();
-                    } catch (_e) {}
-                    if (p && p.timer) window.clearTimeout(p.timer);
-                    delete pedidosAtivos[id];
-                });
-            }
-
-            function finalizar(parcial) {
-                if (finalizado) return;
-                finalizado = true;
-
-                if (watchdogInatividade) window.clearTimeout(watchdogInatividade);
-                if (watchdogGlobal) window.clearTimeout(watchdogGlobal);
-
-                /*
-                 * Tudo o que ficou por concluir é apenas "não analisado".
-                 * Nunca é convertido num problema bibliográfico.
-                 */
-                var remanescente = Math.max(0, obras.length - concluidos);
-                if (parcial && remanescente) falhas += remanescente;
-
-                abortarPedidosPendentes();
-
-                STATE.obrasNaoAnalisadas = falhas;
-                ordenarResultado();
                 callback(resultado);
             }
 
-            function armarWatchdogInatividade() {
-                if (finalizado) return;
-                if (watchdogInatividade) window.clearTimeout(watchdogInatividade);
-
-                watchdogInatividade = window.setTimeout(function () {
-                    if (finalizado) return;
-                    finalizar(true);
-                }, TIMEOUT_INATIVIDADE);
+            function rearmarInatividade() {
+                if (timeoutInatividade) window.clearTimeout(timeoutInatividade);
+                timeoutInatividade = window.setTimeout(finalizar, TIMEOUT_INATIVIDADE);
             }
 
-            watchdogGlobal = window.setTimeout(function () {
-                if (!finalizado) finalizar(true);
-            }, TIMEOUT_GLOBAL);
-
-            function tentarFinalizarNormalmente() {
-                if (finalizado) return true;
+            function tentarFechar() {
                 if (concluidos >= obras.length && ativos === 0) {
-                    finalizar(false);
+                    finalizar();
                     return true;
                 }
                 return false;
             }
 
             function proximo() {
-                if (finalizado || tentarFinalizarNormalmente()) return;
+                if (finalizado || tentarFechar()) return;
 
                 while (!finalizado && ativos < limite && indice < obras.length) {
                     (function (obra) {
                         ativos++;
-                        sequenciaPedido++;
-                        var pedidoId = "p" + sequenciaPedido;
-                        var resolvido = false;
-
-                        function concluirPedido(ok, xmlText) {
-                            if (resolvido || finalizado) return;
-                            resolvido = true;
-
-                            var info = pedidosAtivos[pedidoId];
-                            if (info && info.timer) window.clearTimeout(info.timer);
-                            delete pedidosAtivos[pedidoId];
-
-                            if (ok) {
-                                var xml = authsearchV38ParseXML(xmlText);
-                                if (!xml) {
-                                    falhas++;
-                                } else {
-                                    var analisada = authsearchV38AnalisarXML(xml, obra, authid);
-                                    if (analisada) resultado.push(analisada);
-                                }
-                            } else {
-                                falhas++;
-                            }
-
-                            ativos = Math.max(0, ativos - 1);
-                            concluidos++;
-
-                            onProgress(concluidos, obras.length, resultado.length);
-
-                            /*
-                             * O watchdog é rearmado a CADA avanço real.
-                             * Se ficar em 145/146, ao fim de 9 s fecha a análise
-                             * e mostra os 145 resultados processados.
-                             */
-                            armarWatchdogInatividade();
-
-                            if (!tentarFinalizarNormalmente()) {
-                                window.setTimeout(proximo, 0);
-                            }
-                        }
 
                         var req = $.ajax({
-                            url: authsearchV38MarcXmlUrl(obra.biblionumber),
-                            dataType: "text",
-                            cache: false,
-                            timeout: TIMEOUT_PEDIDO
-                        });
-
-                        var timer = window.setTimeout(function () {
-                            if (resolvido || finalizado) return;
-                            try {
-                                if (req && req.readyState !== 4) req.abort();
-                            } catch (_e) {}
-                            concluirPedido(false, "");
-                        }, TIMEOUT_PEDIDO + 500);
-
-                        pedidosAtivos[pedidoId] = {
-                            req: req,
-                            timer: timer
-                        };
-
-                        req.done(function (txt) {
-                            concluirPedido(true, txt);
-                        });
-
-                        req.fail(function () {
-                            concluirPedido(false, "");
+                            url:koreLiteMarcXmlUrl(obra.biblionumber),
+                            dataType:"text",
+                            cache:false,
+                            timeout:CONFIG.timeout
+                        })
+                        .done(function (txt) {
+                            var xml = koreLiteParseXml(txt);
+                            if (!xml) return;
+                            var analisada = koreLiteAnalisarXml(xml, obra, authid);
+                            if (analisada) resultado.push(analisada);
+                        })
+                        .always(function () {
+                            ativos = Math.max(0, ativos - 1);
+                            concluidos++;
+                            onProgress(concluidos, obras.length, resultado.length);
+                            rearmarInatividade();
+                            window.setTimeout(proximo, 0);
                         });
 
                         registarPedido(req);
@@ -2832,13 +2592,65 @@ body.authsearch-resizing #authsearch-tab {
                 }
             }
 
-            /*
-             * Começa já com watchdog ativo. Se, por qualquer anomalia,
-             * nem o primeiro lote produzir callbacks, a interface também
-             * é libertada.
-             */
-            armarWatchdogInatividade();
+            rearmarInatividade();
             proximo();
+        }
+
+        function koreLitePesquisarCandidatos(authid, callback) {
+            var mapa = {};
+            var pendentes = 0;
+            var terminado = false;
+            var a = STATE.authority || {};
+            var nome = limparTexto(a.nome || "");
+            var variantes = (a.variantes400 || [])
+                .map(function (v) { return limparTexto(v && v.forma ? v.forma : ""); })
+                .filter(Boolean)
+                .slice(0, 4);
+
+            function fundir(obras) {
+                (Array.isArray(obras) ? obras : []).forEach(function (o) {
+                    var bib = String(o.biblionumber || "");
+                    if (!/^\d+$/.test(bib)) return;
+                    if (!mapa[bib]) mapa[bib] = o;
+                });
+            }
+
+            function terminouUm() {
+                pendentes--;
+                if (pendentes > 0 || terminado) return;
+                terminado = true;
+                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
+            }
+
+            function pesquisar(url) {
+                pendentes++;
+                carregarTodasObrasCatalogo(url, function (_erro, obras) {
+                    fundir(obras);
+                    terminouUm();
+                });
+            }
+
+            // Ligados estruturalmente
+            if (STATE.obrasPrecarregadasAuthid === String(authid) && Array.isArray(STATE.obrasLigadasPreload)) {
+                fundir(STATE.obrasLigadasPreload);
+            } else {
+                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=an&q=' + encodeURIComponent(authid) + '&count=50');
+            }
+
+            // Candidatos a $9 em falta
+            if (nome) {
+                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(nome) + '&count=50');
+            }
+
+            variantes.forEach(function (forma) {
+                if (normalizarNomeParaComparacao(forma) === normalizarNomeParaComparacao(nome)) return;
+                pesquisar('/cgi-bin/koha/catalogue/search.pl?idx=au&q=' + encodeURIComponent(forma) + '&count=50');
+            });
+
+            if (!pendentes) {
+                terminado = true;
+                callback(Object.keys(mapa).map(function (k) { return mapa[k]; }));
+            }
         }
 
         /**
@@ -2920,23 +2732,22 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasFiltroProblema = "todos";
             STATE.obrasFiltroTexto = "";
             STATE.obrasResolucaoAberta = {};
-            STATE.obrasNaoAnalisadas = 0;
 
-            $alvo.html('<div class="authsearch-loading">A procurar obras candidatas pela autoridade e pelo índice de autor…</div>');
+            $alvo.html('<div class="authsearch-loading">A preparar análise K●RE simplificada…</div>');
 
-            authsearchV38PesquisarCandidatos(authid, function (candidatos) {
+            koreLitePesquisarCandidatos(authid, function (candidatos) {
                 candidatos = Array.isArray(candidatos) ? candidatos : [];
 
                 if (!candidatos.length) {
                     STATE.obrasCarregadas = true;
-                    atualizarTituloObras(0, 'sem candidatos');
+                    atualizarTituloObras(0, 'sem problemas detetados');
                     renderObrasCatalogo([], STATE.obrasPesquisaUrl || "");
                     return;
                 }
 
-                $alvo.html('<div class="authsearch-loading">A analisar MARCXML de ' + candidatos.length + ' registos candidatos…</div>');
+                $alvo.html('<div class="authsearch-loading">K●RE simplificado · a analisar ' + candidatos.length + ' registos candidatos…</div>');
 
-                authsearchV38AnalisarObras(candidatos, authid, function (problemas) {
+                koreLiteAnalisarObras(candidatos, authid, function (problemas) {
                     STATE.obrasCarregadas = true;
                     STATE.obrasProblemas = problemas.slice();
 
@@ -2948,7 +2759,7 @@ body.authsearch-resizing #authsearch-tab {
                     renderObrasCatalogo(problemas, STATE.obrasPesquisaUrl || "");
 
                 }, function (feito, total, encontrados) {
-                    $alvo.html('<div class="authsearch-loading">A analisar MARCXML… ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema</div>');
+                    $alvo.html('<div class="authsearch-loading">K●RE simplificado · ' + feito + '/' + total + ' · ' + encontrados + ' obra' + (encontrados === 1 ? '' : 's') + ' com problema</div>');
                 });
             });
         }
@@ -2994,13 +2805,13 @@ body.authsearch-resizing #authsearch-tab {
                     STATE.obrasFiltroTexto = $(this).val() || "";
                     renderObrasCatalogo(STATE.obrasProblemas || [], STATE.obrasPesquisaUrl || "");
                 })
-                .on("click.authsearchv3", ".authsearch-works-problem-filter", function (e) {
+                .on("click.authsearchv3", "[data-kore-filter]", function (e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    STATE.obrasFiltroProblema = String($(this).attr("data-problem") || "todos");
+                    STATE.obrasFiltroProblema = String($(this).attr("data-kore-filter") || "todos");
                     renderObrasCatalogo(STATE.obrasProblemas || [], STATE.obrasPesquisaUrl || "");
                 })
-                .on("click.authsearchv3", ".authsearch-work-resolve", function (e) {
+                .on("click.authsearchv3", ".authsearch-kore-resolve", function (e) {
                     e.preventDefault();
                     e.stopPropagation();
                     var bib = String($(this).attr("data-biblionumber") || "");
