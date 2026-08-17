@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.1 · AuthSearch&Cat + motor K●RE real simplificado · 2026-08-17
+   Versão 4.2 · AuthSearch&Cat + K●RE Lite resiliente · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -938,6 +938,18 @@ body.authsearch-resizing #authsearch-tab {
     .authsearch-kore-actions .authsearch-btn{width:auto}
 }
 
+
+.authsearch-works-analysis-warning{
+    margin-top:8px;
+    color:#854a0e;
+    background:#fffaeb;
+    border:1px solid #fedf89;
+    border-radius:4px;
+    padding:7px 8px;
+    font-size:10.5px;
+    line-height:1.35;
+}
+
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
 .authsearch-toolbar-spaced { margin-top: 10px; }
 .authsearch-box-head-flush { padding-left: 0; padding-right: 0; }
@@ -1001,7 +1013,8 @@ body.authsearch-resizing #authsearch-tab {
             obrasProblemas: [],
             obrasFiltroProblema: "todos",
             obrasFiltroTexto: "",
-            obrasResolucaoAberta: {}
+            obrasResolucaoAberta: {},
+            obrasNaoAnalisadas: 0
         };
 
         // Rótulos usados pelo parser UNIMARC. Têm de estar inicializados ANTES
@@ -1288,6 +1301,7 @@ body.authsearch-resizing #authsearch-tab {
             STATE.obrasFiltroProblema = "todos";
             STATE.obrasFiltroTexto = "";
             STATE.obrasResolucaoAberta = {};
+            STATE.obrasNaoAnalisadas = 0;
             var a = STATE.authority || {};
             var qid = primeiroQidValido(a.wikidata || []);
             var pesquisa = '' +
@@ -2063,6 +2077,20 @@ body.authsearch-resizing #authsearch-tab {
             if (!visiveis.length) html += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
 
             html += '</div>';
+
+            if (STATE.obrasNaoAnalisadas) {
+                html += '<div class="authsearch-works-analysis-warning">' +
+                    STATE.obrasNaoAnalisadas + ' registo' +
+                    (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
+                    ' não ' +
+                    (STATE.obrasNaoAnalisadas === 1 ? 'pôde' : 'puderam') +
+                    ' ser analisado' +
+                    (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
+                    ' e não foram considerado' +
+                    (STATE.obrasNaoAnalisadas === 1 ? '' : 's') +
+                    ' na deteção de problemas.</div>';
+            }
+
             $alvo.html(html);
             observarDetalhesObrasVisiveis();
         }
@@ -2744,35 +2772,53 @@ body.authsearch-resizing #authsearch-tab {
 
             var resultado = [];
             var indice = 0;
+            var falhas = 0;
 
             /*
-             * Tal como o K●RE: análise SEQUENCIAL.
-             * Evita dezenas/centenas de pedidos MARC em paralelo e deixa de
-             * depender de MARCXML/export.pl.
+             * Mantém a análise SEQUENCIAL do K●RE, mas cada registo tem
+             * timeout explícito. Um MARC que não responda não bloqueia
+             * os restantes candidatos.
              */
+            var TIMEOUT_REGISTO = Math.max(12000, (CONFIG.timeout || 10000) + 2000);
+
+            function ordenarResultado() {
+                resultado.sort(function (a, b) {
+                    function peso(o) {
+                        var ps = o.koreLiteProblemas || [];
+
+                        if (ps.some(function (p) {
+                            return p.tipo === "sem9e4" ||
+                                   p.tipo === "sem9" ||
+                                   p.tipo === "outroAuthid";
+                        })) return 0;
+
+                        if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
+                        if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
+
+                        return 3;
+                    }
+
+                    var pa = peso(a);
+                    var pb = peso(b);
+
+                    if (pa !== pb) return pa - pb;
+
+                    return tituloSemResponsabilidade(a.titulo || "").localeCompare(
+                        tituloSemResponsabilidade(b.titulo || ""),
+                        "pt"
+                    );
+                });
+            }
+
+            function terminar() {
+                ordenarResultado();
+                STATE.obrasNaoAnalisadas = falhas;
+                callback(resultado);
+            }
+
             function seguinte() {
                 if (indice >= obras.length) {
-                    resultado.sort(function (a, b) {
-                        function peso(o) {
-                            var ps = o.koreLiteProblemas || [];
-                            if (ps.some(function (p) {
-                                return p.tipo === "sem9e4" || p.tipo === "sem9" || p.tipo === "outroAuthid";
-                            })) return 0;
-                            if (ps.some(function (p) { return p.tipo === "sem4"; })) return 1;
-                            if (ps.some(function (p) { return p.tipo === "responsabilidade"; })) return 2;
-                            return 3;
-                        }
-
-                        var pa = peso(a), pb = peso(b);
-                        if (pa !== pb) return pa - pb;
-
-                        return tituloSemResponsabilidade(a.titulo || "").localeCompare(
-                            tituloSemResponsabilidade(b.titulo || ""),
-                            "pt"
-                        );
-                    });
-
-                    callback(resultado);
+                    terminar();
                     return;
                 }
 
@@ -2781,24 +2827,66 @@ body.authsearch-resizing #authsearch-tab {
 
                 onProgress(indice - 1, obras.length, resultado.length, obra);
 
+                var resolvido = false;
+                var xhr = null;
+
+                function concluir(ok, html) {
+                    if (resolvido) return;
+                    resolvido = true;
+
+                    if (watchdog) window.clearTimeout(watchdog);
+
+                    if (ok) {
+                        try {
+                            var analisada = koreLiteAnalisarHTML(html, obra, authid);
+                            if (analisada) resultado.push(analisada);
+                        } catch (_e) {
+                            falhas++;
+                        }
+                    } else {
+                        falhas++;
+                    }
+
+                    onProgress(indice, obras.length, resultado.length, obra);
+
+                    // Liberta a thread antes do registo seguinte.
+                    window.setTimeout(seguinte, 0);
+                }
+
                 var url = "/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=" +
                     encodeURIComponent(obra.biblionumber);
 
-                var xhr = $.ajax({
+                var watchdog = window.setTimeout(function () {
+                    if (resolvido) return;
+
+                    try {
+                        if (xhr && xhr.readyState !== 4) xhr.abort();
+                    } catch (_e) {}
+
+                    concluir(false, "");
+                }, TIMEOUT_REGISTO + 500);
+
+                xhr = $.ajax({
                     url: url,
                     method: "GET",
-                    dataType: "html"
+                    dataType: "html",
+                    cache: false,
+                    timeout: TIMEOUT_REGISTO
                 })
                 .done(function (html) {
-                    var analisada = koreLiteAnalisarHTML(html, obra, authid);
-                    if (analisada) resultado.push(analisada);
+                    concluir(true, html);
                 })
-                .always(function () {
-                    onProgress(indice, obras.length, resultado.length, obra);
-                    seguinte();
+                .fail(function () {
+                    concluir(false, "");
                 });
 
                 registarPedido(xhr);
+            }
+
+            if (!obras.length) {
+                STATE.obrasNaoAnalisadas = 0;
+                callback([]);
+                return;
             }
 
             seguinte();
