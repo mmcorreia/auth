@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 3.8 · AuthSearch&Cat + triagem MARCXML robusta · 2026-08-17
+   Versão 3.9 · AuthSearch&Cat + triagem MARCXML + 200$f · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -852,6 +852,85 @@ body.authsearch-resizing #authsearch-tab {
 .authsearch-works-analysis-warning{
     margin-top:8px;color:#854a0e;background:#fffaeb;border:1px solid #fedf89;border-radius:4px;padding:7px 8px;
     font-size:10.5px;line-height:1.35
+}
+
+
+/* ============================================================
+   OBRAS · DESIGN OPERACIONAL APROXIMADO AO MOCKUP
+   ============================================================ */
+.authsearch-works-kpis{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+    margin:0 0 10px;
+}
+.authsearch-work-kpi{
+    min-width:0;
+    border:1px solid #d8e0e7;
+    background:#fff;
+    border-radius:6px;
+    padding:8px 9px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    text-align:left;
+    cursor:pointer;
+}
+.authsearch-work-kpi:hover{background:#f8fafc;border-color:#b9c8d4}
+.authsearch-work-kpi.is-active{border-color:#5f8eae;box-shadow:0 0 0 1px rgba(51,109,150,.12);background:#f7fbfd}
+.authsearch-work-kpi-icon{
+    width:26px;height:26px;flex:0 0 26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;background:#f2f4f7;color:#667085
+}
+.authsearch-work-kpi.is-critical .authsearch-work-kpi-icon{background:#fff1f0;color:#d92d20}
+.authsearch-work-kpi.is-review .authsearch-work-kpi-icon{background:#fff7e6;color:#d97706}
+.authsearch-work-kpi.is-info .authsearch-work-kpi-icon{background:#eff8ff;color:#175cd3}
+.authsearch-work-kpi-copy{display:flex;flex-direction:column;min-width:0}
+.authsearch-work-kpi-copy strong{font-size:17px;line-height:1;color:#1d2939}
+.authsearch-work-kpi-copy span{font-size:10.5px;color:#667085;line-height:1.25;margin-top:3px}
+
+.authsearch-work.authsearch-work-operational{
+    display:grid;
+    grid-template-columns:68px minmax(0,1fr) 124px;
+    gap:11px;
+    align-items:start;
+    padding:12px 2px;
+}
+.authsearch-work-cover-col{min-width:0}
+.authsearch-work-main{min-width:0}
+.authsearch-work-action-col{
+    display:flex;flex-direction:column;gap:6px;align-items:stretch;padding-top:2px
+}
+.authsearch-work-action-col .authsearch-work-resolve,
+.authsearch-work-action-col .authsearch-work-secondary{
+    width:100%;min-width:0;text-align:center
+}
+.authsearch-work-primary-diagnostic{
+    margin-top:8px;
+    padding:7px 8px;
+    border-left:3px solid #d9e3eb;
+    background:#fbfcfd;
+    font-size:10.5px;
+    line-height:1.35;
+}
+.authsearch-work-primary-diagnostic strong{display:block;color:#344054}
+.authsearch-work-primary-diagnostic span{display:block;color:#667085;margin-top:2px}
+.authsearch-work-problems{margin-top:7px}
+.authsearch-work-opac{color:#1769aa!important}
+
+@media(max-width:620px){
+    .authsearch-works-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .authsearch-work.authsearch-work-operational{grid-template-columns:68px minmax(0,1fr)}
+    .authsearch-work-action-col{
+        grid-column:2;
+        flex-direction:row;
+        flex-wrap:wrap;
+        padding-top:0
+    }
+    .authsearch-work-action-col .authsearch-work-resolve,
+    .authsearch-work-action-col .authsearch-work-secondary{
+        width:auto
+    }
 }
 
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
@@ -1833,7 +1912,7 @@ body.authsearch-resizing #authsearch-tab {
 
         function authsearchV38ClasseProblema(tipo) {
             if (tipo === "sem9" || tipo === "sem9e4" || tipo === "outroAuthid") return "is-critical";
-            if (tipo === "sem4" || tipo === "nomeDivergente" || tipo === "datas") return "is-review";
+            if (tipo === "sem4" || tipo === "nomeDivergente" || tipo === "datas" || tipo === "responsabilidade") return "is-review";
             return "is-info";
         }
 
@@ -1844,7 +1923,8 @@ body.authsearch-resizing #authsearch-tab {
                 sem9e4: "Falta $9 e $4",
                 outroAuthid: "Outro authid",
                 nomeDivergente: "Nome divergente",
-                datas: "Verificar datas"
+                datas: "Verificar datas",
+                responsabilidade: "200$f a rever"
             };
             return mapa[tipo] || tipo;
         }
@@ -1862,23 +1942,25 @@ body.authsearch-resizing #authsearch-tab {
 
         function authsearchV38Resumo(obras) {
             var tipos = [
-                {key:"todos",label:"Todos"},
-                {key:"sem9",label:"Sem $9"},
-                {key:"sem4",label:"Sem $4"},
-                {key:"outroAuthid",label:"Outro authid"},
-                {key:"nomeDivergente",label:"Nome divergente"},
-                {key:"datas",label:"Datas"}
+                {key:"todos",label:"Obras com problemas",icon:"fa-exclamation-triangle",cls:"is-total"},
+                {key:"sem9",label:"Sem $9",icon:"fa-link",cls:"is-critical"},
+                {key:"sem4",label:"Sem $4",icon:"fa-tag",cls:"is-review"},
+                {key:"outroAuthid",label:"Outro authid",icon:"fa-exchange",cls:"is-critical"},
+                {key:"nomeDivergente",label:"Nome divergente",icon:"fa-user",cls:"is-review"},
+                {key:"responsabilidade",label:"200$f a rever",icon:"fa-eye",cls:"is-review"},
+                {key:"datas",label:"Datas",icon:"fa-calendar",cls:"is-info"}
             ];
 
-            return '<div class="authsearch-works-problem-summary">' +
+            return '<div class="authsearch-works-kpis">' +
                 tipos.map(function (t) {
                     var n = authsearchV38Contar(obras, t.key);
                     if (t.key !== "todos" && !n) return "";
-                    return '<button type="button" class="authsearch-works-problem-filter' +
+                    return '<button type="button" class="authsearch-work-kpi ' + t.cls +
                         (STATE.obrasFiltroProblema === t.key ? ' is-active' : '') +
                         '" data-problem="' + escaparAttr(t.key) + '">' +
-                        escaparHTML(t.label) +
-                        '<span class="authsearch-works-problem-count">' + n + '</span></button>';
+                        '<span class="authsearch-work-kpi-icon"><i class="fa ' + escaparAttr(t.icon) + '" aria-hidden="true"></i></span>' +
+                        '<span class="authsearch-work-kpi-copy"><strong>' + n + '</strong><span>' + escaparHTML(t.label) + '</span></span>' +
+                    '</button>';
                 }).join("") +
             '</div>';
         }
@@ -1949,7 +2031,7 @@ body.authsearch-resizing #authsearch-tab {
             var visiveis = obras.filter(authsearchV38PassaFiltro);
             var out =
                 authsearchV38Resumo(obras) +
-                '<div class="authsearch-works-note">Só entram obras em que o MARCXML confirma a ocorrência da autoridade em 700, 701 ou 702 e existe uma anomalia concreta. O campo 700 não é marcado por ausência de $4.</div>' +
+                '<div class="authsearch-works-note">Só entram obras em que o MARCXML confirma a autoridade em 700, 701 ou 702 e existe uma anomalia concreta. Em 701/702, qualquer $4 não vazio conta como preenchido; no 700, a ausência de $4 não é problema. O 200$f/200$g é revisto contra a forma autorizada 200 e as variantes 400.</div>' +
                 '<div class="authsearch-works-toolbar">' +
                     '<div class="authsearch-works-meta">' + obras.length + ' obra' + (obras.length === 1 ? '' : 's') + ' com problema' + (obras.length === 1 ? '' : 's') + '</div>' +
                     '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar obras…" value="' + escaparAttr(STATE.obrasFiltroTexto || '') + '">' +
@@ -1962,9 +2044,13 @@ body.authsearch-resizing #authsearch-tab {
                 var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
                 var marc = '/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
 
-                out += '<article class="authsearch-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
-                    (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
-                    '<div class="authsearch-work-body">' +
+                var principal = problemas[0] || null;
+
+                out += '<article class="authsearch-work authsearch-work-operational" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
+                    '<div class="authsearch-work-cover-col">' +
+                        (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') +
+                    '</div>' +
+                    '<div class="authsearch-work-main">' +
                         '<div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(titulo) + '</a></div>' +
                         '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div>' +
                         '<div class="authsearch-work-problems">' +
@@ -1974,12 +2060,16 @@ body.authsearch-resizing #authsearch-tab {
                                 '</span>';
                             }).join("") +
                         '</div>' +
-                        '<div class="authsearch-work-actions">' +
-                            '<button type="button" class="authsearch-work-resolve" data-biblionumber="' + escaparAttr(o.biblionumber) + '">Resolver problemas</button>' +
-                            '<a class="authsearch-work-secondary" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
-                            '<a class="authsearch-work-secondary" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
-                        '</div>' +
+                        (principal ? '<div class="authsearch-work-primary-diagnostic"><strong>' +
+                            escaparHTML((principal.campo || "7xx") + ' · ' + authsearchV38RotuloProblema(principal.tipo)) +
+                            '</strong><span>' + escaparHTML(principal.detalhe || "") + '</span></div>' : '') +
                         authsearchV38Painel(o) +
+                    '</div>' +
+                    '<div class="authsearch-work-action-col">' +
+                        '<button type="button" class="authsearch-work-resolve" data-biblionumber="' + escaparAttr(o.biblionumber) + '">Resolver problemas</button>' +
+                        '<a class="authsearch-work-secondary" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
+                        '<a class="authsearch-work-secondary authsearch-work-opac" href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">Ver registo</a>' +
+                        '<a class="authsearch-work-secondary" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
                     '</div>' +
                 '</article>';
             });
@@ -2272,12 +2362,16 @@ body.authsearch-resizing #authsearch-tab {
         }
 
         function authsearchV38Codigos4(sf) {
-            var out = [];
-            (sf["4"] || []).forEach(function (v) {
-                var m = String(v || "").match(/\b(?:\d{3}|[a-z]{3})\b/gi);
-                if (m) out = out.concat(m);
-            });
-            return out.filter(function (v, i, a) { return a.indexOf(v) === i; });
+            /*
+             * O Koha pode apresentar/guardar o $4 como código ("070")
+             * ou como valor textual de uma lista autorizada ("Co-autor").
+             * Para decidir se o subcampo existe, NÃO se valida o formato:
+             * qualquer valor não vazio significa que $4 está preenchido.
+             */
+            return (sf["4"] || [])
+                .map(function (v) { return limparTexto(v || ""); })
+                .filter(Boolean)
+                .filter(function (v, i, a) { return a.indexOf(v) === i; });
         }
 
         function authsearchV38Forma7xx(sf) {
@@ -2330,11 +2424,99 @@ body.authsearch-resizing #authsearch-tab {
             if (!lista.some(function (x) { return [x.tipo, x.campo, x.detalhe].join("|") === k; })) lista.push(p);
         }
 
+        function authsearchV38Responsabilidades200(xml) {
+            var out = [];
+            var fields = xml.getElementsByTagName("datafield");
+
+            for (var i = 0; i < fields.length; i++) {
+                if (String(fields[i].getAttribute("tag") || "") !== "200") continue;
+                var sf = authsearchV38Subcampos(fields[i]);
+
+                (sf["f"] || []).forEach(function (v) {
+                    v = limparTexto(v || "");
+                    if (v) out.push({ subcampo: "f", valor: v });
+                });
+
+                // $g = menção de responsabilidade subsequente. É lido pelo mesmo
+                // critério, embora o diagnóstico principal continue rotulado 200$f.
+                (sf["g"] || []).forEach(function (v) {
+                    v = limparTexto(v || "");
+                    if (v) out.push({ subcampo: "g", valor: v });
+                });
+            }
+
+            return out;
+        }
+
+        function authsearchV38ResponsabilidadeCompativel(valor) {
+            /*
+             * Compara a menção do bibliográfico exclusivamente com:
+             * - forma autorizada 200 da autoridade;
+             * - formas variantes 400 da autoridade.
+             *
+             * A comparação é tolerante à ordem ("Atwood, Margaret" /
+             * "Margaret Atwood"), pontuação e datas.
+             */
+            var t = normalizarNomeParaComparacao(valor || "");
+            if (!t) return false;
+
+            var a = STATE.authority || {};
+            var formas = [];
+
+            if (a.nome) formas.push(a.nome);
+            if (a.nomeA && a.nomeB) {
+                formas.push(limparTexto(a.nomeA + " " + a.nomeB));
+                formas.push(limparTexto(a.nomeB + " " + a.nomeA));
+                formas.push(limparTexto(a.nomeA + ", " + a.nomeB));
+                formas.push(limparTexto(a.nomeB + ", " + a.nomeA));
+            }
+
+            (a.variantes400 || []).forEach(function (v) {
+                if (v && v.forma) formas.push(v.forma);
+            });
+
+            var universo = formas
+                .map(function (v) { return normalizarNomeParaComparacao(v || ""); })
+                .filter(Boolean)
+                .filter(function (v, i, arr) { return arr.indexOf(v) === i; });
+
+            function palavraInteira(texto, palavra) {
+                if (!texto || !palavra) return false;
+                var re = new RegExp("(^|[^a-z0-9])" + escaparRegex(palavra) + "($|[^a-z0-9])", "i");
+                return re.test(" " + texto + " ");
+            }
+
+            for (var i = 0; i < universo.length; i++) {
+                var u = universo[i];
+                if (!u) continue;
+
+                if (t === u || palavraInteira(t, u)) return true;
+
+                var partes = u.split(/\s+/).filter(function (p) {
+                    return p.length > 2 && !/^\d{4}$/.test(p);
+                });
+
+                if (partes.length === 1) {
+                    if (palavraInteira(t, partes[0])) return true;
+                    continue;
+                }
+
+                var encontrados = partes.filter(function (p) {
+                    return palavraInteira(t, p);
+                }).length;
+
+                if (encontrados >= Math.min(2, partes.length)) return true;
+            }
+
+            return false;
+        }
+
         function authsearchV38AnalisarXML(xml, obra, authid) {
             var problemas = [];
             var datafields = xml.getElementsByTagName("datafield");
             var datasAuth = limparTexto((STATE.authority && STATE.authority.datas) || "");
             var esperado = String(authid);
+            var autoridadePresenteEm7xx = false;
 
             for (var i = 0; i < datafields.length; i++) {
                 var tag = String(datafields[i].getAttribute("tag") || "");
@@ -2347,12 +2529,21 @@ body.authsearch-resizing #authsearch-tab {
                 var forma = authsearchV38Forma7xx(sf);
                 var compativel = authsearchV38Compativel(forma);
 
-                // Só esta autoridade: pelo $9 esperado ou por forma textual compatível.
+                // A ocorrência só pertence ao universo da autoridade atual
+                // se o $9 aponta para ela ou a forma textual é compatível.
                 if (!temEsperado && !compativel) continue;
 
-                var codigos4 = authsearchV38Codigos4(sf);
-                var exige4 = tag !== "700"; // regra K●RE: 700 principal não exige $4
-                var tem4 = !exige4 || codigos4.length > 0;
+                autoridadePresenteEm7xx = true;
+
+                /*
+                 * $4:
+                 * - 700 = responsabilidade principal: ausência não é problema;
+                 * - 701/702 = qualquer valor não vazio em $4 conta como preenchido,
+                 *   seja "070", "Co-autor", "Ilustrador", etc.
+                 */
+                var valores4 = authsearchV38Codigos4(sf);
+                var exige4 = tag !== "700";
+                var tem4 = !exige4 || valores4.length > 0;
 
                 if (compativel && !temAlgum && !tem4) {
                     authsearchV38AddProblema(problemas, {
@@ -2378,7 +2569,7 @@ body.authsearch-resizing #authsearch-tab {
                         tipo:"sem4",
                         campo:tag,
                         valor:forma,
-                        detalhe:tag + " ligado ao authid " + esperado + ", mas sem código de função $4."
+                        detalhe:tag + " ligado ao authid " + esperado + ", mas o subcampo $4 está efetivamente vazio."
                     });
                 }
 
@@ -2396,7 +2587,7 @@ body.authsearch-resizing #authsearch-tab {
                         tipo:"nomeDivergente",
                         campo:tag,
                         valor:forma,
-                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual difere da forma autorizada e das variantes 400."
+                        detalhe:"O $9 aponta para esta autoridade, mas a forma textual difere da forma autorizada 200 e das variantes 400."
                     });
                 }
 
@@ -2410,6 +2601,37 @@ body.authsearch-resizing #authsearch-tab {
                             ? "Datas no bibliográfico: " + datasBib + " · autoridade: " + datasAuth + "."
                             : "A autoridade tem datas (" + datasAuth + "), mas o ponto de acesso ligado não tem $f."
                     });
+                }
+            }
+
+            /*
+             * 200$f / 200$g:
+             * Só avaliamos a menção de responsabilidade quando esta autoridade
+             * foi efetivamente encontrada em 700/701/702. Assim não se criam
+             * alertas por nomes de outras pessoas presentes no 200.
+             *
+             * Se existir 200$f/$g e nenhuma menção for compatível com o 200
+             * autorizado ou com um 400 desta autoridade, o caso entra em "Rever".
+             * Não é classificado como erro estrutural automático.
+             */
+            if (autoridadePresenteEm7xx) {
+                var responsabilidades = authsearchV38Responsabilidades200(xml);
+
+                if (responsabilidades.length) {
+                    var compativel200 = responsabilidades.some(function (r) {
+                        return authsearchV38ResponsabilidadeCompativel(r.valor);
+                    });
+
+                    if (!compativel200) {
+                        authsearchV38AddProblema(problemas, {
+                            tipo:"responsabilidade",
+                            campo:"200$f",
+                            valor:responsabilidades.map(function (r) {
+                                return "200$" + r.subcampo + " " + r.valor;
+                            }).join(" | "),
+                            detalhe:"A menção de responsabilidade não corresponde à forma autorizada 200 nem a nenhuma variante 400 desta autoridade. Rever a coerência entre 200$f/200$g e o ponto de acesso 7xx."
+                        });
+                    }
                 }
             }
 
