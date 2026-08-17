@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.4 · AuthSearch&Cat + correção escaparRegex · 2026-08-17
+   Versão 4.5 · AuthSearch&Cat + UX Obras refinado · 2026-08-17
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -801,44 +801,78 @@ body.authsearch-resizing #authsearch-tab {
 
 
 /* ============================================================
-   OBRAS NO CATÁLOGO · K●RE SIMPLIFICADO
+   OBRAS NO CATÁLOGO · K●RE SIMPLIFICADO · UX v4.5
    ============================================================ */
 .authsearch-kore-kpis{
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:7px;
-    margin:0 0 10px;
+    margin:0 0 11px;
 }
 .authsearch-kore-kpi{
-    border:1px solid #d8e0e7;
+    border:1px solid #d8e1e8;
     background:#fff;
-    border-radius:6px;
-    padding:8px 9px;
+    border-radius:7px;
+    padding:9px 10px;
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:9px;
     min-width:0;
     text-align:left;
     cursor:pointer;
+    box-shadow:0 1px 1px rgba(16,24,40,.02);
 }
-.authsearch-kore-kpi:hover{background:#f8fafc;border-color:#b8c7d3}
+.authsearch-kore-kpi:hover{
+    background:#fbfdfe;
+    border-color:#b8c8d4;
+}
 .authsearch-kore-kpi.is-active{
-    border-color:#5f8eae;
+    border-color:#79a8c7;
     background:#f7fbfd;
-    box-shadow:0 0 0 1px rgba(51,109,150,.12);
+    box-shadow:0 0 0 2px rgba(66,133,180,.08);
 }
 .authsearch-kore-kpi-icon{
-    width:28px;height:28px;flex:0 0 28px;
+    width:30px;
+    height:30px;
+    flex:0 0 30px;
     border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    background:#f2f4f7;color:#667085;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#f2f4f7;
+    color:#667085;
+    font-size:13px;
 }
-.authsearch-kore-kpi.is-critical .authsearch-kore-kpi-icon{background:#fff1f0;color:#d92d20}
-.authsearch-kore-kpi.is-review .authsearch-kore-kpi-icon{background:#fff7e6;color:#d97706}
-.authsearch-kore-kpi.is-info .authsearch-kore-kpi-icon{background:#eff8ff;color:#175cd3}
-.authsearch-kore-kpi-copy{display:flex;flex-direction:column;min-width:0}
-.authsearch-kore-kpi-copy strong{font-size:17px;line-height:1;color:#1d2939}
-.authsearch-kore-kpi-copy span{font-size:10.5px;line-height:1.2;color:#667085;margin-top:3px}
+.authsearch-kore-kpi.is-critical .authsearch-kore-kpi-icon{
+    background:#fff1f0;
+    color:#d92d20;
+}
+.authsearch-kore-kpi.is-review .authsearch-kore-kpi-icon{
+    background:#fff7e6;
+    color:#d97706;
+}
+.authsearch-kore-kpi.is-info .authsearch-kore-kpi-icon{
+    background:#eff8ff;
+    color:#175cd3;
+}
+.authsearch-kore-kpi-copy{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+}
+.authsearch-kore-kpi-copy strong{
+    font-size:18px;
+    line-height:1;
+    font-weight:800;
+    color:#1d2939;
+}
+.authsearch-kore-kpi-copy span{
+    font-size:10.5px;
+    line-height:1.25;
+    color:#667085;
+    margin-top:4px;
+    font-weight:650;
+}
 
 .authsearch-kore-note{
     font-size:10.5px;
@@ -846,27 +880,73 @@ body.authsearch-resizing #authsearch-tab {
     line-height:1.4;
     margin:0 0 8px;
 }
+.authsearch-works-toolbar{
+    margin-bottom:5px;
+}
 .authsearch-kore-work{
     display:grid;
-    grid-template-columns:68px minmax(0,1fr) 132px;
-    gap:11px;
+    grid-template-columns:68px minmax(0,1fr) 116px;
+    gap:12px;
     align-items:start;
-    padding:12px 2px;
-    border-bottom:1px solid #e5e9ed;
+    padding:13px 2px;
+    border-bottom:1px solid #e7ebef;
 }
 .authsearch-kore-work:last-child{border-bottom:0}
+.authsearch-kore-cover{min-width:0}
 .authsearch-kore-main{min-width:0}
 .authsearch-kore-actions{
     display:flex;
     flex-direction:column;
-    gap:6px;
+    align-items:stretch;
+    gap:7px;
+    padding-top:1px;
 }
-.authsearch-kore-actions .authsearch-btn{
+.authsearch-kore-primary-action{
+    display:inline-flex!important;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
     width:100%;
-    min-width:0;
-    font-size:10.5px;
-    padding:6px 8px;
+    min-height:31px;
+    padding:6px 9px!important;
+    border:1px solid #78a8c9!important;
+    border-radius:6px!important;
+    background:#f7fbfd!important;
+    color:#185b88!important;
+    font-size:10.5px!important;
+    font-weight:800!important;
+    line-height:1.2;
+    text-decoration:none!important;
 }
+.authsearch-kore-primary-action:hover{
+    background:#eef6fa!important;
+    border-color:#5c93b8!important;
+    text-decoration:none!important;
+}
+.authsearch-kore-secondary-actions{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    align-items:center;
+}
+.authsearch-kore-text-link{
+    display:inline-flex!important;
+    align-items:center;
+    gap:4px;
+    padding:2px 4px!important;
+    border:0!important;
+    background:transparent!important;
+    color:#47677f!important;
+    font-size:10.5px!important;
+    font-weight:650!important;
+    text-decoration:none!important;
+    white-space:nowrap;
+}
+.authsearch-kore-text-link:hover{
+    color:#174f77!important;
+    text-decoration:underline!important;
+}
+
 .authsearch-kore-problems{
     display:flex;
     flex-wrap:wrap;
@@ -886,43 +966,73 @@ body.authsearch-resizing #authsearch-tab {
     background:#f8fafc;
     color:#475467;
 }
-.authsearch-kore-badge.is-critical{border-color:#fecdca;background:#fff5f5;color:#b42318}
-.authsearch-kore-badge.is-review{border-color:#fedf89;background:#fffaeb;color:#b54708}
-.authsearch-kore-badge.is-info{border-color:#b2ddff;background:#eff8ff;color:#175cd3}
-
-.authsearch-kore-diagnostic{
+.authsearch-kore-badge.is-critical{
+    border-color:#fecdca;
+    background:#fff5f5;
+    color:#b42318;
+}
+.authsearch-kore-badge.is-review{
+    border-color:#fedf89;
+    background:#fffaeb;
+    color:#b54708;
+}
+.authsearch-kore-badge.is-info{
+    border-color:#b2ddff;
+    background:#eff8ff;
+    color:#175cd3;
+}
+.authsearch-kore-diagnostics{
     margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+.authsearch-kore-diagnostic{
     padding:7px 8px;
     border-left:3px solid #d9e3eb;
     background:#fbfcfd;
     font-size:10.5px;
     line-height:1.35;
 }
-.authsearch-kore-diagnostic strong{display:block;color:#344054}
-.authsearch-kore-diagnostic span{display:block;color:#667085;margin-top:2px}
-.authsearch-kore-resolution{
-    margin-top:9px;
-    padding:8px 9px;
-    border:1px solid #dce5ec;
-    border-radius:5px;
-    background:#fbfdff;
-}
-.authsearch-kore-resolution-title{
-    font-size:10.5px;
-    font-weight:800;
+.authsearch-kore-diagnostic.is-critical{border-left-color:#f04438}
+.authsearch-kore-diagnostic.is-review{border-left-color:#f79009}
+.authsearch-kore-diagnostic.is-info{border-left-color:#2e90fa}
+.authsearch-kore-diagnostic strong{
+    display:block;
     color:#344054;
-    margin-bottom:4px;
+    font-weight:800;
 }
-.authsearch-kore-resolution-row{
+.authsearch-kore-diagnostic span{
+    display:block;
+    color:#667085;
+    margin-top:2px;
+}
+.authsearch-kore-more{
+    margin-top:5px;
+    font-size:10px;
+    color:#667085;
+}
+
+.authsearch-work-details{
+    margin-top:5px;
+}
+.authsearch-work-meta{
     display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:8px;
-    padding:7px 0;
-    border-top:1px solid #edf1f5;
+    grid-template-columns:64px minmax(0,1fr);
+    column-gap:7px;
+    row-gap:2px;
+    font-size:10.8px;
+    line-height:1.35;
 }
-.authsearch-kore-resolution-row:first-child{border-top:0;padding-top:0}
-.authsearch-kore-resolution-row strong{display:block;font-size:10.5px;color:#111827}
-.authsearch-kore-resolution-row span{display:block;margin-top:2px;font-size:10.5px;color:#667085;line-height:1.35}
+.authsearch-work-meta-label{
+    color:#52677a;
+    font-weight:700;
+}
+.authsearch-work-meta-value{
+    color:#344054;
+    min-width:0;
+}
+
 .authsearch-kore-empty{
     padding:11px;
     border:1px solid #ccebd9;
@@ -931,14 +1041,6 @@ body.authsearch-resizing #authsearch-tab {
     color:#067647;
     font-size:11.5px;
 }
-@media(max-width:620px){
-    .authsearch-kore-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-    .authsearch-kore-work{grid-template-columns:68px minmax(0,1fr)}
-    .authsearch-kore-actions{grid-column:2;flex-direction:row;flex-wrap:wrap}
-    .authsearch-kore-actions .authsearch-btn{width:auto}
-}
-
-
 .authsearch-works-analysis-warning{
     margin-top:8px;
     color:#854a0e;
@@ -948,6 +1050,22 @@ body.authsearch-resizing #authsearch-tab {
     padding:7px 8px;
     font-size:10.5px;
     line-height:1.35;
+}
+
+@media(max-width:700px){
+    .authsearch-kore-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .authsearch-kore-work{grid-template-columns:68px minmax(0,1fr)}
+    .authsearch-kore-actions{
+        grid-column:2;
+        flex-direction:row;
+        flex-wrap:wrap;
+        align-items:center;
+    }
+    .authsearch-kore-primary-action{width:auto}
+    .authsearch-kore-secondary-actions{
+        flex-direction:row;
+        flex-wrap:wrap;
+    }
 }
 
 /* Utilitários de layout que substituem estilos inline do JavaScript. */
@@ -2004,22 +2122,24 @@ body.authsearch-resizing #authsearch-tab {
             return base.indexOf(termo) !== -1;
         }
 
-        function koreLiteRenderResolucao(obra) {
-            if (!STATE.obrasResolucaoAberta[String(obra.biblionumber)]) return "";
-            var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(obra.biblionumber);
+        function koreLiteRenderDiagnosticos(obra) {
+            var problemas = obra.koreLiteProblemas || [];
+            if (!problemas.length) return "";
 
-            return '<div class="authsearch-kore-resolution">' +
-                '<div class="authsearch-kore-resolution-title">Centro de resolução · ' +
-                    (obra.koreLiteProblemas || []).length + ' ocorrência' +
-                    ((obra.koreLiteProblemas || []).length === 1 ? '' : 's') + '</div>' +
-                (obra.koreLiteProblemas || []).map(function (p) {
-                    return '<div class="authsearch-kore-resolution-row">' +
-                        '<div><strong>' + escaparHTML((p.campo || "7xx") + " · " + koreLiteRotulo(p.tipo)) + '</strong>' +
-                        '<span>' + escaparHTML(p.detalhe || "") + '</span></div>' +
-                        '<a class="authsearch-btn" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Resolver</a>' +
+            return '<div class="authsearch-kore-diagnostics">' +
+                problemas.map(function (p) {
+                    return '<div class="authsearch-kore-diagnostic ' + koreLiteClasse(p.tipo) + '">' +
+                        '<strong>' + escaparHTML((p.campo || "7xx") + " · " + koreLiteRotulo(p.tipo)) + '</strong>' +
+                        '<span>' + escaparHTML(p.detalhe || "") + '</span>' +
                     '</div>';
                 }).join("") +
             '</div>';
+        }
+
+        function koreLiteTextoAcao(obra) {
+            var n = (obra.koreLiteProblemas || []).length;
+            if (n <= 1) return "Corrigir registo";
+            return "Corrigir " + n + " problemas";
         }
 
         function renderObrasCatalogo(obras, urlPesquisa) {
@@ -2048,43 +2168,82 @@ body.authsearch-resizing #authsearch-tab {
 
             var html =
                 koreLiteRenderKpis(obras) +
-                '<div class="authsearch-kore-note">Versão simplificada do K●RE: apenas problemas de ligação e coerência de responsabilidade. Não mostra assuntos, notas, contexto ou candidatos técnicos.</div>' +
+                '<div class="authsearch-kore-note">Apenas obras que requerem intervenção. O diagnóstico é apresentado diretamente; a ação principal abre o registo para correção.</div>' +
                 '<div class="authsearch-works-toolbar">' +
                     '<div class="authsearch-works-meta">' + obras.length + ' obra' + (obras.length === 1 ? '' : 's') + ' com problema' + (obras.length === 1 ? '' : 's') + '</div>' +
                     '<input type="search" id="authsearch-works-filter" class="authsearch-works-filter" autocomplete="off" placeholder="Filtrar obras…" value="' + escaparAttr(STATE.obrasFiltroTexto || '') + '">' +
                 '</div>' +
-                '<div class="authsearch-works-list">';
+                '<div class="authsearch-works-list" id="authsearch-works-list">';
 
             visiveis.forEach(function (o) {
                 var titulo = tituloSemResponsabilidade(o.titulo || '') || ('Registo ' + o.biblionumber);
                 var editar = '/cgi-bin/koha/cataloguing/addbiblio.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
-                var marc = '/cgi-bin/koha/catalogue/MARCdetail.pl?biblionumber=' + encodeURIComponent(o.biblionumber);
-                var principal = (o.koreLiteProblemas || [])[0];
 
-                html += '<article class="authsearch-kore-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
-                    '<div>' + (o.img ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">' : '<div class="authsearch-work-placeholder">Sem capa</div>') + '</div>' +
+                // MARC completo em formato limpo, sem etiquetas descritivas.
+                var marc = '/cgi-bin/koha/catalogue/showmarc.pl?id=' +
+                    encodeURIComponent(o.biblionumber) +
+                    '&viewas=html';
+
+                var detalhe = o.href ||
+                    ('/cgi-bin/koha/catalogue/detail.pl?biblionumber=' + encodeURIComponent(o.biblionumber));
+
+                html += '<article class="authsearch-work authsearch-kore-work" data-biblionumber="' + escaparAttr(o.biblionumber) + '">' +
+
+                    '<div class="authsearch-kore-cover">' +
+                        (o.img
+                            ? '<img class="authsearch-work-cover" src="' + escaparAttr(o.img) + '" alt="">'
+                            : '<div class="authsearch-work-placeholder">Sem capa</div>') +
+                    '</div>' +
+
                     '<div class="authsearch-kore-main">' +
-                        '<div class="authsearch-work-title"><a href="' + escaparAttr(o.href) + '" target="_blank" rel="noopener noreferrer">' + escaparHTML(titulo) + '</a></div>' +
+
+                        '<div class="authsearch-work-title">' +
+                            '<a href="' + escaparAttr(detalhe) + '" target="_blank" rel="noopener noreferrer">' +
+                                escaparHTML(titulo) +
+                            '</a>' +
+                        '</div>' +
+
                         '<div class="authsearch-work-details is-loading">A carregar dados bibliográficos…</div>' +
+
                         '<div class="authsearch-kore-problems">' +
                             (o.koreLiteProblemas || []).map(function (p) {
-                                return '<span class="authsearch-kore-badge ' + koreLiteClasse(p.tipo) + '">' + escaparHTML(koreLiteRotulo(p.tipo)) + '</span>';
+                                return '<span class="authsearch-kore-badge ' + koreLiteClasse(p.tipo) + '">' +
+                                    escaparHTML(koreLiteRotulo(p.tipo)) +
+                                '</span>';
                             }).join("") +
                         '</div>' +
-                        (principal ? '<div class="authsearch-kore-diagnostic"><strong>' +
-                            escaparHTML((principal.campo || "7xx") + " · " + koreLiteRotulo(principal.tipo)) +
-                            '</strong><span>' + escaparHTML(principal.detalhe || "") + '</span></div>' : '') +
-                        koreLiteRenderResolucao(o) +
+
+                        koreLiteRenderDiagnosticos(o) +
+
                     '</div>' +
+
                     '<div class="authsearch-kore-actions">' +
-                        '<button type="button" class="authsearch-btn authsearch-primary authsearch-kore-resolve" data-biblionumber="' + escaparAttr(o.biblionumber) + '">Resolver problemas</button>' +
-                        '<a class="authsearch-btn" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">Editar</a>' +
-                        '<a class="authsearch-btn" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">MARC</a>' +
+
+                        '<a class="authsearch-kore-primary-action" href="' + escaparAttr(editar) + '" target="_blank" rel="noopener noreferrer">' +
+                            '<i class="fa fa-pencil" aria-hidden="true"></i>' +
+                            escaparHTML(koreLiteTextoAcao(o)) +
+                        '</a>' +
+
+                        '<div class="authsearch-kore-secondary-actions">' +
+
+                            '<a class="authsearch-kore-text-link" href="' + escaparAttr(detalhe) + '" target="_blank" rel="noopener noreferrer">' +
+                                '<i class="fa fa-external-link" aria-hidden="true"></i> Registo' +
+                            '</a>' +
+
+                            '<a class="authsearch-kore-text-link" href="' + escaparAttr(marc) + '" target="_blank" rel="noopener noreferrer">' +
+                                '<i class="fa fa-list-alt" aria-hidden="true"></i> MARC' +
+                            '</a>' +
+
+                        '</div>' +
+
                     '</div>' +
+
                 '</article>';
             });
 
-            if (!visiveis.length) html += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
+            if (!visiveis.length) {
+                html += '<div class="authsearch-empty">Não existem obras para o filtro selecionado.</div>';
+            }
 
             html += '</div>';
 
@@ -2114,13 +2273,28 @@ body.authsearch-resizing #authsearch-tab {
             var htmlCache = STATE.obrasDetalheHtml && STATE.obrasDetalheHtml[biblionumber];
             function aplicarHtmlDetalhe(html) {
                     var d = extrairMetadadosObra(html, { titulo: $obra.find('.authsearch-work-title').text() });
-                    var linhas = '';
-                    linhas += linhaObra('Autores', d.autores);
-                    linhas += linhaObra('ISBN', d.isbn);
-                    linhas += linhaObra('Editor', d.editor);
-                    linhas += linhaObra('Coleção / vol.', d.colecao);
-                    linhas += linhaObra('Assuntos', d.assunto);
-                    $dest.html(linhas || '<span class="authsearch-muted">Sem metadados adicionais disponíveis.</span>').removeClass('is-loading');
+                    var meta = [];
+
+                    function addMeta(label, value) {
+                        value = limparTexto(value || "");
+                        if (!value) return;
+                        meta.push(
+                            '<span class="authsearch-work-meta-label">' + escaparHTML(label) + '</span>' +
+                            '<span class="authsearch-work-meta-value">' + escaparHTML(value) + '</span>'
+                        );
+                    }
+
+                    addMeta('Autores', d.autores);
+                    addMeta('ISBN', d.isbn);
+                    addMeta('Editor', d.editor);
+                    addMeta('Coleção / vol.', d.colecao);
+                    addMeta('Assuntos', d.assunto);
+
+                    $dest.html(
+                        meta.length
+                            ? '<div class="authsearch-work-meta">' + meta.join('') + '</div>'
+                            : '<span class="authsearch-muted">Sem metadados adicionais disponíveis.</span>'
+                    ).removeClass('is-loading');
                     $obra.attr('data-detail-loaded', '1');
                     var filtro = limparTexto(($obra.find('.authsearch-work-title').text() || '') + ' ' + $dest.text()).toLowerCase();
                     $obra.attr('data-filter', filtro);
@@ -3131,14 +3305,6 @@ body.authsearch-resizing #authsearch-tab {
                     e.preventDefault();
                     e.stopPropagation();
                     STATE.obrasFiltroProblema = String($(this).attr("data-kore-filter") || "todos");
-                    renderObrasCatalogo(STATE.obrasProblemas || [], STATE.obrasPesquisaUrl || "");
-                })
-                .on("click.authsearchv3", ".authsearch-kore-resolve", function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var bib = String($(this).attr("data-biblionumber") || "");
-                    if (!bib) return;
-                    STATE.obrasResolucaoAberta[bib] = !STATE.obrasResolucaoAberta[bib];
                     renderObrasCatalogo(STATE.obrasProblemas || [], STATE.obrasPesquisaUrl || "");
                 })
                 .on("click.authsearchv3", ".authsearch-add-400", function (e) {
