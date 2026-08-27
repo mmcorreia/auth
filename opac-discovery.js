@@ -7,7 +7,7 @@
 
      NOVIDADES:
      KEEP pref=novidades
-     KEEP pref=infantil
+     KEEP pref=opac_infantil
      KEEP pref=opac_jovem_adulto
      ========================================================== --><link href="https://books.google.com" rel="preconnect" /><link href="https://covers.openlibrary.org" rel="preconnect" /><link href="https://www.wikidata.org" rel="preconnect" /><link href="https://pt.wikipedia.org" rel="preconnect" /><link href="https://commons.wikimedia.org" rel="preconnect" />
 <style>
@@ -1193,7 +1193,7 @@
 <div class="odh-review-header">
 <div>
 <p class="odh-eyebrow">Comunidade</p>
-<h2>O que os leitores dizem?</h2>
+<h2>Os leitores dizem</h2>
 </div>
 <div class="odh-review-controls"><button class="odh-review-nav odh-review-prev" type="button" aria-label="Coment&aacute;rio anterior"> &lsaquo; </button> <button class="odh-review-nav odh-review-next" type="button" aria-label="Coment&aacute;rio seguinte"> &rsaquo; </button></div>
 </div>
@@ -1247,9 +1247,7 @@
 <p class="odh-reading-intro">Entre os livros mais emprestados nas Bibliotecas de Oeiras.</p>
 </div>
 </div>
-<div class="odh-reading" id="odh-reading" data-report="/cgi-bin/koha/svc/report?id=846&amp;annotated=1" data-pool="20" data-limit="3">
-<div class="odh-status">A carregar leituras&hellip;</div>
-</div>
+<div class="odh-reading" id="odh-reading" data-report="/cgi-bin/koha/svc/report?id=846&amp;annotated=1" data-pool="20" data-limit="3"><div class="odh-status">A carregar leituras&hellip;</div></div>
 </div>
 <div>
 <div class="odh-heading">
