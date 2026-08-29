@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.10 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
+   Versão 4.11 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -1306,23 +1306,13 @@ body.authsearch-resizing #authsearch-tab {
          * Mantém o mesmo id para preservar toda a lógica de abertura existente.
          */
         function instalarBotaoAbertura() {
-            var $titulos = $("h1");
-            var $titulo = $titulos.filter(function () {
-                return /Modificar\s+autoridade/i.test(limparTexto($(this).text()));
-            }).first();
-
-            if (!$titulo.length) {
-                $titulo = $("#main h1, main h1, .main h1").first();
-            }
-
+            /*
+             * O botão é sempre filho direto do BODY.
+             * Não o colocamos dentro do H1 porque o conteúdo principal pode mudar
+             * de posição quando o painel é acoplado/desacoplado ou quando há scroll.
+             */
             var $botao = $('<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false" aria-label="Abrir Identificadores" title="Abrir Identificadores">››</button>');
-
-            if ($titulo.length) {
-                $titulo.append($botao);
-            } else {
-                /* Fallback raro: mantém o controlo acessível no início do conteúdo. */
-                $("body").prepend($botao);
-            }
+            $("body").append($botao);
         }
 
 
@@ -1384,6 +1374,24 @@ body.authsearch-resizing #authsearch-tab {
             tab.style.top = fixedTop;
         }
 
+        function restaurarPosicaoInicialBotao() {
+            var tab = document.getElementById("authsearch-tab");
+            if (!tab) return;
+
+            /*
+             * Reposição absoluta do controlo:
+             * - sempre encostado ao lado esquerdo;
+             * - sempre na altura calculada inicialmente.
+             */
+            tab.style.left = "0px";
+
+            if (tab.dataset.authsearchFixedTop) {
+                tab.style.top = tab.dataset.authsearchFixedTop;
+            } else {
+                alinharBotaoComTitulo();
+            }
+        }
+
         function abrirPainel() {
             STATE.aberto = true;
             $("#authsearch-root").addClass("authsearch-open").attr("aria-hidden", "false");
@@ -1405,11 +1413,33 @@ body.authsearch-resizing #authsearch-tab {
 
         function fecharPainel() {
             STATE.aberto = false;
+
             // Cancela pedidos pendentes para evitar alterações de UI após fechar o painel.
             abortarPedidos();
-            $("#authsearch-root").removeClass("authsearch-open").attr("aria-hidden", "true");
-            $("#authsearch-tab").attr("aria-expanded", "false").show();
+
+            $("#authsearch-root")
+                .removeClass("authsearch-open")
+                .attr("aria-hidden", "true");
+
+            /*
+             * Primeiro retiramos o dock. Só depois mostramos e recolocamos o botão.
+             * Desta forma nenhuma regra de body.authsearch-docked consegue deixar
+             * o botão na posição deslocada do painel.
+             */
             removerDockLayout();
+
+            var $tab = $("#authsearch-tab");
+            $tab.attr("aria-expanded", "false").show();
+
+            restaurarPosicaoInicialBotao();
+
+            /*
+             * Reaplica no frame seguinte porque a remoção do padding/transition do
+             * BODY pode terminar depois da instrução acima.
+             */
+            requestAnimationFrame(function () {
+                restaurarPosicaoInicialBotao();
+            });
         }
 
         function obterLimitesLarguraPainel() {
