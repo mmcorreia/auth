@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.9 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
+   Versão 4.10 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -1330,6 +1330,19 @@ body.authsearch-resizing #authsearch-tab {
             var tab = document.getElementById("authsearch-tab");
             if (!tab) return;
 
+            /*
+             * A posição vertical é calculada apenas uma vez.
+             * O botão é position:fixed e deve permanecer sempre na mesma altura
+             * do viewport, mesmo que o utilizador faça scroll com o painel aberto.
+             *
+             * Isto evita que os eventos "resize" disparados ao abrir/fechar o dock
+             * recalcularem a posição quando o título já saiu do ecrã.
+             */
+            if (tab.dataset.authsearchFixedTop) {
+                tab.style.top = tab.dataset.authsearchFixedTop;
+                return;
+            }
+
             var candidatos = [
                 "#toolbar + h1",
                 "#breadcrumbs + h1",
@@ -1361,13 +1374,14 @@ body.authsearch-resizing #authsearch-tab {
             if (!titulo) return;
 
             var rect = titulo.getBoundingClientRect();
-            var top = Math.max(6, Math.round(rect.top + window.scrollY + (rect.height - tab.offsetHeight) / 2));
+            var top = Math.max(
+                6,
+                Math.round(rect.top + (rect.height - tab.offsetHeight) / 2)
+            );
 
-            /*
-             * Como o botão é position:fixed, convertemos de coordenada de documento
-             * para coordenada do viewport.
-             */
-            tab.style.top = Math.max(6, Math.round(top - window.scrollY)) + "px";
+            var fixedTop = top + "px";
+            tab.dataset.authsearchFixedTop = fixedTop;
+            tab.style.top = fixedTop;
         }
 
         function abrirPainel() {
