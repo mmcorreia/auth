@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.7 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
+   Versão 4.8 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -41,34 +41,32 @@
 }
 
 #authsearch-tab {
-    position:fixed;
-    left:0;
-    top:34%;
-    z-index:10050;
-    transition:left .18s ease;
-    border:1px solid #98a2b3;
-    border-right:0;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    vertical-align:middle;
+    margin-left:10px;
+    padding:2px 7px 3px;
+    min-width:28px;
+    height:24px;
+    border:1px solid #c9d2dc;
+    border-radius:5px;
     background:#fff;
-    color:#1f2937;
-    padding:12px 7px;
-    writing-mode:vertical-rl;
-    transform:rotate(180deg);
-
-    /* Texto "Identificadores": tipografia simples e mais legível. */
+    color:#667085;
     font-family:Arial,Helvetica,sans-serif;
-    font-size:10px;
-    line-height:1.15;
-    font-weight:700;
-    letter-spacing:.025em;
-
+    font-size:14px;
+    line-height:1;
+    font-weight:600;
+    letter-spacing:-.08em;
     cursor:pointer;
-    border-radius:6px 0 0 6px;
-    box-shadow:0 3px 12px rgba(15,23,42,.12);
+    box-shadow:none;
+    transition:background .12s ease,border-color .12s ease,color .12s ease;
 }
 
 #authsearch-tab:hover {
     background:#f8fafc;
-    color:#007fae;
+    border-color:#9fb0bf;
+    color:#245f88;
 }
 
 #authsearch-root {
@@ -143,7 +141,7 @@ body.authsearch-resizing.authsearch-docked {
 }
 
 body.authsearch-docked #authsearch-tab {
-    left:var(--authsearch-dock-width);
+    /* O botão pertence ao título da página; não acompanha a margem do painel. */
 }
 
 body.authsearch-resizing #authsearch-tab {
@@ -739,7 +737,6 @@ body.authsearch-resizing #authsearch-tab {
     .authsearch-kp-gallery-item:nth-child(5){grid-column:3;grid-row:2}
     .authsearch-kp-name{font-size:20px}
     body.authsearch-docked{padding-left:0!important}
-    body.authsearch-docked #authsearch-tab{left:0}
     #authsearch-root{width:calc(100vw - 34px);min-width:0;max-width:none}
     .authsearch-card-main{grid-template-columns:86px 1fr}
     .authsearch-card-photo,.authsearch-card-placeholder{width:86px;height:112px}
@@ -1289,7 +1286,6 @@ body.authsearch-resizing #authsearch-tab {
             document.documentElement.style.removeProperty("--authsearch-dock-width");
 
             var html = '' +
-                '<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false">Identificadores</button>' +
                 '<aside id="authsearch-root" aria-hidden="true">' +
                     '<div class="authsearch-head">' +
                         '<div class="authsearch-brand"><strong id="authsearch-heading">AuthID #</strong></div>' +
@@ -1300,8 +1296,33 @@ body.authsearch-resizing #authsearch-tab {
                 '</aside>';
 
             $("body").append(html);
+            instalarBotaoAbertura();
             STATE.larguraPainelPx = obterLarguraInicialPainel();
             definirLarguraPainel(STATE.larguraPainelPx, false);
+        }
+
+        /*
+         * Botão discreto junto ao título "Modificar autoridade…".
+         * Mantém o mesmo id para preservar toda a lógica de abertura existente.
+         */
+        function instalarBotaoAbertura() {
+            var $titulos = $("h1");
+            var $titulo = $titulos.filter(function () {
+                return /Modificar\s+autoridade/i.test(limparTexto($(this).text()));
+            }).first();
+
+            if (!$titulo.length) {
+                $titulo = $("#main h1, main h1, .main h1").first();
+            }
+
+            var $botao = $('<button type="button" id="authsearch-tab" aria-controls="authsearch-root" aria-expanded="false" aria-label="Abrir Identificadores" title="Abrir Identificadores">››</button>');
+
+            if ($titulo.length) {
+                $titulo.append($botao);
+            } else {
+                /* Fallback raro: mantém o controlo acessível no início do conteúdo. */
+                $("body").prepend($botao);
+            }
         }
 
         function abrirPainel() {
