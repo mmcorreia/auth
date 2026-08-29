@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.8 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
+   Versão 4.9 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -41,32 +41,30 @@
 }
 
 #authsearch-tab {
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    vertical-align:middle;
-    margin-left:10px;
-    padding:2px 7px 3px;
-    min-width:28px;
-    height:24px;
-    border:1px solid #c9d2dc;
-    border-radius:5px;
+    position:fixed;
+    left:0;
+    top:18px;
+    z-index:10050;
+    transition:left .18s ease,background .14s ease,color .14s ease,border-color .14s ease;
+    border:1px solid #aeb8c4;
+    border-left:0;
     background:#fff;
-    color:#667085;
+    color:#344054;
+    padding:5px 8px 5px 7px;
     font-family:Arial,Helvetica,sans-serif;
     font-size:14px;
     line-height:1;
-    font-weight:600;
-    letter-spacing:-.08em;
+    font-weight:700;
+    letter-spacing:0;
     cursor:pointer;
-    box-shadow:none;
-    transition:background .12s ease,border-color .12s ease,color .12s ease;
+    border-radius:0 5px 5px 0;
+    box-shadow:0 1px 4px rgba(15,23,42,.08);
 }
 
 #authsearch-tab:hover {
     background:#f8fafc;
-    border-color:#9fb0bf;
-    color:#245f88;
+    color:#0f4c75;
+    border-color:#8fa0ad;
 }
 
 #authsearch-root {
@@ -1186,6 +1184,7 @@ body.authsearch-resizing #authsearch-tab {
         bindEventos();
         atualizarAuthorityState();
         sincronizarInterfaceInicial();
+        window.addEventListener("resize", alinharBotaoComTitulo);
 
         /* ======================================================
            CONTEXTO / ESTADO
@@ -1299,6 +1298,7 @@ body.authsearch-resizing #authsearch-tab {
             instalarBotaoAbertura();
             STATE.larguraPainelPx = obterLarguraInicialPainel();
             definirLarguraPainel(STATE.larguraPainelPx, false);
+            alinharBotaoComTitulo();
         }
 
         /*
@@ -1323,6 +1323,51 @@ body.authsearch-resizing #authsearch-tab {
                 /* Fallback raro: mantém o controlo acessível no início do conteúdo. */
                 $("body").prepend($botao);
             }
+        }
+
+
+        function alinharBotaoComTitulo() {
+            var tab = document.getElementById("authsearch-tab");
+            if (!tab) return;
+
+            var candidatos = [
+                "#toolbar + h1",
+                "#breadcrumbs + h1",
+                "main h1",
+                ".main h1",
+                "#main h1",
+                "h1"
+            ];
+
+            var titulo = null;
+            for (var i = 0; i < candidatos.length; i++) {
+                var el = document.querySelector(candidatos[i]);
+                if (el && /Modificar autoridade/i.test(limparTexto(el.textContent || ""))) {
+                    titulo = el;
+                    break;
+                }
+            }
+
+            if (!titulo) {
+                var h1s = document.querySelectorAll("h1");
+                for (var j = 0; j < h1s.length; j++) {
+                    if (/Modificar autoridade/i.test(limparTexto(h1s[j].textContent || ""))) {
+                        titulo = h1s[j];
+                        break;
+                    }
+                }
+            }
+
+            if (!titulo) return;
+
+            var rect = titulo.getBoundingClientRect();
+            var top = Math.max(6, Math.round(rect.top + window.scrollY + (rect.height - tab.offsetHeight) / 2));
+
+            /*
+             * Como o botão é position:fixed, convertemos de coordenada de documento
+             * para coordenada do viewport.
+             */
+            tab.style.top = Math.max(6, Math.round(top - window.scrollY)) + "px";
         }
 
         function abrirPainel() {
