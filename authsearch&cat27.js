@@ -2,7 +2,7 @@
    AUTHSEARCH / KOHA INTRANET AUTHORITY SEARCH
    Koha authority editor · Wikidata + VIAF + UNIMARC 017/200/400
 
-   Versão 4.6 · AuthSearch&Cat + UX Obras simplificado · 2026-08-17
+   Versão 4.7 · AuthSearch&Cat + UX Obras simplificado · 2026-08-29
    CSS e JavaScript no mesmo ficheiro, organizados por secções.
 
    Princípios:
@@ -53,9 +53,14 @@
     padding:12px 7px;
     writing-mode:vertical-rl;
     transform:rotate(180deg);
-    font-size:12px;
-    font-weight:800;
-    letter-spacing:.04em;
+
+    /* Texto "Identificadores": tipografia simples e mais legível. */
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:10px;
+    line-height:1.15;
+    font-weight:700;
+    letter-spacing:.025em;
+
     cursor:pointer;
     border-radius:6px 0 0 6px;
     box-shadow:0 3px 12px rgba(15,23,42,.12);
